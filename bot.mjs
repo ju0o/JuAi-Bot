@@ -480,9 +480,29 @@ async function job(key, fn) {
   } finally { running.delete(key); }
 }
 
+// ASUS is powered off overnight by AutoNight. On boot, answer what members left while we were away.
+async function catchUp() {
+  const since = kvGet(db, "last_seen"); if (!since) return;
+  let n = 0;
+  const lab = await hub.channels.fetch(ids.lab);
+  for (const m of [...(await lab.messages.fetch({ limit: 50 })).values()].reverse()) {
+    if (n >= 10) break;
+    if (m.createdTimestamp > since && !m.author.bot && !m.system && !m.hasThread) { m.member ??= await guild.members.fetch(m.author.id).catch(() => null); await labQuestion(m); n++; }
+  }
+  const threads = (await guild.channels.fetchActiveThreads()).threads.filter((t) => [ids.qa, ids.feedback, ids.suggest].includes(t.parentId) && t.createdTimestamp > since);
+  for (const t of threads.values()) {
+    if (n >= 10) break;
+    if ((await t.messages.fetch({ limit: 10 }).catch(() => new Map())).some?.((x) => x.author.bot)) continue; // answered just before shutdown
+    await onThread(t); n++;
+  }
+  if (n) await log(`🌅 꺼져 있던 동안 들어온 질문·글 ${n}개에 답했어요`);
+}
+
 async function tick() {
   if (!ids.staff) return;
   const now = Date.now(), today = L.kstDate(now), h = L.kstHour(now);
+  if (!running.has("catchup:done")) { running.add("catchup:done"); await catchUp().catch((e) => fail("catch-up", e)); }
+  kvSet(db, "last_seen", now);
   for (const [id, x] of recent) if (!x.some((e) => now - e.at < 120_000)) recent.delete(id);
   await job("bootstrap", bootstrap);
   if (h >= 8) await job(`summary:${today}`, () => dailySummary(today));

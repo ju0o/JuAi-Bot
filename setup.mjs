@@ -144,7 +144,7 @@ async function main() {
   }
   async function putOnboarding(questions, shown) { await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
     enabled: true, mode: 0,
-    default_channel_ids: ["guide", "notice", "rules", "intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
+    default_channel_ids: ["guide", "notice", "rules", "intro", "chat", "news", "qa", "projects", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
     prompts: questions.map((q, i) => ({ id: sid(), type: 0, title: q.title, single_select: q.single, required: q.required, in_onboarding: i < shown,
       options: q.options.map((o) => ({ id: sid(), title: o.title, ...(o.description ? { description: o.description } : {}),
         role_ids: o.roles.map((k) => roles[k].id), channel_ids: o.roles.length ? [] : [ids.chat] })) })),

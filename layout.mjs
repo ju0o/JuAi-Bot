@@ -29,6 +29,7 @@ export const CATEGORIES = [
     { key: "voice", name: "음성-라운지", type: "voice", access: "open" },
   ] },
   { name: "프로젝트", channels: [
+    { key: "projects", name: "프로젝트-목록", type: "text", access: "readonly", topic: "누가 뭘 만들고 있는지 한눈에. 쇼케이스 글로 매일 자동 갱신돼요." },
     { key: "showcase", name: "쇼케이스", type: "forum", access: "open", topic: "만든 거 자랑하기. 프로젝트 하나에 글 하나.", tags: ["웹", "앱", "에이전트", "도구", "모델/연구"] },
     { key: "feedback", name: "피드백-요청", type: "forum", access: "open", topic: "원하는 피드백 종류를 태그로 달아주세요.", tags: ["UI", "코드", "기획", "버그", "해결됨"] },
     { key: "coproject", name: "공동-프로젝트", type: "forum", access: "open", topic: "같이 만들 사람 모집.", tags: ["팀원모집", "진행중", "완료"] },
@@ -92,6 +93,7 @@ ${c("news")} 새 모델, 새 도구, 업계 소식
 ${c("qa")} 막히는 걸 글로 올리면 🔵 OpenCode가 **먼저 답을 달아요**. 사람들 답도 이어서 달려요. 해결되면 "해결됨" 태그!
 
 **프로젝트**
+${c("projects")} 누가 뭘 만들고 있는지 한눈에 보는 목록. 쇼케이스 글로 매일 자동 갱신돼요.
 ${c("showcase")} 만든 걸 자랑하는 곳. 프로젝트 하나에 글 하나. **GitHub 링크를 넣으면 🔵 OpenCode가 코드 리뷰**를 달아요. 반응 좋은 글은 **매주 금요일 하이라이트**로 소개되고, 한동안 소식이 없으면 진행 상황을 물어봐요.
 ${c("feedback")} 피드백 받고 싶은 걸 올리세요. 원하는 피드백(UI/코드/기획/버그)을 **태그로 달면** 더 잘 모여요. 🟠 CommandCode가 첫 코멘트를, GitHub 링크가 있으면 🔵 OpenCode가 코드 리뷰를 달아요.
 ${c("coproject")} 같이 만들 사람 모집. 글을 올리면 🟠 CommandCode가 찾는 분야(프론트엔드·디자인 등)를 정리하고 **"공동프로젝트 알림" 역할에게 알려줘요.**`,
@@ -136,7 +138,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 • \`요약해줘\` 지금까지 대화를 3줄로 정리 (1회)
 
 **포럼에 글을 올리면 자동으로**
-• ${c("qa")} → 🔵 OpenCode 첫 답변
+• ${c("qa")} → 🔵 OpenCode 첫 답변 (입문자 질문이면 같은 분야 실무자도 불러요)
 • ${c("feedback")} → 🟠 CommandCode 첫 피드백 + GitHub 링크가 있으면 🔵 코드 리뷰
 • ${c("showcase")} → GitHub 링크가 있으면 🔵 코드 리뷰
 • ${c("coproject")} → 🟠 찾는 분야 정리 + "공동프로젝트 알림" 역할에게 알림

@@ -43,6 +43,13 @@ export function takeQuota(db, userId, { staff = false, now = Date.now(), limits 
   return { ok: true, left: staff ? Infinity : total - used, total };
 }
 
+/** Read-only view of today's quota (for "!남은횟수"). */
+export function peekQuota(db, userId, { now = Date.now(), limits = LIMITS } = {}) {
+  const day = quotaDay(now), get = (id) => db.prepare("SELECT count FROM usage WHERE user_id=? AND day=?").get(id, day)?.count ?? 0;
+  const total = limits.daily + get(`bonus:${userId}`), used = get(userId);
+  return { used, total, left: Math.max(0, total - used), bonus: total - limits.daily };
+}
+
 export const quotaMessage = (q) => ({
   global: "오늘 서버 전체 AI 사용량이 다 찼어요. 내일 오전 9시에 다시 열려요.",
   daily: `오늘 질문 ${q.total}개를 다 쓰셨어요. 내일 오전 9시에 충전돼요.\n-# 다른 사람의 #피드백-요청·#쇼케이스 글에 피드백을 달면 하루 최대 ${LIMITS.bonusMax}회 더 받을 수 있어요.`,

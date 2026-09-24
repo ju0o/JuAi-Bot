@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { ChannelType, Client, GatewayIntentBits, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
-import { CATEGORIES, GUIDE, ONBOARDING, ROLES } from "./layout.mjs";
+import { CATEGORIES, GUIDE, ONBOARDING, ROLES, STAFF_GUIDE } from "./layout.mjs";
 import { openDb, kvGet, kvSet } from "./db.mjs";
 
 export const env = parseEnv(readFileSync(new URL("./.env", import.meta.url), "utf8"));
@@ -115,6 +115,11 @@ async function main() {
     await guideCh.messages.pin(msgIds[0]).catch(() => {}); console.log("+ 사용법 게시");
   }
   kvSet(openDb(), "guide_messages", msgIds);
+  // Founder command sheet, pinned in the private staff channel.
+  const staffCh = await guild.channels.fetch(ids.staff), staffText = STAFF_GUIDE((k) => `<#${ids[k]}>`);
+  const staffPrev = kvGet(openDb(), "staff_guide") ? await staffCh.messages.fetch(kvGet(openDb(), "staff_guide")).catch(() => null) : null;
+  if (staffPrev) await staffPrev.edit(staffText);
+  else { const m = await staffCh.send({ content: staffText, allowedMentions: { parse: [] } }); await m.pin().catch(() => {}); kvSet(openDb(), "staff_guide", m.id); }
   let invite = kvGet(openDb(), "invite");
   if (!invite || !(await client.fetchInvite(invite).catch(() => null))) { invite = (await guideCh.createInvite({ maxAge: 0, maxUses: 0, unique: true, reason: "JuAi 공개 초대 링크" })).url; kvSet(openDb(), "invite", invite); }
   console.log(`초대 링크: ${invite}`);

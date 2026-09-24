@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { grantBonus, peekQuota, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
+import { bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
@@ -37,5 +37,10 @@ assert.equal(validateAdminPlan({ action: "rm -rf", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: 99999 } }).params.minutes, 7 * 24 * 60);
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).action, "answer");
+
+const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
+assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
+assert.equal(bestFaq(faqRows, "디스코드 봇 토큰은 어디서 받아?"), null);
+assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
 
 console.log("check ok");

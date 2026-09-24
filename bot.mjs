@@ -6,10 +6,11 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, EmbedBuilder, GatewayIntentBits as G, MessageType, MessageFlags, ModalBuilder, Options, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, EmbedBuilder, GatewayIntentBits as G, MessageType, MessageFlags, ModalBuilder, Options, Partials, TextInputBuilder, TextInputStyle } from "discord.js";
 import { env, BOTS, botId, findGuild } from "./setup.mjs";
 import { openDb, kvGet, kvSet } from "./db.mjs";
-import { ai } from "./ai.mjs";
+import * as AI from "./ai.mjs";
+const { ai } = AI;
 import { CHANNELS, SUMMARY_KEYS, channelByKey } from "./layout.mjs";
 import * as L from "./lib.mjs";
 
@@ -26,7 +27,8 @@ async function connect() {
     const token = env[BOTS[name]]; if (!token) { console.warn(`${name}: 토큰 없음`); continue; }
     const isHub = !hub;
     const client = new Client({
-      intents: isHub ? [G.Guilds, G.GuildMessages, G.MessageContent] : [G.Guilds],
+      intents: isHub ? [G.Guilds, G.GuildMessages, G.MessageContent, G.GuildMessageReactions] : [G.Guilds],
+      ...(isHub ? { partials: [Partials.Message, Partials.Reaction, Partials.User] } : {}),
       makeCache: Options.cacheWithLimits({ ...Options.DefaultMakeCacheSettings, MessageManager: isHub ? 30 : 0, PresenceManager: 0, ReactionManager: 0,
         GuildEmojiManager: 0, GuildStickerManager: 0, VoiceStateManager: 0, GuildMemberManager: { maxSize: 200, keepOverLimit: (m) => m.id === m.client.user.id } }),
     });
@@ -46,6 +48,8 @@ async function connect() {
   if (missing.length) console.warn(`채널 없음: ${missing.join(", ")} → node setup.mjs 먼저 실행`);
   hub.on("messageCreate", (m) => void onMessage(m).catch((e) => fail("message", e)));
   hub.on("threadCreate", (t, isNew) => { if (isNew) onThread(t).catch((e) => fail("thread", e)); });
+  hub.on("messageReactionAdd", (r, u) => void onVote(r, u).catch((e) => fail("vote", e)));
+  hub.on("threadUpdate", (before, after) => void onSolved(before, after).catch((e) => fail("solved", e)));
 }
 
 const as = (who) => clients[who] ?? hub;
@@ -116,7 +120,45 @@ async function answer(m, channelId, who, history, replyTo) {
   const prompt = `${PERSONA[who]}\n${RULES}\n\n대화 기록:\n${history.join("\n") || "(없음)"}\n\n${name(m)}의 질문: ${L.quote(m.content.replace(/<@!?\d+>/g, ""), 2000)}`;
   const text = await withTyping(who, channelId, () => ai(ENGINE[who], prompt)).catch((e) => { fail(`answer/${who}`, e); return "지금은 답을 못 만들었어요. 잠시 뒤에 다시 물어봐 주세요."; });
   const footer = Number.isFinite(q.left) ? `\n-# 오늘 남은 질문 ${q.left}/${q.total}` : "";
-  await sayLong(who, channelId, text + footer, replyTo);
+  const first = await sayLong(who, channelId, text + footer, replyTo);
+  rememberAnswer(first, m.author.id, m.content, text);
+}
+
+/** Every AI answer gets 👍/👎; the asker's 👍 turns it into a FAQ entry, 👎s show up in the weekly report. */
+function rememberAnswer(msg, asker, question, text) {
+  if (!msg) return;
+  db.prepare("INSERT OR REPLACE INTO answers(msg_id,asker,question,answer,url,model,at) VALUES(?,?,?,?,?,?,?)")
+    .run(msg.id, asker, question.replace(/<@!?\d+>/g, "").trim().slice(0, 1000), text.slice(0, 3000), msg.url, AI.lastModel || "", Date.now());
+  for (const e of ["👍", "👎"]) msg.react(e).catch(() => {});
+}
+
+function addFaq(source, question, answerText, url) {
+  db.prepare("INSERT OR IGNORE INTO faq(source,question,answer,url,at) VALUES(?,?,?,?,?)").run(source, question.slice(0, 1000), answerText.slice(0, 1500), url, Date.now());
+}
+
+async function onVote(reaction, user) {
+  if (user.bot || !["👍", "👎"].includes(reaction.emoji.name)) return;
+  const row = db.prepare("SELECT * FROM answers WHERE msg_id=?").get(reaction.message.id); if (!row) return;
+  const vote = reaction.emoji.name === "👍" ? 1 : -1;
+  db.prepare("INSERT OR REPLACE INTO votes(msg_id,user_id,vote,at) VALUES(?,?,?,?)").run(row.msg_id, user.id, vote, Date.now());
+  if (vote === 1 && user.id === row.asker) addFaq(`answer:${row.msg_id}`, row.question, row.answer, row.url);
+}
+
+async function onSolved(before, after) {
+  if (after.parentId !== ids.qa) return;
+  const forum = await hub.channels.fetch(ids.qa), solved = forum.availableTags.find((t) => t.name === "해결됨")?.id;
+  if (!solved || before.appliedTags?.includes(solved) || !after.appliedTags.includes(solved)) return;
+  const starter = await after.fetchStarterMessage().catch(() => null);
+  const msgs = [...(await after.messages.fetch({ limit: 50 })).values()].reverse().filter((x) => x.id !== starter?.id && x.content);
+  const best = msgs.find((x) => x.author.bot) || msgs.at(-1); if (!best) return;
+  addFaq(`thread:${after.id}`, `${after.name} ${starter?.content || ""}`, best.content, after.url);
+}
+
+/** Already solved? Point at the old answer instead of spending an AI call and the member's quota. */
+async function faqReply(question, channelId, who, followUp) {
+  const hit = L.bestFaq(db.prepare("SELECT * FROM faq").all(), question); if (!hit) return false;
+  await say(who, channelId, `📚 **비슷한 질문이 예전에 해결됐어요**\n**Q.** ${hit.question.replace(/\s+/g, " ").slice(0, 120)}\n**A.** ${hit.answer.replace(/-# .*$/gm, "").slice(0, 500)}\n🔗 ${hit.url}\n\n${followUp}`);
+  return true;
 }
 
 async function summarizeThread(m) {
@@ -132,6 +174,7 @@ async function summarizeThread(m) {
 
 async function labQuestion(m) {
   const thread = await m.startThread({ name: m.content.replace(/\s+/g, " ").slice(0, 50) || "질문", autoArchiveDuration: 1440 });
+  if (await faqReply(m.content, thread.id, "OPENCODE", "-# 이걸로 해결이 안 되면 이 스레드에 한 번 더 써 주세요. AI가 이어서 답해요. (이번엔 질문 횟수를 안 썼어요)")) return;
   await answer(m, thread.id, "OPENCODE", [], undefined);
 }
 
@@ -157,12 +200,13 @@ async function onThread(t) {
   }
   if (t.parentId === ids.coproject) return coprojectMatch(t, post);
   if (t.parentId === ids.showcase) return codeReview(t, starter);
+  if (t.parentId === ids.qa && await faqReply(`${t.name} ${starter.content}`, t.id, "OPENCODE", "-# 해결이 안 되면 @OpenCode를 불러서 이어서 물어보세요.")) return;
   if (!L.takeQuota(db, "bot:forum", { staff: true }).ok) return;
   const who = t.parentId === ids.qa ? "OPENCODE" : "COMMANDCODE";
   const task = who === "OPENCODE" ? "이 질문에 첫 답변을 달아줘. 모르면 추측하지 말고 확인할 방법을 알려줘."
     : "피드백 요청 글이야. 좋은 점 1개, 개선 제안 2개를 구체적으로 쓰고, 다른 멤버가 피드백하기 쉽게 작성자에게 되물을 질문 1개를 붙여줘." + (t.appliedTags.length ? "" : " 태그(UI/코드/기획/버그)를 달면 피드백이 더 잘 모인다고 짧게 안내해.");
   const text = await withTyping(who, t.id, () => ai(ENGINE[who], `${PERSONA[who]}\n${RULES}\n\n${task}\n\n${post}`)).catch((e) => fail(`forum/${who}`, e));
-  if (text) await sayLong(who, t.id, text);
+  if (text) { const first = await sayLong(who, t.id, text); if (who === "OPENCODE") rememberAnswer(first, starter.author.id, `${t.name} ${starter.content}`, text); }
   if (t.parentId === ids.feedback) await codeReview(t, starter);
 }
 
@@ -592,6 +636,15 @@ async function highlight() {
   await createCard("notice", "이번 주 하이라이트 공지", text, { text });
 }
 
+function answerQuality(since) {
+  const byModel = db.prepare(`SELECT a.model, SUM(v.vote=1) up, SUM(v.vote=-1) down FROM votes v JOIN answers a ON a.msg_id=v.msg_id WHERE v.at>=? GROUP BY a.model`).all(since);
+  const worst = db.prepare(`SELECT a.url, a.question, SUM(v.vote=-1) down FROM votes v JOIN answers a ON a.msg_id=v.msg_id WHERE v.at>=? GROUP BY a.msg_id HAVING down>0 ORDER BY down DESC LIMIT 3`).all(since);
+  const faqNew = db.prepare("SELECT count(*) n FROM faq WHERE at>=?").get(since).n;
+  if (!byModel.length && !faqNew) return [];
+  return [`• AI 답변 평가: ${byModel.map((r) => `${String(r.model).replace("opencode/", "") || "?"} 👍${r.up} 👎${r.down}`).join(" · ") || "없음"} · 새 FAQ ${faqNew}개`,
+    ...worst.map((w) => `  👎${w.down} ${w.question.slice(0, 40)}… ${w.url}`)];
+}
+
 async function opsReport() {
   const since = Date.now() - 7 * L.DAY_MS, days = [...Array(7)].map((_, d) => L.quotaDay(Date.now() - d * L.DAY_MS));
   const sum = (who) => days.reduce((a, d) => a + (db.prepare("SELECT count FROM usage WHERE user_id=? AND day=?").get(who, d)?.count ?? 0), 0);
@@ -604,6 +657,7 @@ async function opsReport() {
     `• 새 멤버 ${joins}명 · 프로필 작성 ${profiles}명`,
     `• AI 질문 ${sum("*")}회 (하루 평균 ${Math.round(sum("*") / 7)}회, 사용자-일 ${people}) · 한도 초과 ${sum("reject:*")}회`,
     `• 새 글: ${[["showcase", "쇼케이스"], ["feedback", "피드백"], ["qa", "질문"], ["coproject", "공동 프로젝트"], ["suggest", "건의"]].map(([k, n]) => `${n} ${posts[ids[k]] || 0}`).join(" · ")}`,
+    ...answerQuality(since),
     sum("reject:*") > 10 ? "-# 한도 초과가 많아요. #운영진에 \"하루 한도 7회로 올려줘\"라고 말하면 바꿔드려요." : ""].filter(Boolean).join("\n"));
 }
 

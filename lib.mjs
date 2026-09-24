@@ -117,3 +117,17 @@ export function validateAdminPlan(plan) {
   if (plan.action === "delete_messages") params.last = Math.min(Math.max(Number(params.last) || 20, 1), 100);
   return { action: plan.action, params, summary: str(plan.summary, 300) ?? plan.action };
 }
+
+/** Character-bigram Jaccard: good enough to spot "the same question asked again" in Korean without embeddings. */
+const grams = (s) => { const t = String(s).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ""); const g = new Set(); for (let i = 0; i < t.length - 1; i++) g.add(t.slice(i, i + 2)); return g; };
+export function similarity(a, b) {
+  const A = grams(a), B = grams(b); if (!A.size || !B.size) return 0;
+  let n = 0; for (const x of A) if (B.has(x)) n++;
+  return n / (A.size + B.size - n);
+}
+// ponytail: linear scan over the FAQ table; fine for thousands of rows, add an index/embeddings if it ever gets slow.
+export function bestFaq(rows, question, min = 0.3) {
+  let best = null, score = min;
+  for (const r of rows) { const s = similarity(question, r.question); if (s >= score) { best = r; score = s; } }
+  return best && { ...best, score };
+}

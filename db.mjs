@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS usage(user_id TEXT, day TEXT, count INTEGER, last_at 
 CREATE TABLE IF NOT EXISTS kv(key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, kind TEXT, payload TEXT, status TEXT DEFAULT 'OPEN', message_id TEXT, remind_at INTEGER, created_at INTEGER);
 CREATE TABLE IF NOT EXISTS picks(repo TEXT PRIMARY KEY, day TEXT);
+CREATE TABLE IF NOT EXISTS answers(msg_id TEXT PRIMARY KEY, asker TEXT, question TEXT, answer TEXT, url TEXT, model TEXT, at INTEGER);
+CREATE TABLE IF NOT EXISTS votes(msg_id TEXT, user_id TEXT, vote INTEGER, at INTEGER, PRIMARY KEY(msg_id, user_id));
+CREATE TABLE IF NOT EXISTS faq(id INTEGER PRIMARY KEY, source TEXT UNIQUE, question TEXT, answer TEXT, url TEXT, at INTEGER);
 CREATE TABLE IF NOT EXISTS profiles(user_id TEXT PRIMARY KEY, sns TEXT, making TEXT, github TEXT, message_id TEXT, updated_at INTEGER);`;
 
 export function openDb(dir = "data") {

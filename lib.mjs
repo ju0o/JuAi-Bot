@@ -12,7 +12,15 @@ export const kstMidnight = (date) => Date.parse(`${date}T00:00:00Z`) - KST_MS;
 /** Quota day rolls over at 09:00 KST, which is exactly 00:00 UTC. */
 export const quotaDay = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
 
-export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300 };
+export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300, bonusMax: 3 };
+
+/** +1 question for giving feedback on someone else's post, at most bonusMax per quota day. Stored as usage rows "bonus:<id>". */
+export function grantBonus(db, userId, { now = Date.now(), limits = LIMITS } = {}) {
+  const day = quotaDay(now), key = `bonus:${userId}`;
+  if ((db.prepare("SELECT count FROM usage WHERE user_id=? AND day=?").get(key, day)?.count ?? 0) >= limits.bonusMax) return false;
+  db.prepare(`INSERT INTO usage(user_id,day,count,last_at) VALUES(?,?,1,?) ON CONFLICT(user_id,day) DO UPDATE SET count=count+1,last_at=excluded.last_at`).run(key, day, now);
+  return true;
+}
 
 /** Per-member AI chat quota. Records the use only when allowed. */
 export function takeQuota(db, userId, { staff = false, now = Date.now(), limits = LIMITS } = {}) {
@@ -20,20 +28,24 @@ export function takeQuota(db, userId, { staff = false, now = Date.now(), limits 
   const global = db.prepare("SELECT count FROM usage WHERE user_id='*' AND day=?").get(day)?.count ?? 0;
   if (global >= limits.globalDaily) return { ok: false, reason: "global" };
   const row = db.prepare("SELECT count,last_at FROM usage WHERE user_id=? AND day=?").get(userId, day);
+  const total = limits.daily + (db.prepare("SELECT count FROM usage WHERE user_id=? AND day=?").get(`bonus:${userId}`, day)?.count ?? 0);
   if (!staff) {
     if (row && now - row.last_at < limits.gapMs) return { ok: false, reason: "gap", waitSec: Math.ceil((limits.gapMs - (now - row.last_at)) / 1000) };
-    if (row && row.count >= limits.daily) return { ok: false, reason: "daily" };
+    if (row && row.count >= total) {
+      db.prepare(`INSERT INTO usage(user_id,day,count,last_at) VALUES('reject:*',?,1,?) ON CONFLICT(user_id,day) DO UPDATE SET count=count+1`).run(day, now);
+      return { ok: false, reason: "daily", total };
+    }
   }
   const bump = db.prepare(`INSERT INTO usage(user_id,day,count,last_at) VALUES(?,?,1,?)
     ON CONFLICT(user_id,day) DO UPDATE SET count=count+1,last_at=excluded.last_at`);
   bump.run(userId, day, now); bump.run("*", day, now);
   const used = (row?.count ?? 0) + 1;
-  return { ok: true, left: staff ? Infinity : limits.daily - used };
+  return { ok: true, left: staff ? Infinity : total - used, total };
 }
 
 export const quotaMessage = (q) => ({
   global: "오늘 서버 전체 AI 사용량이 다 찼어요. 내일 오전 9시에 다시 열려요.",
-  daily: `오늘 질문 ${LIMITS.daily}개를 다 쓰셨어요. 내일 오전 9시에 충전돼요.`,
+  daily: `오늘 질문 ${q.total}개를 다 쓰셨어요. 내일 오전 9시에 충전돼요.\n-# 다른 사람의 #피드백-요청·#쇼케이스 글에 피드백을 달면 하루 최대 ${LIMITS.bonusMax}회 더 받을 수 있어요.`,
   gap: `조금만 천천히요. ${q.waitSec}초 뒤에 다시 물어봐 주세요.`,
 })[q.reason];
 

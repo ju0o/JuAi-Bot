@@ -6,7 +6,7 @@ export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
   { key: "agent", name: "AI 에이전트", color: 0x5b7fd6, hoist: true, perms: [] },
   { key: "optout", name: "AI 언급 제외", color: 0, perms: [] },
-  { key: "coproject", name: "공동프로젝트 알림", color: 0xc8872b, perms: [] },
+  { key: "coproject", name: "공동프로젝트 알림", color: 0xc8872b, perms: [], mentionable: true },
   ...["프론트엔드", "백엔드", "AI 에이전트 개발", "디자인", "기획"].map((name) => ({ key: `int:${name}`, name, color: 0, perms: [] })),
   ...["입문", "실무", "연구"].map((name) => ({ key: `lvl:${name}`, name, color: 0, perms: [] })),
   ...["Claude Code", "Codex", "Cursor", "OpenCode", "기타 도구"].map((name) => ({ key: `tool:${name}`, name: `${name} 사용자`, color: 0, perms: [] })),
@@ -91,12 +91,12 @@ ${c("news")} 새 모델, 새 도구, 업계 소식
 ${c("qa")} 막히는 걸 글로 올리면 🔵 OpenCode가 **먼저 답을 달아요**. 사람들 답도 이어서 달려요. 해결되면 "해결됨" 태그!
 
 **프로젝트**
-${c("showcase")} 만든 걸 자랑하는 곳. 프로젝트 하나에 글 하나.
+${c("showcase")} 만든 걸 자랑하는 곳. 프로젝트 하나에 글 하나. 반응 좋은 글은 **매주 금요일 하이라이트**로 소개돼요.
 ${c("feedback")} 피드백 받고 싶은 걸 올리세요. 원하는 피드백(UI/코드/기획/버그)을 **태그로 달면** 더 잘 모여요. 🟠 CommandCode가 첫 코멘트를 달아요.
-${c("coproject")} 같이 만들 사람 모집. 입장 질문에서 "공동 프로젝트 알림"을 고르면 새 모집 글을 놓치지 않아요.`,
+${c("coproject")} 같이 만들 사람 모집. 글을 올리면 🟠 CommandCode가 찾는 분야(프론트엔드·디자인 등)를 정리하고 **"공동프로젝트 알림" 역할에게 알려줘요.**`,
 
 `**AI 에이전트**
-${c("picks")} 💻 Codex의 오늘의 추천. 추천마다 스레드가 열리고 🔵 OpenCode가 **활용 예시와 흐름도**를 달아요. 스레드에 "이거 내 프로젝트에 어떻게 써?"라고 물어보면 이어서 답해요.
+${c("picks")} 💻 Codex의 오늘의 추천. 추천마다 스레드가 열리고 🔵 OpenCode가 **활용 예시와 흐름도**를 달아요. 스레드에 "이거 내 프로젝트에 어떻게 써?"라고 물어보면 이어서 답해요. 추천에 👍/👎를 누르면 다음 추천에 반영돼요.
 ${c("lab")} **여기 글을 쓰면 🔵 OpenCode가 스레드를 열고 답해요.** 스레드 안에서 계속 대화하면 앞 내용을 기억해요. ChatGPT처럼 쓰면 돼요.
 ${c("playground")} 봇 테스트, 아무거나
 
@@ -111,6 +111,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 
 ## ⚠️ 알아두세요
 • AI 질문은 **1인 하루 ${LIMITS.daily}회**, 질문 사이 30초. 매일 **오전 9시**에 충전돼요.
+• 🎁 다른 사람의 쇼케이스·피드백 글에 **30자 이상 피드백**을 달면 그날 **+1회** (하루 최대 ${LIMITS.bonusMax}회).
 • 무료 AI 모델이라 입력한 내용이 모델 개선에 쓰일 수 있어요. **비밀번호·API 키·개인정보는 절대 올리지 마세요.**
 • 추천·요약에서 내 글이 언급되기 싫으면 입장 질문에서 **"언급하지 말아주세요"**를 고르세요.
 • AI 답은 틀릴 수 있어요. 중요한 건 한 번 더 확인!`,

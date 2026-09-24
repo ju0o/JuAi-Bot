@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
+import { grantBonus, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
@@ -12,6 +12,10 @@ for (let i = 1; i < LIMITS.daily; i++) assert.ok(takeQuota(db, "u1", { now: t0 +
 assert.equal(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs }).reason, "daily");
 assert.ok(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs, staff: true }).ok, "staff is unlimited");
 assert.ok(takeQuota(db, "u1", { now: Date.parse("2026-09-25T00:00:01Z") }).ok, "refills at 09:00 KST");
+assert.ok(grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }));
+assert.equal(grantBonus(db, "u1", { now: t0 }), false, "bonus capped");
+db.exec("DELETE FROM usage WHERE user_id='u1' AND day='2026-09-24'"); db.exec("INSERT INTO usage VALUES('u1','2026-09-24',5,0)");
+assert.equal(takeQuota(db, "u1", { now: t0 + 999 * LIMITS.gapMs }).left, 2, "5 used of 5+3 → 2 left after this one");
 assert.equal(quotaDay(Date.parse("2026-09-24T23:59:59Z")), "2026-09-24");
 db.exec("UPDATE usage SET count=999 WHERE user_id='*'");
 assert.equal(takeQuota(db, "u2", { now: Date.parse("2026-09-25T00:10:00Z") }).reason, "global");

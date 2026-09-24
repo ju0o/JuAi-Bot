@@ -59,6 +59,8 @@ async function main() {
     open: [],
     readonly: [{ id: everyone, deny: [P.SendMessages, P.CreatePublicThreads, P.CreatePrivateThreads], allow: [P.SendMessagesInThreads] },
       { id: roles.agent.id, allow: [P.SendMessages, P.CreatePublicThreads, P.ManageThreads, P.EmbedLinks] }, { id: roles.staff.id, allow: [P.SendMessages] }],
+    botsonly: [{ id: everyone, deny: [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads, P.CreatePrivateThreads] },
+      { id: roles.agent.id, allow: [P.SendMessages, P.EmbedLinks] }],
     private: [{ id: everyone, deny: [P.ViewChannel] }, { id: roles.agent.id, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
       { id: roles.staff.id, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory] }],
   })[access];

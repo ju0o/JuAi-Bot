@@ -3,7 +3,7 @@
 //   node setup.mjs          → applies roles, channels, forum tags, permissions, Community, onboarding
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
-import { ChannelType, Client, GatewayIntentBits, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
+import { ChannelType, Client, GatewayIntentBits, GuildDefaultMessageNotifications, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
 import { CATEGORIES, GUIDE, ONBOARDING, ROLES, STAFF_GUIDE } from "./layout.mjs";
 import { openDb, kvGet, kvSet } from "./db.mjs";
 
@@ -99,6 +99,7 @@ async function main() {
       community = true; console.log("+ 커뮤니티 기능 켬");
     } catch (e) { console.warn(`커뮤니티 켜기 실패: ${e.message}`); }
   }
+  await guild.edit({ defaultMessageNotifications: GuildDefaultMessageNotifications.OnlyMentions }); // new members: only @mentions ping by default
   await guild.edit({ systemChannel: ids.intro, ...(community ? { rulesChannel: ids.rules, publicUpdatesChannel: ids.staff } : {}) });
   await applyChannels(true);
 

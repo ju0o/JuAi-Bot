@@ -43,8 +43,8 @@ async function main() {
   for (const r of ROLES) {
     const perms = r.perms.map((p) => P[p]);
     let role = existingRoles.find((x) => x.name === r.name);
-    if (!role) { role = await guild.roles.create({ name: r.name, color: r.color, hoist: !!r.hoist, permissions: perms, mentionable: false }); console.log(`+ 역할 ${r.name}`); }
-    else await role.edit({ color: r.color, hoist: !!r.hoist, permissions: perms });
+    if (!role) { role = await guild.roles.create({ name: r.name, color: r.color, hoist: !!r.hoist, permissions: perms, mentionable: !!r.mentionable }); console.log(`+ 역할 ${r.name}`); }
+    else await role.edit({ color: r.color, hoist: !!r.hoist, permissions: perms, mentionable: !!r.mentionable });
     roles[r.key] = role;
   }
   for (const key of Object.values(BOTS)) {

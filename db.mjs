@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS profiles(user_id TEXT PRIMARY KEY, sns TEXT, making T
 export function openDb(dir = "data") {
   mkdirSync(dir, { recursive: true });
   const db = new DatabaseSync(`${dir}/juai.db`); db.exec("PRAGMA journal_mode=WAL"); db.exec(SCHEMA);
+  try { db.exec("ALTER TABLE picks ADD COLUMN msg_id TEXT"); } catch { /* already migrated */ }
   return db;
 }
 export const kvGet = (db, key) => { const v = db.prepare("SELECT value FROM kv WHERE key=?").get(key)?.value; return v === undefined ? undefined : JSON.parse(v); };

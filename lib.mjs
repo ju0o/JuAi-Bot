@@ -12,6 +12,28 @@ export const kstMidnight = (date) => Date.parse(`${date}T00:00:00Z`) - KST_MS;
 /** Quota day rolls over at 09:00 KST, which is exactly 00:00 UTC. */
 export const quotaDay = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
 
+const dateInKey = /(\d{4}-\d{2}-\d{2})/;
+const olderThan = (date, now, days) => {
+  const at = Date.parse(`${date}T00:00:00Z`);
+  return Number.isFinite(at) && at < now - days * DAY_MS;
+};
+
+/** Remove dated transient state and usage rows beyond their retention windows. */
+export function pruneState(db, now = Date.now()) {
+  const prefixes = ["subsent:", "mentor:", "done:", "tries:", "boot:", "topics:", "summary:"];
+  for (const { key } of db.prepare("SELECT key FROM kv").all()) {
+    const date = dateInKey.exec(key)?.[1];
+    if (date && prefixes.some((prefix) => key.startsWith(prefix)) && olderThan(date, now, 45)) {
+      db.prepare("DELETE FROM kv WHERE key=?").run(key);
+    }
+  }
+  for (const { day } of db.prepare("SELECT day FROM usage").all()) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day) && olderThan(day, now, 60)) {
+      db.prepare("DELETE FROM usage WHERE day=?").run(day);
+    }
+  }
+}
+
 export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300, bonusMax: 3 };
 
 /** +1 question for giving feedback on someone else's post, at most bonusMax per quota day. Stored as usage rows "bonus:<id>". */

@@ -950,6 +950,7 @@ async function tick() {
   kvSet(db, "last_seen", now);
   for (const [id, x] of recent) if (!x.some((e) => now - e.at < 120_000)) recent.delete(id);
   await job("bootstrap", bootstrap);
+  await job(`prune:${today}`, () => L.pruneState(db, now));
   if (h >= 8) await job(`summary:${today}`, () => dailySummary(today));
   if (h >= 9) await job(`picks:${today}`, () => dailyPicks(today));
   if (L.kstDay(now) === 1 && h >= 10) { await job(`weekly:${today}`, weekly); await job(`ops:${today}`, opsReport); }

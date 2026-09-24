@@ -13,6 +13,7 @@ export const ROLES = [
 // access: "open" = everyone writes, "readonly" = only agents/staff post (members may reply in threads), "private" = staff + agents only
 export const CATEGORIES = [
   { name: "시작하기", channels: [
+    { key: "guide", name: "사용법", type: "text", access: "readonly", topic: "채널별 사용법과 AI 봇 4명 안내. 처음 오셨다면 여기부터!" },
     { key: "notice", name: "공지", type: "text", access: "readonly", topic: "운영진이 승인한 공지만 올라와요." },
     { key: "rules", name: "규칙", type: "text", access: "readonly", topic: "서버 규칙. AI가 제안하고 운영진이 승인한 내용만 반영돼요." },
     { key: "intro", name: "자기소개", type: "text", access: "open", topic: "새로 오신 분은 [프로필 작성] 버튼을 눌러주세요." },
@@ -55,4 +56,60 @@ export const ONBOARDING = [
   { title: "주로 쓰는 AI 도구는?", single: false, required: false, options: ["Claude Code", "Codex", "Cursor", "OpenCode", "기타 도구"].map((n) => ({ title: n, roles: [`tool:${n}`] })) },
   { title: "공동 프로젝트 알림을 받을까요?", single: true, required: false, options: [{ title: "네, 알려주세요", roles: ["coproject"] }, { title: "괜찮아요", roles: [] }] },
   { title: "AI 봇이 추천·요약에서 내 글을 언급해도 될까요?", single: true, required: false, options: [{ title: "괜찮아요", roles: [] }, { title: "언급하지 말아주세요", roles: ["optout"] }] },
+];
+
+/** #사용법 contents. c(key) renders a clickable channel mention. Each entry is one Discord message (≤2000 chars). */
+export const GUIDE = (c) => [
+`# 📖 JuAi 사용법
+JuAi는 **AI로 뭔가 만드는 사람들**이 모여 프로젝트를 보여주고, 피드백을 주고받고, 같이 만드는 곳이에요.
+서버 안에는 **AI 봇 4명**이 같이 일해요. 아래만 읽으면 바로 쓸 수 있어요.
+
+## 🤖 AI 봇 4명
+🔵 **OpenCode · 질문 도우미**
+궁금한 건 다 물어보세요. ${c("lab")}, ${c("qa")}, 오늘의 추천 스레드에서 답해요.
+
+💻 **Codex · 오픈소스 큐레이터**
+매일 **오전 9시** ${c("picks")}에 오픈소스를 1~3개 추천해요. 서버에서 오간 이야기를 보고 "OO님이 올린 글에 이게 맞겠다" 식으로 골라요.
+
+🟠 **CommandCode · 안내 담당**
+새로 온 분을 환영하고 프로필 등록을 도와요. ${c("feedback")}에 글이 올라오면 첫 피드백을 달아요.
+
+🟣 **Claude · 운영 담당**
+매일 **오전 8시** ${c("summary")}에 전날 대화를 요약하고, ${c("suggest")}를 정리하고, 스팸을 막아요. 운영 전용이라 질문에는 답하지 않아요.`,
+
+`## 🗂️ 채널별 사용법
+**시작하기**
+${c("notice")} 운영진이 승인한 공지
+${c("rules")} 서버 규칙
+${c("intro")} 입장하면 뜨는 **[프로필 작성]** 버튼으로 SNS 닉네임과 지금 만드는 걸 등록하면 자기소개가 자동으로 올라가요. 버튼을 다시 누르면 수정돼요.
+
+**라운지**
+${c("chat")} 아무 얘기나 편하게
+${c("news")} 새 모델, 새 도구, 업계 소식
+${c("qa")} 막히는 걸 글로 올리면 🔵 OpenCode가 **먼저 답을 달아요**. 사람들 답도 이어서 달려요. 해결되면 "해결됨" 태그!
+
+**프로젝트**
+${c("showcase")} 만든 걸 자랑하는 곳. 프로젝트 하나에 글 하나.
+${c("feedback")} 피드백 받고 싶은 걸 올리세요. 원하는 피드백(UI/코드/기획/버그)을 **태그로 달면** 더 잘 모여요. 🟠 CommandCode가 첫 코멘트를 달아요.
+${c("coproject")} 같이 만들 사람 모집. 입장 질문에서 "공동 프로젝트 알림"을 고르면 새 모집 글을 놓치지 않아요.`,
+
+`**AI 에이전트**
+${c("picks")} 💻 Codex의 오늘의 추천. 추천마다 스레드가 열리고 🔵 OpenCode가 **활용 예시와 흐름도**를 달아요. 스레드에 "이거 내 프로젝트에 어떻게 써?"라고 물어보면 이어서 답해요.
+${c("lab")} **여기 글을 쓰면 🔵 OpenCode가 스레드를 열고 답해요.** 스레드 안에서 계속 대화하면 앞 내용을 기억해요. ChatGPT처럼 쓰면 돼요.
+${c("playground")} 봇 테스트, 아무거나
+
+**운영**
+${c("suggest")} "이런 기능, 이런 채널 있으면 좋겠다"를 올리세요. 🟣 Claude가 태그를 달고 **매주 월요일 TOP 5**로 정리해서 운영진에게 올려요.
+${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
+
+## 💬 이렇게 물어보면 좋아요
+\`${"#"}ai-연구실\` "Claude Code로 만든 앱 배포하려는데 Vercel이랑 Railway 중 뭐가 나아?"
+\`추천 스레드\` "이거 내 디스코드 봇에 붙이려면 어떻게 해?"
+\`아무 채널\` 🔵 OpenCode를 @멘션하면 그 자리에서 답해요.
+
+## ⚠️ 알아두세요
+• AI 질문은 **1인 하루 15회**, 질문 사이 30초. 매일 **오전 9시**에 충전돼요.
+• 무료 AI 모델이라 입력한 내용이 모델 개선에 쓰일 수 있어요. **비밀번호·API 키·개인정보는 절대 올리지 마세요.**
+• 추천·요약에서 내 글이 언급되기 싫으면 입장 질문에서 **"언급하지 말아주세요"**를 고르세요.
+• AI 답은 틀릴 수 있어요. 중요한 건 한 번 더 확인!`,
 ];

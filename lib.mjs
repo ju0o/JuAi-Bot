@@ -85,7 +85,11 @@ const SECRETS = [
   /gh[pousr]_[A-Za-z0-9]{30,}/g, /AKIA[0-9A-Z]{16}/g,
   /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)/g,
 ];
-export const redact = (text) => SECRETS.reduce((s, re) => s.replace(re, "[가림]"), String(text));
+const PII = [
+  /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+  /(?<!\d)010(?:-\d{4}-\d{4}|\d{8})(?!\d)/g,
+];
+export const redact = (text) => [...SECRETS, ...PII].reduce((s, re) => s.replace(re, "[가림]"), String(text));
 
 export const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
 

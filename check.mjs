@@ -1,15 +1,21 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST
+assert.deepEqual(peekQuota(db, "new-user", { now: t0 }), { used: 0, total: LIMITS.daily, left: LIMITS.daily, bonus: 0 });
 assert.equal(takeQuota(db, "u1", { now: t0 }).left, LIMITS.daily - 1);
-assert.equal(takeQuota(db, "u1", { now: t0 + 1000 }).reason, "gap");
+const gap = takeQuota(db, "u1", { now: t0 + 1000 });
+assert.equal(gap.reason, "gap");
+assert.match(quotaMessage(gap), new RegExp(`${gap.waitSec}초`));
 for (let i = 1; i < LIMITS.daily; i++) assert.ok(takeQuota(db, "u1", { now: t0 + i * LIMITS.gapMs }).ok);
-assert.equal(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs }).reason, "daily");
+const daily = takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs });
+assert.equal(daily.reason, "daily");
+assert.match(quotaMessage(daily), new RegExp(`${daily.total}개`));
+assert.match(quotaMessage(daily), new RegExp(`${LIMITS.bonusMax}회`));
 assert.ok(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs, staff: true }).ok, "staff is unlimited");
 assert.ok(takeQuota(db, "u1", { now: Date.parse("2026-09-25T00:00:01Z") }).ok, "refills at 09:00 KST");
 assert.ok(grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }));
@@ -20,6 +26,7 @@ assert.deepEqual(peekQuota(db, "u1", { now: t0 }), { used: 6, total: 8, left: 2,
 assert.equal(quotaDay(Date.parse("2026-09-24T23:59:59Z")), "2026-09-24");
 db.exec("UPDATE usage SET count=999 WHERE user_id='*'");
 assert.equal(takeQuota(db, "u2", { now: Date.parse("2026-09-25T00:10:00Z") }).reason, "global");
+assert.match(quotaMessage({ reason: "global" }), /서버 전체/);
 
 assert.equal(kstDate(Date.parse("2026-09-23T15:00:00Z")), "2026-09-24");
 assert.equal(kstMidnight("2026-09-24"), Date.parse("2026-09-23T15:00:00Z"));

@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, pruneState, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
@@ -44,6 +44,22 @@ assert.equal(validateAdminPlan({ action: "rm -rf", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: 99999 } }).params.minutes, 7 * 24 * 60);
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).action, "answer");
+
+const pruneNow = Date.parse("2026-09-25T00:00:00Z");
+for (const prefix of ["subsent:", "mentor:", "done:", "tries:", "boot:", "topics:", "summary:"]) {
+  db.prepare("INSERT INTO kv(key,value) VALUES(?,?)").run(`${prefix}2026-08-01`, "1");
+  db.prepare("INSERT INTO kv(key,value) VALUES(?,?)").run(`${prefix}2026-09-01`, "1");
+}
+db.exec("INSERT INTO kv(key,value) VALUES ('other:2026-08-01','1'), ('summary:undated','1')");
+db.exec("INSERT INTO usage VALUES ('old','2026-07-01',1,0), ('recent','2026-09-01',1,0), ('undated','not-a-date',1,0)");
+pruneState(db, pruneNow);
+for (const prefix of ["subsent:", "mentor:", "done:", "tries:", "boot:", "topics:", "summary:"]) {
+  assert.equal(db.prepare("SELECT count(*) n FROM kv WHERE key=?").get(`${prefix}2026-08-01`).n, 0);
+}
+assert.equal(db.prepare("SELECT count(*) n FROM kv WHERE key LIKE '%2026-09-01'").get().n, 7);
+assert.equal(db.prepare("SELECT count(*) n FROM kv WHERE key IN ('other:2026-08-01','summary:undated')").get().n, 2);
+assert.equal(db.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-01'").get().n, 0);
+assert.equal(db.prepare("SELECT count(*) n FROM usage WHERE day IN ('2026-09-01','not-a-date')").get().n, 2);
 
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);

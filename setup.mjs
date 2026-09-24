@@ -88,12 +88,9 @@ async function main() {
   }
 
   await applyChannels(false);
-  if (!guild.features.includes("COMMUNITY")) {
-    await guild.edit({ features: [...guild.features, "COMMUNITY"], verificationLevel: GuildVerificationLevel.Low,
-      explicitContentFilter: GuildExplicitContentFilter.AllMembers, rulesChannel: ids.rules, publicUpdatesChannel: ids.staff });
-    console.log("+ 커뮤니티 기능 켬");
-  }
-  await guild.edit({ systemChannel: ids.intro, rulesChannel: ids.rules, publicUpdatesChannel: ids.staff });
+  // Turning Community on needs Administrator, which the bot deliberately doesn't have: the Founder flips it once in server settings.
+  const community = guild.features.includes("COMMUNITY");
+  await guild.edit({ systemChannel: ids.intro, ...(community ? { rulesChannel: ids.rules, publicUpdatesChannel: ids.staff } : {}) });
   await applyChannels(true);
 
   // Remove Discord's default channels only when they are empty.
@@ -104,6 +101,11 @@ async function main() {
     if (!msgs || msgs.size === 0) await c.delete().then(() => console.log(`- 기본 ${c.name}`)).catch(() => {});
   }
 
+  kvSet(openDb(), "channels", ids);
+  if (!community) {
+    console.log("\n! 커뮤니티 기능이 꺼져 있어서 입장 질문은 아직 못 만들었어요.\n  서버 설정 → 커뮤니티 활성화 (규칙 채널: #규칙, 업데이트 채널: #운영진) 후 node setup.mjs를 한 번 더 실행하세요.");
+    await client.destroy(); return;
+  }
   // Onboarding. Discord wants snowflake-like ids for new prompts/options.
   let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++);
   await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
@@ -119,4 +121,4 @@ async function main() {
   await client.destroy();
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.argv[2] === "invite" ? printInvites() : main().catch((e) => { console.error("실패:", e.message); process.exit(1); });
+if (import.meta.url === `file://${process.argv[1]}`) process.argv[2] === "invite" ? printInvites() : main().catch((e) => { console.error("실패:", e.message, e.method ?? "", e.url ?? ""); process.exit(1); });

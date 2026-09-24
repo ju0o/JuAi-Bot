@@ -11,7 +11,7 @@ import { env, BOTS, botId, findGuild } from "./setup.mjs";
 import { openDb, kvGet, kvSet } from "./db.mjs";
 import * as AI from "./ai.mjs";
 const { ai } = AI;
-import { CHANNELS, SUMMARY_KEYS, channelByKey } from "./layout.mjs";
+import { CHANNELS, HELP_TEXT, SUMMARY_KEYS, channelByKey } from "./layout.mjs";
 import * as L from "./lib.mjs";
 
 const db = openDb();
@@ -90,6 +90,7 @@ async function onMessage(m) {
   if (founder && (m.channelId === ids.staff || mentions("CLAUDE"))) return adminCommand(m, m.content);
   if (mentions("CLAUDE")) return say("CLAUDE", m.channelId, { content: `Claude는 서버 운영 담당이에요. 궁금한 건 <#${ids.lab}>에 쓰면 OpenCode가 답해요!`, reply: { messageReference: m.id } });
   const text = m.content.trim();
+  if (text === "!도움말") return say("COMMANDCODE", m.channelId, { content: HELP_TEXT((k) => `<#${ids[k]}>`), reply: { messageReference: m.id } });
   if (/^!?남은\s?횟수$/.test(text)) {
     const q = L.peekQuota(db, m.author.id);
     return say("OPENCODE", m.channelId, { content: isStaff(m.member) ? "운영진은 AI 질문 횟수 제한이 없어요." : `오늘 남은 AI 질문 **${q.left}/${q.total}**${q.bonus ? ` (피드백 보너스 +${q.bonus} 포함)` : ""} · 매일 오전 9시 충전`, reply: { messageReference: m.id } });

@@ -19,7 +19,7 @@ const DEFAULT_JUNK = new Set(["일반", "general", "채팅 채널", "음성 채�
 function printInvites() {
   for (const [name, key] of Object.entries(BOTS)) {
     const id = botId(env[key]); if (!id) { console.log(`${name}: 토큰 없음`); continue; }
-    const perms = new PermissionsBitField(name === "CLAUDE" ? ADMIN : BASE).bitfield;
+    const perms = P.Administrator; // Founder decision 9/24: bots run the server, the Founder only approves
     console.log(`${name}: https://discord.com/oauth2/authorize?client_id=${id}&scope=bot&permissions=${perms}`);
   }
 }

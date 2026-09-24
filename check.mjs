@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
@@ -42,5 +42,8 @@ const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
 assert.equal(bestFaq(faqRows, "디스코드 봇 토큰은 어디서 받아?"), null);
 assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
+
+const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
+assert.deepEqual([...hits.keys()].sort(), ["MCP", "Next js", "mcp"]);
 
 console.log("check ok");

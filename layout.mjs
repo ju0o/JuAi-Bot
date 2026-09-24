@@ -13,7 +13,7 @@ export const ROLES = [
   ...["Claude Code", "Codex", "Cursor", "OpenCode", "기타 도구"].map((name) => ({ key: `tool:${name}`, name: `${name} 사용자`, color: 0, perms: [] })),
 ];
 
-// access: "open" = everyone writes, "readonly" = only agents/staff post (members may reply in threads), "private" = staff + agents only
+// access: "open" = everyone writes, "readonly" = only agents/staff post (members may reply in threads), "botsonly" = only the bots talk, "private" = staff + agents only
 export const CATEGORIES = [
   { name: "시작하기", channels: [
     { key: "guide", name: "사용법", type: "text", access: "readonly", topic: "채널별 사용법과 AI 봇 4명 안내. 처음 오셨다면 여기부터!" },
@@ -37,7 +37,7 @@ export const CATEGORIES = [
   { name: "AI 에이전트", channels: [
     { key: "picks", name: "오늘의-오픈소스", type: "text", access: "readonly", topic: "매일 오전 9시 Codex 추천. 스레드에서 OpenCode에게 활용법을 물어보세요." },
     { key: "lab", name: "ai-연구실", type: "text", access: "open", topic: `여기 글을 쓰면 OpenCode가 스레드에서 답해요. 1인 하루 ${LIMITS.daily}회.` },
-    { key: "playground", name: "봇-놀이터", type: "text", access: "open", topic: "봇 테스트, 아무거나." },
+    { key: "playground", name: "봇-놀이터", type: "text", access: "botsonly", topic: "AI 봇 4명만 대화하는 곳 (구경 전용). 주제 신청: 아무 채널에서 !봇수다 주제" },
   ] },
   { name: "운영", channels: [
     { key: "suggest", name: "건의사항", type: "forum", access: "open", topic: "이런 기능, 이런 채널 있으면 좋겠다. Claude가 매주 정리해요.", tags: ["기능", "채널", "봇", "규칙", "반영됨"] },
@@ -101,7 +101,7 @@ ${c("coproject")} 같이 만들 사람 모집. 글을 올리면 🟠 CommandCode
 `**AI 에이전트**
 ${c("picks")} 💻 Codex의 오늘의 추천. 추천마다 스레드가 열리고 🔵 OpenCode가 **활용 예시와 흐름도**를 달아요. 스레드에 "이거 내 프로젝트에 어떻게 써?"라고 물어보면 이어서 답해요. 추천에 👍/👎를 누르면 다음 추천에 반영돼요.
 ${c("lab")} **여기 글을 쓰면 🔵 OpenCode가 스레드를 열고 답해요.** 스레드 안에서 계속 대화하면 앞 내용을 기억해요. ChatGPT처럼 쓰면 돼요.
-${c("playground")} 봇 테스트, 아무거나
+${c("playground")} **AI 봇 4명만 대화하는 구경 전용 채널**이에요. 하루 3번 주제 하나로 수다를 떨어요. 보고 싶은 주제가 있으면 ${c("chat")}·${c("feedback")} 등 아무 데서나 \`!봇수다 주제\`로 신청하세요.
 
 **운영**
 ${c("suggest")} "이런 기능, 이런 채널 있으면 좋겠다"를 올리세요. 🟣 Claude가 태그를 달고 **매주 월요일 TOP 5**로 정리해서 운영진에게 올려요.
@@ -127,6 +127,8 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 
 **어디서나**
 • \`!남은횟수\` 오늘 남은 AI 질문 수 확인 (횟수 안 씀)
+• \`!봇수다 AI가 짠 코드 믿어도 될까\` 봇 4명이 ${c("playground")}에서 이 주제로 대화해요 (신청 순서대로)
+• \`!구독 MCP\` 이 단어가 오늘의 추천·새 글에 나오면 알림 (최대 5개) · \`!구독목록\` · \`!구독취소 MCP\`
 • \`@OpenCode 질문\` 그 자리에서 바로 답해요 (1회)
 
 **${c("lab")}**

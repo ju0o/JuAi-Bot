@@ -131,3 +131,10 @@ export function bestFaq(rows, question, min = 0.3) {
   for (const r of rows) { const s = similarity(question, r.question); if (s >= score) { best = r; score = s; } }
   return best && { ...best, score };
 }
+
+/** Keywords from subs that appear in text (case-insensitive, spaces ignored). Returns Map keyword -> [user ids]. */
+export function matchSubs(rows, text) {
+  const hay = String(text).toLowerCase().replace(/\s+/g, ""), hits = new Map();
+  for (const { user_id, keyword } of rows) if (hay.includes(keyword.toLowerCase().replace(/\s+/g, ""))) hits.set(keyword, [...(hits.get(keyword) || []), user_id]);
+  return hits;
+}

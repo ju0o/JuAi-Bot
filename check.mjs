@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, pruneState, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
+import { HELP_TEXT } from "./layout.mjs";
+
+const help = HELP_TEXT((k) => `#${k}`);
+assert.ok(help.length < 1900);
+assert.ok(help.includes("!남은횟수"));
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST

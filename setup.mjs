@@ -137,14 +137,18 @@ async function main() {
   }
   // Onboarding. Discord wants snowflake-like ids for new prompts/options.
   let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++);
-  await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
+  // Discord caps questions shown at join; the rest go to the "채널 & 역할" page (in_onboarding: false).
+  for (let n = ONBOARDING.length; n > 0; n--) {
+    try { await putOnboarding(ONBOARDING, n); console.log(`+ 입장 질문 ${n}개 + 채널&역할 화면 ${ONBOARDING.length - n}개 설정`); break; }
+    catch (e) { if (!/TOO_MANY_ONBOARDING_PROMPTS/.test(e.message) || n === 1) throw e; }
+  }
+  async function putOnboarding(questions, shown) { await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
     enabled: true, mode: 0,
     default_channel_ids: ["guide", "notice", "rules", "intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
-    prompts: ONBOARDING.map((q) => ({ id: sid(), type: 0, title: q.title, single_select: q.single, required: q.required, in_onboarding: true,
+    prompts: questions.map((q, i) => ({ id: sid(), type: 0, title: q.title, single_select: q.single, required: q.required, in_onboarding: i < shown,
       options: q.options.map((o) => ({ id: sid(), title: o.title, ...(o.description ? { description: o.description } : {}),
         role_ids: o.roles.map((k) => roles[k].id), channel_ids: o.roles.length ? [] : [ids.chat] })) })),
-  } });
-  console.log("+ 입장 질문 설정");
+  } }); }
   kvSet(openDb(), "channels", ids);
   console.log("완료");
   await client.destroy();

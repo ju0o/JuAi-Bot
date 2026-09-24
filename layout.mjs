@@ -52,13 +52,13 @@ export const channelByKey = Object.fromEntries(CHANNELS.map((c) => [c.key, c]));
 /** Channels Claude reads for the daily summary and Codex for context. */
 export const SUMMARY_KEYS = ["intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "lab", "suggest"];
 
-// Discord onboarding (multiple choice only). Option → role keys.
+// Discord onboarding (multiple choice only). Option → role keys. Ordered by importance: setup drops from the end if Discord caps the count.
 export const ONBOARDING = [
   { title: "관심 분야는?", single: false, required: false, options: ["프론트엔드", "백엔드", "AI 에이전트 개발", "디자인", "기획"].map((n) => ({ title: n, roles: [`int:${n}`] })) },
+  { title: "AI 봇이 추천·요약에서 내 글을 언급해도 될까요?", single: true, required: false, options: [{ title: "괜찮아요", roles: [] }, { title: "언급하지 말아주세요", roles: ["optout"] }] },
+  { title: "공동 프로젝트 알림을 받을까요?", single: true, required: false, options: [{ title: "네, 알려주세요", roles: ["coproject"] }, { title: "괜찮아요", roles: [] }] },
   { title: "경험 수준은?", single: true, required: false, options: [["입문", "이제 막 시작"], ["실무", "일에 쓰고 있음"], ["연구", "모델·논문 파는 중"]].map(([n, d]) => ({ title: n, description: d, roles: [`lvl:${n}`] })) },
   { title: "주로 쓰는 AI 도구는?", single: false, required: false, options: ["Claude Code", "Codex", "Cursor", "OpenCode", "기타 도구"].map((n) => ({ title: n, roles: [`tool:${n}`] })) },
-  { title: "공동 프로젝트 알림을 받을까요?", single: true, required: false, options: [{ title: "네, 알려주세요", roles: ["coproject"] }, { title: "괜찮아요", roles: [] }] },
-  { title: "AI 봇이 추천·요약에서 내 글을 언급해도 될까요?", single: true, required: false, options: [{ title: "괜찮아요", roles: [] }, { title: "언급하지 말아주세요", roles: ["optout"] }] },
 ];
 
 /** #사용법 contents. c(key) renders a clickable channel mention. Each entry is one Discord message (≤2000 chars). */

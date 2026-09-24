@@ -1,5 +1,7 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
+import { LIMITS } from "./lib.mjs";
+
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
   { key: "agent", name: "AI 에이전트", color: 0x5b7fd6, hoist: true, perms: [] },
@@ -32,7 +34,7 @@ export const CATEGORIES = [
   ] },
   { name: "AI 에이전트", channels: [
     { key: "picks", name: "오늘의-오픈소스", type: "text", access: "readonly", topic: "매일 오전 9시 Codex 추천. 스레드에서 OpenCode에게 활용법을 물어보세요." },
-    { key: "lab", name: "ai-연구실", type: "text", access: "open", topic: "여기 글을 쓰면 OpenCode가 스레드에서 답해요. 1인 하루 15회." },
+    { key: "lab", name: "ai-연구실", type: "text", access: "open", topic: `여기 글을 쓰면 OpenCode가 스레드에서 답해요. 1인 하루 ${LIMITS.daily}회.` },
     { key: "playground", name: "봇-놀이터", type: "text", access: "open", topic: "봇 테스트, 아무거나." },
   ] },
   { name: "운영", channels: [
@@ -108,7 +110,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 \`아무 채널\` 🔵 OpenCode를 @멘션하면 그 자리에서 답해요.
 
 ## ⚠️ 알아두세요
-• AI 질문은 **1인 하루 15회**, 질문 사이 30초. 매일 **오전 9시**에 충전돼요.
+• AI 질문은 **1인 하루 ${LIMITS.daily}회**, 질문 사이 30초. 매일 **오전 9시**에 충전돼요.
 • 무료 AI 모델이라 입력한 내용이 모델 개선에 쓰일 수 있어요. **비밀번호·API 키·개인정보는 절대 올리지 마세요.**
 • 추천·요약에서 내 글이 언급되기 싫으면 입장 질문에서 **"언급하지 말아주세요"**를 고르세요.
 • AI 답은 틀릴 수 있어요. 중요한 건 한 번 더 확인!`,

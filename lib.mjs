@@ -12,7 +12,7 @@ export const kstMidnight = (date) => Date.parse(`${date}T00:00:00Z`) - KST_MS;
 /** Quota day rolls over at 09:00 KST, which is exactly 00:00 UTC. */
 export const quotaDay = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
 
-export const LIMITS = { daily: 15, gapMs: 30_000, globalDaily: 300 };
+export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300 };
 
 /** Per-member AI chat quota. Records the use only when allowed. */
 export function takeQuota(db, userId, { staff = false, now = Date.now(), limits = LIMITS } = {}) {

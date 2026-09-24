@@ -453,7 +453,7 @@ top은 반응 많은 순 최대 5개(없으면 빈 배열). proposals는 실제�
 async function bootstrap() {
   const out = await ai("claude", `새로 여는 JuAi(AI로 뭔가 만드는 사람들이 프로젝트를 공유하고 피드백을 주고받는 한국어 디스코드 서버)의 첫 규칙과 환영 공지를 써줘. JSON만:
 {"rules":["규칙 한 줄"],"notice":"환영 공지문"}
-규칙 6~8개: 존중, 피드백은 구체적으로, 홍보는 쇼케이스에서, 개인정보·비밀키 올리지 않기, AI 봇 사용 안내(1인 하루 15회, 무료 모델이라 입력 내용이 모델 개선에 쓰일 수 있음, 추천·요약에서 이름이 언급될 수 있고 입장 질문에서 끌 수 있음) 포함.
+규칙 6~8개: 존중, 피드백은 구체적으로, 홍보는 쇼케이스에서, 개인정보·비밀키 올리지 않기, AI 봇 사용 안내(1인 하루 ${L.LIMITS.daily}회, 무료 모델이라 입력 내용이 모델 개선에 쓰일 수 있음, 추천·요약에서 이름이 언급될 수 있고 입장 질문에서 끌 수 있음) 포함.
 공지: 채널 안내(쇼케이스, 피드백-요청, 공동-프로젝트, ai-연구실, 오늘의-오픈소스, 어제-요약, 건의사항)와 봇 4명(Claude 운영, Codex 오픈소스 추천, OpenCode 질문 답변, CommandCode 안내) 소개. 친근하게, 800자 이내.`);
   const data = L.extractJson(out); if (!data?.rules) throw new Error("첫 규칙 초안을 못 읽었어요");
   await createCard("rule", "첫 규칙", data.rules.map((r, n) => `${n + 1}. ${r}`).join("\n"), { rules: data.rules });

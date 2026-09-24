@@ -1,0 +1,122 @@
+// Builds the JuAi server from layout.mjs. Safe to re-run: everything is matched by name and updated in place.
+//   node setup.mjs invite   → prints the 4 bot invite links
+//   node setup.mjs          → applies roles, channels, forum tags, permissions, Community, onboarding
+import { readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
+import { ChannelType, Client, GatewayIntentBits, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
+import { CATEGORIES, ONBOARDING, ROLES } from "./layout.mjs";
+import { openDb, kvSet } from "./db.mjs";
+
+export const env = parseEnv(readFileSync(new URL("./.env", import.meta.url), "utf8"));
+export const BOTS = { CLAUDE: "DISCORD_CLAUDE_BOT_TOKEN", CODEX: "DISCORD_CODEX_BOT_TOKEN", OPENCODE: "DISCORD_OPENCODE_BOT_TOKEN", COMMANDCODE: "DISCORD_COMMANDCODE_BOT_TOKEN" };
+/** A bot token's first segment is its user id in base64, so ids never need to be configured. */
+export const botId = (token) => token ? Buffer.from(token.split(".")[0], "base64").toString() : undefined;
+
+const BASE = [P.ViewChannel, P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads, P.EmbedLinks, P.AttachFiles, P.ReadMessageHistory, P.AddReactions];
+const ADMIN = [...BASE, P.ManageGuild, P.ManageRoles, P.ManageChannels, P.ManageMessages, P.ManageThreads, P.ModerateMembers];
+const DEFAULT_JUNK = new Set(["일반", "general", "채팅 채널", "음성 채널", "Text Channels", "Voice Channels"]);
+
+function printInvites() {
+  for (const [name, key] of Object.entries(BOTS)) {
+    const id = botId(env[key]); if (!id) { console.log(`${name}: 토큰 없음`); continue; }
+    const perms = new PermissionsBitField(name === "CLAUDE" ? ADMIN : BASE).bitfield;
+    console.log(`${name}: https://discord.com/oauth2/authorize?client_id=${id}&scope=bot&permissions=${perms}`);
+  }
+}
+
+export async function findGuild(client) {
+  const guilds = await client.guilds.fetch();
+  const hit = env.JUAI_GUILD_ID ? guilds.get(env.JUAI_GUILD_ID) : guilds.find((g) => /juai/i.test(g.name));
+  if (!hit) throw new Error(`JuAi 서버를 못 찾았어요. 봇이 들어간 서버: ${[...guilds.values()].map((g) => g.name).join(", ") || "없음"}`);
+  return client.guilds.fetch(hit.id);
+}
+
+async function main() {
+  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+  await client.login(env[BOTS.CLAUDE]);
+  const guild = await findGuild(client);
+  console.log(`서버: ${guild.name} (${guild.id})`);
+  kvSet(openDb(), "guild_id", guild.id);
+
+  // Roles
+  const roles = {}; const existingRoles = await guild.roles.fetch();
+  for (const r of ROLES) {
+    const perms = r.perms.map((p) => P[p]);
+    let role = existingRoles.find((x) => x.name === r.name);
+    if (!role) { role = await guild.roles.create({ name: r.name, color: r.color, hoist: !!r.hoist, permissions: perms, mentionable: false }); console.log(`+ 역할 ${r.name}`); }
+    else await role.edit({ color: r.color, hoist: !!r.hoist, permissions: perms });
+    roles[r.key] = role;
+  }
+  for (const key of Object.values(BOTS)) {
+    const id = botId(env[key]); if (!id) continue;
+    const member = await guild.members.fetch(id).catch(() => null);
+    if (member && !member.roles.cache.has(roles.agent.id)) await member.roles.add(roles.agent).catch((e) => console.warn(`역할 부여 실패 ${member.user.username}: ${e.message}`));
+    if (!member) console.warn(`! 봇 ${id}가 아직 서버에 없어요 (초대 링크를 눌러주세요)`);
+  }
+
+  const everyone = guild.roles.everyone.id;
+  const overwrites = (access) => ({
+    open: [],
+    readonly: [{ id: everyone, deny: [P.SendMessages, P.CreatePublicThreads, P.CreatePrivateThreads], allow: [P.SendMessagesInThreads] },
+      { id: roles.agent.id, allow: [P.SendMessages, P.CreatePublicThreads, P.ManageThreads, P.EmbedLinks] }, { id: roles.staff.id, allow: [P.SendMessages] }],
+    private: [{ id: everyone, deny: [P.ViewChannel] }, { id: roles.agent.id, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
+      { id: roles.staff.id, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory] }],
+  })[access];
+  const TYPE = { text: ChannelType.GuildText, forum: ChannelType.GuildForum, voice: ChannelType.GuildVoice };
+
+  const ids = {};
+  async function applyChannels(forums) {
+    const all = await guild.channels.fetch();
+    let catPos = 0;
+    for (const cat of CATEGORIES) {
+      let parent = all.find((c) => c?.type === ChannelType.GuildCategory && c.name === cat.name);
+      if (!parent) { parent = await guild.channels.create({ name: cat.name, type: ChannelType.GuildCategory }); console.log(`+ 카테고리 ${cat.name}`); }
+      await parent.setPosition(catPos++).catch(() => {});
+      for (const ch of cat.channels) {
+        if ((ch.type === "forum") !== forums) continue;
+        const spec = { name: ch.name, type: TYPE[ch.type], parent: parent.id, permissionOverwrites: overwrites(ch.access),
+          ...(ch.topic && ch.type !== "voice" ? { topic: ch.topic } : {}), ...(ch.tags ? { availableTags: ch.tags.map((name) => ({ name })) } : {}) };
+        let chan = all.find((c) => c && c.type === TYPE[ch.type] && c.name === ch.name);
+        if (!chan) { chan = await guild.channels.create(spec); console.log(`+ 채널 ${cat.name} / ${ch.name}`); }
+        else {
+          const tags = ch.tags ? ch.tags.map((name) => chan.availableTags?.find((t) => t.name === name) ?? { name }) : undefined;
+          await chan.edit({ ...spec, ...(tags ? { availableTags: tags } : {}) });
+        }
+        ids[ch.key] = chan.id;
+      }
+    }
+  }
+
+  await applyChannels(false);
+  if (!guild.features.includes("COMMUNITY")) {
+    await guild.edit({ features: [...guild.features, "COMMUNITY"], verificationLevel: GuildVerificationLevel.Low,
+      explicitContentFilter: GuildExplicitContentFilter.AllMembers, rulesChannel: ids.rules, publicUpdatesChannel: ids.staff });
+    console.log("+ 커뮤니티 기능 켬");
+  }
+  await guild.edit({ systemChannel: ids.intro, rulesChannel: ids.rules, publicUpdatesChannel: ids.staff });
+  await applyChannels(true);
+
+  // Remove Discord's default channels only when they are empty.
+  for (const c of (await guild.channels.fetch()).values()) {
+    if (!c || !DEFAULT_JUNK.has(c.name)) continue;
+    if (c.type === ChannelType.GuildCategory) { if (!guild.channels.cache.some((x) => x.parentId === c.id && !DEFAULT_JUNK.has(x.name))) await c.delete().then(() => console.log(`- 기본 ${c.name}`)).catch(() => {}); continue; }
+    const msgs = c.isTextBased() ? await c.messages.fetch({ limit: 1 }).catch(() => null) : null;
+    if (!msgs || msgs.size === 0) await c.delete().then(() => console.log(`- 기본 ${c.name}`)).catch(() => {});
+  }
+
+  // Onboarding. Discord wants snowflake-like ids for new prompts/options.
+  let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++);
+  await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
+    enabled: true, mode: 0,
+    default_channel_ids: ["notice", "rules", "intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
+    prompts: ONBOARDING.map((q) => ({ id: sid(), type: 0, title: q.title, single_select: q.single, required: q.required, in_onboarding: true,
+      options: q.options.map((o) => ({ id: sid(), title: o.title, ...(o.description ? { description: o.description } : {}),
+        role_ids: o.roles.map((k) => roles[k].id), channel_ids: o.roles.length ? [] : [ids.chat] })) })),
+  } });
+  console.log("+ 입장 질문 설정");
+  kvSet(openDb(), "channels", ids);
+  console.log("완료");
+  await client.destroy();
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) process.argv[2] === "invite" ? printInvites() : main().catch((e) => { console.error("실패:", e.message); process.exit(1); });

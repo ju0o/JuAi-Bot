@@ -1,0 +1,20 @@
+# Install: cp juai-bot.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now juai-bot
+[Unit]
+Description=JuAi Discord bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/skkse12/Desktop/Projects/JuAi-Bot
+ExecStart=/usr/bin/node --no-warnings bot.mjs
+Restart=always
+RestartSec=10
+Environment=PATH=/home/skkse12/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=CLAUDE_CONFIG_DIR=/home/skkse12/.claude-team
+# Stay light next to everything else on ASUS: low CPU priority, capped memory (AI CLIs count toward this).
+Nice=10
+CPUWeight=30
+MemoryHigh=700M
+MemoryMax=1200M
+
+[Install]
+WantedBy=default.target

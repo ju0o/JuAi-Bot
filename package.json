@@ -1,0 +1,8 @@
+{
+  "name": "juai-bot",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": { "start": "node bot.mjs", "setup": "node setup.mjs", "check": "node check.mjs" },
+  "dependencies": { "discord.js": "^14.21.0" }
+}

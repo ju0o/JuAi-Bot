@@ -211,7 +211,20 @@ async function welcome(m) {
   await say("COMMANDCODE", m.channelId, { content: `<@${m.author.id}>님, JuAi에 오신 걸 환영해요! 👋\n아래 버튼으로 **SNS 닉네임**과 지금 만드는 걸 알려주시면 이 채널에 소개를 올리고, **딱 맞는 활용법**도 추천해 드릴게요.\n\n**이렇게 시작해보세요**\n1. <#${ids.lab}>에 지금 막힌 거 하나 물어보기 → AI가 스레드에서 답해요\n2. 만들고 있는 게 있다면 <#${ids.showcase}>에 올리기 → GitHub 링크면 코드 리뷰도 달려요\n3. <#${ids.picks}> 오늘의 추천 스레드 구경하기\n-# 전체 사용법은 <#${ids.guide}>에 있어요.`,
     components: [row], reply: { messageReference: m.id, failIfNotExists: false }, allowedMentions: { users: [m.author.id] } })
     .then((w) => kvSet(db, `joined:${m.author.id}`, { at: Date.now(), welcomeId: w.id }));
+  // A public hello in #자유대화 too, once onboarding roles have landed.
+  setTimeout(() => void loungeWelcome(m.author.id).catch((e) => fail("welcome/lounge", e)), 60_000);
 }
+
+async function loungeWelcome(uid) {
+  const member = await guild.members.fetch(uid).catch(() => null); if (!member) return;
+  const pick = (prefix) => ROLE_GROUPS[prefix].filter((n) => member.roles.cache.some((r) => r.name === n));
+  const interests = pick("int"), level = pick("lvl")[0];
+  const about = [interests.length ? `**${interests.join(" · ")}**에 관심 있으시대요` : "", level ? `(${level})` : ""].filter(Boolean).join(" ");
+  const lines = ["🎉", "👋", "🙌"];
+  await say("COMMANDCODE", ids.chat, { content: `${lines[Math.floor(Math.random() * lines.length)]} <@${uid}>님이 JuAi에 들어오셨어요!${about ? ` ${about}.` : ""}\n다들 반갑게 인사해 주세요! 궁금한 건 <#${ids.lab}>에서 AI한테 바로 물어볼 수 있어요.`,
+    allowedMentions: { users: [uid] } });
+}
+const ROLE_GROUPS = { int: ["프론트엔드", "백엔드", "AI 에이전트 개발", "디자인", "기획"], lvl: ["입문", "실무", "연구"] };
 
 function profileModal(prev) {
   const input = (id, label, style, required, max, value) => new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label)

@@ -88,8 +88,15 @@ async function main() {
   }
 
   await applyChannels(false);
-  // Turning Community on needs Administrator, which the bot deliberately doesn't have: the Founder flips it once in server settings.
-  const community = guild.features.includes("COMMUNITY");
+  // Turning Community on needs Administrator (bots are invited as Administrator; if not, the Founder flips it in settings).
+  let community = guild.features.includes("COMMUNITY");
+  if (!community) {
+    try {
+      await guild.edit({ verificationLevel: GuildVerificationLevel.Low, explicitContentFilter: GuildExplicitContentFilter.AllMembers });
+      await guild.edit({ features: [...guild.features, "COMMUNITY"], rulesChannel: ids.rules, publicUpdatesChannel: ids.staff });
+      community = true; console.log("+ 커뮤니티 기능 켬");
+    } catch (e) { console.warn(`커뮤니티 켜기 실패: ${e.message}`); }
+  }
   await guild.edit({ systemChannel: ids.intro, ...(community ? { rulesChannel: ids.rules, publicUpdatesChannel: ids.staff } : {}) });
   await applyChannels(true);
 

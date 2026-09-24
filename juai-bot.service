@@ -5,6 +5,7 @@ After=network-online.target
 
 [Service]
 WorkingDirectory=/home/skkse12/Desktop/Projects/JuAi-Bot
+ExecStartPre=/usr/bin/node guard.mjs
 ExecStart=/usr/bin/node --no-warnings bot.mjs
 Restart=always
 RestartSec=10

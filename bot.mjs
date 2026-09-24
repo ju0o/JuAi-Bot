@@ -4,6 +4,7 @@
 //   OpenCode    = member helper (#ai-연구실, pick threads, first answer in 질문-답변)
 //   CommandCode = guide (welcome + profile form, first comment in 피드백-요청; text via the free OpenCode model)
 import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, EmbedBuilder, GatewayIntentBits as G, MessageType, MessageFlags, ModalBuilder, Options, TextInputBuilder, TextInputStyle } from "discord.js";
 import { env, BOTS, botId, findGuild } from "./setup.mjs";
@@ -335,6 +336,7 @@ async function execute(card) {
     case "channel_delete": { const ch = await hub.channels.fetch(p.channelId); await ch.delete(); return `#${ch.name} 삭제했어요`; }
     case "feature": void implement(card).catch((e) => fail(`feature ${card.id}`, e)); return "작업을 시작했어요. 끝나면 적용 카드를 올릴게요";
     case "feature_ready": {
+      writeFileSync(path.join(ROOT, "data/deploy.json"), JSON.stringify({ prev: git(["rev-parse", "HEAD"]), card: card.id, tries: 0 })); // guard.mjs rolls back if we can't start
       git(["merge", "--ff-only", p.branch]); git(["worktree", "remove", "--force", p.dir]);
       setTimeout(() => process.exit(0), 3000); // systemd restarts us on the new code
       return "적용했어요. 봇을 재시작합니다";
@@ -450,6 +452,13 @@ top은 반응 많은 순 최대 5개(없으면 빈 배열). proposals는 실제�
   }
 }
 
+// ponytail: 7 daily copies next to the db; move off-disk if ASUS storage becomes a worry.
+async function backup() {
+  const dir = path.join(ROOT, "data/backup"); mkdirSync(dir, { recursive: true });
+  db.exec(`VACUUM INTO '${path.join(dir, `juai-${L.kstDate()}.db`)}'`);
+  for (const f of readdirSync(dir).filter((f) => f.endsWith(".db")).sort().slice(0, -7)) rmSync(path.join(dir, f));
+}
+
 async function bootstrap() {
   const out = await ai("claude", `새로 여는 JuAi(AI로 뭔가 만드는 사람들이 프로젝트를 공유하고 피드백을 주고받는 한국어 디스코드 서버)의 첫 규칙과 환영 공지를 써줘. JSON만:
 {"rules":["규칙 한 줄"],"notice":"환영 공지문"}
@@ -479,6 +488,7 @@ async function tick() {
   if (h >= 8) await job(`summary:${today}`, () => dailySummary(today));
   if (h >= 9) await job(`picks:${today}`, () => dailyPicks(today));
   if (L.kstDay(now) === 1 && h >= 10) await job(`weekly:${today}`, weekly);
+  if (h >= 4) await job(`backup:${today}`, backup);
   for (const c of db.prepare("SELECT id FROM cards WHERE status='HOLD' AND remind_at<=?").all(now)) {
     const card = getCard(c.id); setCard(c.id, "REVISED");
     await createCard(card.kind, `다시 물어봐요: ${card.payload.title}`, card.payload.body, card.payload);
@@ -487,6 +497,9 @@ async function tick() {
 
 await connect();
 console.log(`JuAi bot ONLINE · ${guild.name} · rss ${Math.round(process.memoryUsage().rss / 1e6)}MB`);
+const deployFile = path.join(ROOT, "data/deploy.json"), rollbackFile = path.join(ROOT, "data/rollback.json");
+if (existsSync(deployFile)) { const d = JSON.parse(readFileSync(deployFile, "utf8")); rmSync(deployFile); log(`🚀 card ${d.card} 새 버전이 정상적으로 켜졌어요`); }
+if (existsSync(rollbackFile)) { const d = JSON.parse(readFileSync(rollbackFile, "utf8")); rmSync(rollbackFile); log(`↩️ card ${d.card} 새 버전이 켜지지 않아 이전 버전(${d.prev.slice(0, 7)})으로 되돌렸어요. 코드는 feature/card-${d.card} 브랜치에 남아 있어요`); }
 setTimeout(() => void tick().catch((e) => fail("tick", e)), 20_000);
 setInterval(() => void tick().catch((e) => fail("tick", e)), 5 * 60_000);
 for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, async () => { await Promise.all(Object.values(clients).map((c) => c.destroy())); process.exit(0); });

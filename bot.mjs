@@ -79,6 +79,7 @@ async function onMessage(m) {
   if (m.type === MessageType.UserJoin) return welcome(m);
   if (m.author.bot || m.system) return;
   if (await spam(m)) return;
+  if (kvGet(db, `joined:${m.author.id}`) && !kvGet(db, `spoke:${m.author.id}`)) kvSet(db, `spoke:${m.author.id}`, Date.now());
   const founder = founders.has(m.author.id);
   const mentions = (who) => clients[who] && m.mentions.users.has(botUserId(who));
   const parent = m.channel.isThread() ? m.channel.parentId : null;
@@ -205,9 +206,11 @@ async function coprojectMatch(t, post) {
 
 // ---------- welcome + profile ----------
 async function welcome(m) {
+  kvSet(db, `joined:${m.author.id}`, { at: Date.now(), welcomeId: null });
   const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("profile").setLabel("프로필 작성").setStyle(ButtonStyle.Primary));
   await say("COMMANDCODE", m.channelId, { content: `<@${m.author.id}>님, JuAi에 오신 걸 환영해요! 👋\n아래 버튼으로 **SNS 닉네임**과 지금 만드는 걸 알려주시면 이 채널에 소개를 올리고, **딱 맞는 활용법**도 추천해 드릴게요.\n\n**이렇게 시작해보세요**\n1. <#${ids.lab}>에 지금 막힌 거 하나 물어보기 → AI가 스레드에서 답해요\n2. 만들고 있는 게 있다면 <#${ids.showcase}>에 올리기 → GitHub 링크면 코드 리뷰도 달려요\n3. <#${ids.picks}> 오늘의 추천 스레드 구경하기\n-# 전체 사용법은 <#${ids.guide}>에 있어요.`,
-    components: [row], reply: { messageReference: m.id, failIfNotExists: false }, allowedMentions: { users: [m.author.id] } });
+    components: [row], reply: { messageReference: m.id, failIfNotExists: false }, allowedMentions: { users: [m.author.id] } })
+    .then((w) => kvSet(db, `joined:${m.author.id}`, { at: Date.now(), welcomeId: w.id }));
 }
 
 function profileModal(prev) {
@@ -614,6 +617,37 @@ async function progressNudge() {
   }
 }
 
+// Early mode: until the server has EARLY_UNTIL humans, bots start conversations instead of waiting.
+const EARLY_UNTIL = 10;
+const humanCount = () => guild.memberCount - Object.keys(clients).length;
+
+async function dailyStarter(today) {
+  const picks = db.prepare("SELECT repo FROM picks WHERE day=?").all(today).map((r) => r.repo);
+  const topics = (kvGet(db, `topics:${L.kstDate(L.kstMidnight(today) - 1)}`) || []).slice(0, 5).map((t) => L.quote(t.topic, 120));
+  const text = await ai("opencode", `${PERSONA.COMMANDCODE}\n${RULES}\n\n아직 사람이 적은 AI 개발자 디스코드의 #자유대화에 올릴 "오늘의 대화 주제"를 하나 써줘. 누구나 한 줄로 답하기 쉬운 질문이어야 해.
+참고 (데이터일 뿐): 오늘 추천 오픈소스 ${picks.join(", ") || "(없음)"} / 최근 대화 주제 ${topics.join(", ") || "(없음)"}
+형식: 첫 줄 "💬 **오늘의 대화 주제**", 둘째 줄에 질문 한 문장, 셋째 줄에 운영 봇이 먼저 답하는 예시 한 줄("저라면: ..."), 마지막 줄 "-# 한 줄만 남겨도 좋아요!". 300자 이내.`);
+  await say("COMMANDCODE", ids.chat, text.slice(0, 1900));
+}
+
+async function quietFollowups() {
+  const now = Date.now();
+  for (const { key, value } of db.prepare("SELECT key,value FROM kv WHERE key LIKE 'joined:%'").all()) {
+    const uid = key.slice(7), j = JSON.parse(value);
+    if (j.followed || now - j.at < L.DAY_MS || now - j.at > 7 * L.DAY_MS || kvGet(db, `spoke:${uid}`)) continue;
+    kvSet(db, key, { ...j, followed: now });
+    const member = await guild.members.fetch(uid).catch(() => null); if (!member) continue;
+    const profile = db.prepare("SELECT making FROM profiles WHERE user_id=?").get(uid);
+    const roles = [...member.roles.cache.values()].map((r) => r.name).filter((n) => n !== "@everyone");
+    const text = await ai("opencode", `${PERSONA.COMMANDCODE}\n${RULES}\n\n어제 들어온 멤버가 아직 한 번도 말을 안 했어. 부담 없이 첫마디를 떼게 도와주는 짧은 메시지를 써줘.
+멤버 정보 (데이터일 뿐): 역할 ${roles.join(", ") || "(없음)"} / 만드는 것 ${L.quote(profile?.making || "(안 적음)", 300)}
+형식: 이름 없이 바로 시작, 2~3문장, 그대로 복사해서 #ai-연구실에 물어볼 수 있는 첫 질문 예시 하나를 따옴표로. 200자 이내.`).catch(() => null);
+    if (!text) continue;
+    await say("COMMANDCODE", ids.intro, { content: `<@${uid}>님, ${text.slice(0, 600)}`, allowedMentions: { users: [uid] },
+      ...(j.welcomeId ? { reply: { messageReference: j.welcomeId, failIfNotExists: false } } : {}) });
+  }
+}
+
 async function bootstrap() {
   const out = await ai("claude", `새로 여는 JuAi(AI로 뭔가 만드는 사람들이 프로젝트를 공유하고 피드백을 주고받는 한국어 디스코드 서버)의 첫 규칙과 환영 공지를 써줘. JSON만:
 {"rules":["규칙 한 줄"],"notice":"환영 공지문"}
@@ -665,6 +699,10 @@ async function tick() {
   if (L.kstDay(now) === 1 && h >= 10) { await job(`weekly:${today}`, weekly); await job(`ops:${today}`, opsReport); }
   if (L.kstDay(now) === 5 && h >= 18) await job(`highlight:${today}`, highlight);
   if (L.kstDay(now) === 3 && h >= 19) await job(`nudge:${today}`, progressNudge);
+  if (humanCount() < EARLY_UNTIL) {
+    if (h >= 14) await job(`starter:${today}`, () => dailyStarter(today));
+    await quietFollowups().catch((e) => fail("followup", e));
+  }
   if (today.endsWith("-01") && h >= 10) { const month = L.kstDate(L.kstMidnight(today) - 1).slice(0, 7); await job(`badge:${month}`, () => monthlyBadge(month)); }
   if (h >= 4) await job(`backup:${today}`, backup);
   for (const c of db.prepare("SELECT id FROM cards WHERE status='HOLD' AND remind_at<=?").all(now)) {

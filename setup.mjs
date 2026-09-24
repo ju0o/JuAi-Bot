@@ -4,8 +4,8 @@
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { ChannelType, Client, GatewayIntentBits, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
-import { CATEGORIES, ONBOARDING, ROLES } from "./layout.mjs";
-import { openDb, kvSet } from "./db.mjs";
+import { CATEGORIES, GUIDE, ONBOARDING, ROLES } from "./layout.mjs";
+import { openDb, kvGet, kvSet } from "./db.mjs";
 
 export const env = parseEnv(readFileSync(new URL("./.env", import.meta.url), "utf8"));
 export const BOTS = { CLAUDE: "DISCORD_CLAUDE_BOT_TOKEN", CODEX: "DISCORD_CODEX_BOT_TOKEN", OPENCODE: "DISCORD_OPENCODE_BOT_TOKEN", COMMANDCODE: "DISCORD_COMMANDCODE_BOT_TOKEN" };
@@ -102,6 +102,23 @@ async function main() {
   }
 
   kvSet(openDb(), "channels", ids);
+
+  // #사용법: edit in place on re-run so the channel never collects duplicates.
+  const guideCh = await guild.channels.fetch(ids.guide);
+  const texts = GUIDE((k) => `<#${ids[k]}>`); const prevIds = kvGet(openDb(), "guide_messages") || [];
+  const prev = await Promise.all(prevIds.map((id) => guideCh.messages.fetch(id).catch(() => null)));
+  let msgIds;
+  if (prev.length === texts.length && prev.every(Boolean)) { await Promise.all(prev.map((m, n) => m.edit(texts[n]))); msgIds = prevIds; console.log("~ 사용법 갱신"); }
+  else {
+    await Promise.all(prev.filter(Boolean).map((m) => m.delete().catch(() => {})));
+    msgIds = []; for (const t of texts) msgIds.push((await guideCh.send({ content: t, allowedMentions: { parse: [] } })).id);
+    await guideCh.messages.pin(msgIds[0]).catch(() => {}); console.log("+ 사용법 게시");
+  }
+  kvSet(openDb(), "guide_messages", msgIds);
+  let invite = kvGet(openDb(), "invite");
+  if (!invite || !(await client.fetchInvite(invite).catch(() => null))) { invite = (await guideCh.createInvite({ maxAge: 0, maxUses: 0, unique: true, reason: "JuAi 공개 초대 링크" })).url; kvSet(openDb(), "invite", invite); }
+  console.log(`초대 링크: ${invite}`);
+
   if (!community) {
     console.log("\n! 커뮤니티 기능이 꺼져 있어서 입장 질문은 아직 못 만들었어요.\n  서버 설정 → 커뮤니티 활성화 (규칙 채널: #규칙, 업데이트 채널: #운영진) 후 node setup.mjs를 한 번 더 실행하세요.");
     await client.destroy(); return;
@@ -110,7 +127,7 @@ async function main() {
   let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++);
   await client.rest.put(`/guilds/${guild.id}/onboarding`, { body: {
     enabled: true, mode: 0,
-    default_channel_ids: ["notice", "rules", "intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
+    default_channel_ids: ["guide", "notice", "rules", "intro", "chat", "news", "qa", "showcase", "feedback", "coproject", "picks", "lab", "playground", "suggest", "summary"].map((k) => ids[k]),
     prompts: ONBOARDING.map((q) => ({ id: sid(), type: 0, title: q.title, single_select: q.single, required: q.required, in_onboarding: true,
       options: q.options.map((o) => ({ id: sid(), title: o.title, ...(o.description ? { description: o.description } : {}),
         role_ids: o.roles.map((k) => roles[k].id), channel_ids: o.roles.length ? [] : [ids.chat] })) })),

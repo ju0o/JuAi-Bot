@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { ChannelType, Client, GatewayIntentBits, GuildDefaultMessageNotifications, GuildExplicitContentFilter, GuildVerificationLevel, PermissionFlagsBits as P, PermissionsBitField } from "discord.js";
-import { CATEGORIES, GUIDE, ONBOARDING, ROLES, STAFF_GUIDE } from "./layout.mjs";
+import { CATEGORIES, GUIDE, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE } from "./layout.mjs";
 import { openDb, kvGet, kvSet } from "./db.mjs";
 
 export const env = parseEnv(readFileSync(new URL("./.env", import.meta.url), "utf8"));
@@ -125,6 +125,11 @@ async function main() {
     await guideCh.messages.pin(msgIds[0]).catch(() => {}); console.log("+ 사용법 게시");
   }
   kvSet(openDb(), "guide_messages", msgIds);
+  // Source-code intro, pinned in #봇-소스코드.
+  const srcCh = await guild.channels.fetch(ids.source), srcText = SOURCE_GUIDE.replace("<#QA>", `<#${ids.qa}>`).replace("<#SUGGEST>", `<#${ids.suggest}>`);
+  const srcPrev = kvGet(openDb(), "source_guide") ? await srcCh.messages.fetch(kvGet(openDb(), "source_guide")).catch(() => null) : null;
+  if (srcPrev) await srcPrev.edit(srcText);
+  else { const m = await srcCh.send({ content: srcText, allowedMentions: { parse: [] } }); await m.pin().catch(() => {}); kvSet(openDb(), "source_guide", m.id); }
   // Founder command sheet, pinned in the private staff channel.
   const staffCh = await guild.channels.fetch(ids.staff), staffText = STAFF_GUIDE((k) => `<#${ids[k]}>`);
   const staffPrev = kvGet(openDb(), "staff_guide") ? await staffCh.messages.fetch(kvGet(openDb(), "staff_guide")).catch(() => null) : null;

@@ -545,6 +545,7 @@ async function adminCommand(m, raw) {
 - create_channel {name, category, kind:"text"|"forum"}
 - delete_channel {channel}
 - implement_feature {description}: 봇에 새 기능 추가/수정 (코드 작업이 필요한 요청)
+- release {}: 지금까지 바뀐 봇 코드를 GitHub 새 버전으로 공개하고 #봇-소스코드에 릴리즈 노트 올리기
 채널 목록: ${channelNames()}. 명령한 채널: #${here}. 채널은 목록의 이름으로 써.
 명령: ${L.quote(text, 1500)}`;
   const plan = L.validateAdminPlan(L.extractJson(await withTyping("CLAUDE", m.channelId, () => ai("claude", prompt))));
@@ -572,6 +573,7 @@ async function adminCommand(m, raw) {
     create_channel: () => createCard("channel_create", `채널 만들기: #${p.name}`, plan.summary, p),
     delete_channel: () => { const ch = resolveChannel(p.channel); return ch ? createCard("channel_delete", `채널 삭제: #${ch.name}`, plan.summary, { channelId: ch.id }) : reply(`#${p.channel} 채널을 못 찾았어요.`); },
     implement_feature: () => createCard("feature", "기능 구현", p.description, { description: p.description }),
+    release: () => createCard("release", "GitHub 릴리즈 올리기", `바뀐 봇 코드를 새 버전으로 https://github.com/ju0o/JuAi-Bot 에 공개하고 <#${ids.source}>에 릴리즈 노트를 올려요.`, {}),
   };
   await cards[plan.action]();
   if (m.channelId !== ids.staff) await reply(`확인 카드를 <#${ids.staff}>에 올렸어요.`);
@@ -579,7 +581,7 @@ async function adminCommand(m, raw) {
 
 // ---------- approval cards ----------
 const KIND = { notice: "공지 제안", rule: "규칙 제안", delete: "삭제 확인", timeout: "타임아웃 확인", channel_create: "채널 생성", channel_delete: "채널 삭제",
-  feature: "기능 구현", feature_ready: "기능 적용", spam: "스팸 조치", badge: "월간 배지" };
+  feature: "기능 구현", feature_ready: "기능 적용", spam: "스팸 조치", badge: "월간 배지", release: "GitHub 릴리즈" };
 const TEXT_KINDS = new Set(["notice", "rule", "feature"]);
 
 function cardView(id, kind, title, body, status) {
@@ -674,10 +676,15 @@ async function execute(card) {
       kvSet(db, "badge_holders", p.user_ids); await sayLong("CLAUDE", ids.notice, p.text);
       return `${p.user_ids.length}명에게 역할을 주고 공지했어요`;
     }
+    case "release": {
+      const out = execFileSync("node", ["--no-warnings", "scripts/release.mjs"], { cwd: ROOT, encoding: "utf8", timeout: 300_000 }).trim().split("\n").at(-1);
+      return out.startsWith("RELEASED") ? `${out.split(" ")[1]} 공개했어요` : "새로 공개할 변경이 없어요";
+    }
     case "feature": void implement(card).catch((e) => fail(`feature ${card.id}`, e)); return "작업을 시작했어요. 끝나면 적용 카드를 올릴게요";
     case "feature_ready": {
       writeFileSync(path.join(ROOT, "data/deploy.json"), JSON.stringify({ prev: git(["rev-parse", "HEAD"]), card: card.id, tries: 0 })); // guard.mjs rolls back if we can't start
       git(["merge", "--ff-only", p.branch]); git(["worktree", "remove", "--force", p.dir]);
+      await createCard("release", "GitHub 릴리즈 올릴까요?", `방금 적용한 기능을 새 버전으로 GitHub(https://github.com/ju0o/JuAi-Bot)에 공개하고 <#${ids.source}>에 릴리즈 노트를 올려요.`, {});
       setTimeout(() => process.exit(0), 3000); // systemd restarts us on the new code
       return "적용했어요. 봇을 재시작합니다";
     }

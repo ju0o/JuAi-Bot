@@ -126,7 +126,7 @@ export function extractJson(text) {
 /** Member-authored text goes into prompts as quoted data, never as instructions. */
 export const quote = (s, max = 300) => JSON.stringify(String(s).replace(/\s+/g, " ").slice(0, max));
 
-export const ADMIN_ACTIONS = ["answer", "set_topic", "post_notice", "add_rule", "delete_messages", "timeout", "create_channel", "delete_channel", "implement_feature"];
+export const ADMIN_ACTIONS = ["release", "answer", "set_topic", "post_notice", "add_rule", "delete_messages", "timeout", "create_channel", "delete_channel", "implement_feature"];
 /** Actions that run without a card. Everything else needs the Founder's 승인. */
 export const DIRECT_ACTIONS = new Set(["answer", "set_topic"]);
 
@@ -134,7 +134,7 @@ export function validateAdminPlan(plan) {
   if (!plan || typeof plan !== "object" || !ADMIN_ACTIONS.includes(plan.action)) return null;
   const p = plan.params && typeof plan.params === "object" ? plan.params : {};
   const str = (v, max) => typeof v === "string" && v.trim() ? v.trim().slice(0, max) : undefined;
-  const need = { answer: ["text"], set_topic: ["channel", "topic"], post_notice: ["text"], add_rule: ["text"], delete_messages: ["channel"],
+  const need = { release: [], answer: ["text"], set_topic: ["channel", "topic"], post_notice: ["text"], add_rule: ["text"], delete_messages: ["channel"],
     timeout: ["user_id", "minutes"], create_channel: ["name"], delete_channel: ["channel"], implement_feature: ["description"] }[plan.action];
   const params = {};
   for (const [k, v] of Object.entries(p)) params[k] = typeof v === "number" ? v : str(v, 1800);

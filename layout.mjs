@@ -18,6 +18,7 @@ export const CATEGORIES = [
   { name: "시작하기", channels: [
     { key: "guide", name: "사용법", type: "text", access: "readonly", topic: "채널별 사용법과 AI 봇 4명 안내. 처음 오셨다면 여기부터!" },
     { key: "notice", name: "공지", type: "text", access: "readonly", topic: "운영진이 승인한 공지만 올라와요." },
+    { key: "source", name: "봇-소스코드", type: "text", access: "readonly", topic: "이 서버를 돌리는 봇의 원본 코드 (MIT). 새 버전이 나오면 릴리즈 노트가 올라와요." },
     { key: "rules", name: "규칙", type: "text", access: "readonly", topic: "서버 규칙. AI가 제안하고 운영진이 승인한 내용만 반영돼요." },
     { key: "intro", name: "자기소개", type: "text", access: "open", topic: "새로 오신 분은 [프로필 작성] 버튼을 눌러주세요." },
   ] },
@@ -186,6 +187,7 @@ export const STAFF_GUIDE = (c) => `## 🛠️ 운영진 명령어 (Founder 전�
 • "이번 주 밋업 공지 써줘" → 공지 초안
 • "규칙에 '홍보는 쇼케이스에서만' 추가해줘"
 • "하루 한도 7회로 올려줘" / "이런 기능 넣어줘" → 봇이 직접 코드를 고치고, 승인하면 적용
+• "GitHub 릴리즈 올려줘" → 새 버전 공개 + ${c("source")}에 릴리즈 노트 (기능 적용 후엔 자동으로 카드가 떠요)
 
 **버튼 뜻**
 • 승인: 바로 실행하거나 게시
@@ -195,3 +197,18 @@ export const STAFF_GUIDE = (c) => `## 🛠️ 운영진 명령어 (Founder 전�
 **자동으로 올라오는 카드**
 월요일 10시 운영 리포트와 건의 TOP 5 · 금요일 18시 하이라이트 · 매달 1일 피드백 장인 · 스팸 조치
 -# 새 기능이 켜지지 않으면 이전 버전으로 자동 복구돼요. 기록은 ${c("botlog")}에 있어요.`;
+
+/** Pinned in #봇-소스코드. */
+export const SOURCE_GUIDE = `# 📦 JuAi 봇 원본 코드
+지금 이 서버를 돌리는 봇 4명(Claude · Codex · OpenCode · CommandCode)의 코드를 전부 공개해요.
+
+🔗 **https://github.com/ju0o/JuAi-Bot**
+📄 **MIT 라이선스**: 누구나 가져다 쓰고, 고치고, 자기 서버에 돌려도 돼요. 출처(저작권 표시)만 남겨주세요.
+
+**이런 걸 볼 수 있어요**
+• 노트북 한 대에서 프로그램 1개로 봇 4개를 돌리는 구조
+• 무료 AI 모델 자동 교체, 멤버 글을 다루는 AI 격리 실행
+• 승인 카드로 운영하는 방식, 봇들끼리 수다 엔진
+
+새 버전이 나오면 이 채널에 **릴리즈 노트**가 올라와요. 코드 보고 궁금한 건 <#QA>, 개선 아이디어는 <#SUGGEST>에 남겨주세요!`;
+

@@ -508,6 +508,19 @@ async function loungeWelcome(uid) {
 }
 const ROLE_GROUPS = { int: ["프론트엔드", "백엔드", "AI 에이전트 개발", "디자인", "기획"], lvl: ["입문", "실무", "연구"] };
 
+/** A pinned [프로필 작성] button in #자기소개, so members who missed their welcome can still fill it in. */
+async function ensureProfileButton() {
+  if (!ids.intro) return;
+  const ch = await as("COMMANDCODE").channels.fetch(ids.intro), prevId = kvGet(db, "profile_button");
+  if (prevId && await ch.messages.fetch(prevId).catch(() => null)) return;
+  const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("profile").setLabel("프로필 작성").setStyle(ButtonStyle.Primary));
+  const msg = await ch.send({ content: `👋 **JuAi 자기소개**\n아래 버튼을 누르고 **SNS 닉네임**과 지금 만드는 걸 적으면 이 채널에 소개가 올라가요. 관심사에 맞는 활용법도 추천해 드려요.\n-# 언제든 다시 눌러서 고칠 수 있어요.`, components: [row], allowedMentions: NO_PING });
+  await msg.pin().catch(() => {});
+  kvSet(db, "profile_button", msg.id);
+  const notice = (await ch.messages.fetch({ limit: 3 }).catch(() => new Map())).find?.((x) => x.type === MessageType.ChannelPinnedMessage);
+  if (notice) await notice.delete().catch(() => {}); // keep the channel clean of "pinned a message" notices
+}
+
 function profileModal(prev) {
   const input = (id, label, style, required, max, value) => new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label)
     .setStyle(style).setRequired(required).setMaxLength(max).setValue(value || ""));
@@ -1032,6 +1045,7 @@ async function tick() {
 }
 
 await connect();
+await ensureProfileButton().catch((e) => fail("profile-button", e));
 console.log(`JuAi bot ONLINE · ${guild.name} · rss ${Math.round(process.memoryUsage().rss / 1e6)}MB`);
 const deployFile = path.join(ROOT, "data/deploy.json"), rollbackFile = path.join(ROOT, "data/rollback.json");
 if (existsSync(deployFile)) { const d = JSON.parse(readFileSync(deployFile, "utf8")); rmSync(deployFile); log(`🚀 card ${d.card} 새 버전이 정상적으로 켜졌어요`); }

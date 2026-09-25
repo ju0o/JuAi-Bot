@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstMidnight, redact, chunk, extractJson, validateAdminPlan, pruneState, LIMITS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 import { HELP_TEXT } from "./layout.mjs";
 
@@ -29,16 +29,25 @@ db.exec("DELETE FROM usage WHERE user_id='u1' AND day='2026-09-24'"); db.exec("I
 assert.equal(takeQuota(db, "u1", { now: t0 + 999 * LIMITS.gapMs }).left, 2, "5 used of 5+3 → 2 left after this one");
 assert.deepEqual(peekQuota(db, "u1", { now: t0 }), { used: 6, total: 8, left: 2, bonus: 3 });
 assert.equal(quotaDay(Date.parse("2026-09-24T23:59:59Z")), "2026-09-24");
+assert.equal(quotaDay(Date.parse("2026-09-25T00:00:00Z")), "2026-09-25");
 db.exec("UPDATE usage SET count=999 WHERE user_id='*'");
 assert.equal(takeQuota(db, "u2", { now: Date.parse("2026-09-25T00:10:00Z") }).reason, "global");
 assert.match(quotaMessage({ reason: "global" }), /서버 전체/);
 
 assert.equal(kstDate(Date.parse("2026-09-23T15:00:00Z")), "2026-09-24");
+assert.equal(kstHour(Date.parse("2026-09-23T14:59:59Z")), 23);
+assert.equal(kstHour(Date.parse("2026-09-23T15:00:00Z")), 0);
+assert.equal(kstDay(Date.parse("2026-09-23T14:59:59Z")), 3);
+assert.equal(kstDay(Date.parse("2026-09-23T15:00:00Z")), 4);
 assert.equal(kstMidnight("2026-09-24"), Date.parse("2026-09-23T15:00:00Z"));
 
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));
 assert.equal(redact("mail user@example.com, phones 010-1234-5678 / 01012345678"), "mail [가림], phones [가림] / [가림]");
+assert.equal(quote("  a \n b  "), JSON.stringify(" a b "));
+assert.equal(quote("123456", 3), '"123"');
+assert.equal(quote('"x"'), '"\\"x\\""');
+assert.equal(stripAnsi("hello \x1b[31mred\x1b[0m!"), "hello red!");
 
 const parts = chunk("```\n" + "x\n".repeat(1500) + "```");
 assert.ok(parts.length > 1 && parts.every((p) => p.length <= 1910 && (p.match(/```/g) || []).length % 2 === 0));

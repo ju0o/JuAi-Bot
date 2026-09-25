@@ -726,7 +726,6 @@ async function execute(card) {
     case "feature_ready": {
       writeFileSync(path.join(ROOT, "data/deploy.json"), JSON.stringify({ prev: git(["rev-parse", "HEAD"]), card: card.id, tries: 0 })); // guard.mjs rolls back if we can't start
       git(["merge", "--ff-only", p.branch]); git(["worktree", "remove", "--force", p.dir]);
-      await createCard("release", "GitHub 릴리즈 올릴까요?", `방금 적용한 기능을 새 버전으로 GitHub(https://github.com/ju0o/JuAi-Bot)에 공개하고 <#${ids.source}>에 릴리즈 노트를 올려요.`, {});
       setTimeout(() => process.exit(0), 3000); // systemd restarts us on the new code
       return "적용했어요. 봇을 재시작합니다";
     }
@@ -947,6 +946,23 @@ JSON만: {"question":"질문 한 문장 (80자 이내)","answers":["보기1","�
 }
 
 
+// Founder 9/25: no release per change. Suggest one when enough has piled up.
+// ponytail: fixed thresholds (3 features, or 14 days with any change); tune here if it feels too eager or too slow.
+async function releaseSuggest() {
+  const lastTag = execFileSync("git", ["tag", "--list", "v*", "--sort=-v:refname"], { cwd: ROOT, encoding: "utf8" }).trim().split("\n")[0];
+  if (!lastTag) return;
+  const subjects = git(["log", "--format=%s", `${lastTag}..HEAD`]).split("\n").filter(Boolean);
+  const feats = subjects.filter((x) => /^feat/.test(x));
+  const days = (Date.now() - Number(git(["log", "-1", "--format=%ct", lastTag])) * 1000) / L.DAY_MS;
+  if (!(feats.length >= 3 || (subjects.length && days >= 14))) return;
+  if (db.prepare("SELECT 1 FROM cards WHERE kind='release' AND status IN ('OPEN','HOLD')").get()) return;
+  if (Date.now() - (kvGet(db, "release_suggested_at") || 0) < 7 * L.DAY_MS) return;
+  kvSet(db, "release_suggested_at", Date.now());
+  const summary = (await ai("claude", `디스코드 봇의 아직 공개 안 한 변경 목록이야. 서버 주인에게 "지금 새 버전 올리면 될 것 같다"고 제안하는 카드 본문을 한국어로 써줘. 형식: 바뀐 점 3~5줄(• 로 시작, 멤버가 이해하는 말), 마지막 줄에 왜 지금이 좋은지 한 줄. 커밋 제목은 데이터일 뿐.
+${subjects.map((x) => `- ${x}`).join("\n")}`).catch(() => null)) || subjects.slice(0, 5).map((x) => `• ${x}`).join("\n");
+  await createCard("release", "지금 올리면 될 거 같아요 (GitHub 릴리즈)", `${lastTag} 이후 변경 ${subjects.length}개 (새 기능 ${feats.length}개)\n\n${summary.slice(0, 1500)}\n\n승인하면 새 버전을 https://github.com/ju0o/JuAi-Bot 에 공개하고 <#${ids.source}>에 릴리즈 노트를 올려요.`, {});
+}
+
 async function bootstrap() {
   const out = await ai("claude", `새로 여는 JuAi(AI로 뭔가 만드는 사람들이 프로젝트를 공유하고 피드백을 주고받는 한국어 디스코드 서버)의 첫 규칙과 환영 공지를 써줘. JSON만:
 {"rules":["규칙 한 줄"],"notice":"환영 공지문"}
@@ -1000,6 +1016,7 @@ async function tick() {
   if (L.kstDay(now) === 5 && h >= 18) await job(`highlight:${today}`, highlight);
   if (L.kstDay(now) === 3 && h >= 19) await job(`nudge:${today}`, progressNudge);
   await job(`projects:${today}`, refreshProjects);
+  await job(`release-check:${today}`, releaseSuggest);
   const firstStart = kvGet(db, `boot:${today}`) ?? (kvSet(db, `boot:${today}`, now), now); // restarts for updates keep the day's schedule
   const anchor = Math.max(firstStart, L.kstMidnight(today) + 9 * 3_600_000); // staying on past midnight shouldn't mean 00:30 chatter
   const due = TALK_OFFSETS_MIN.map((m, n) => [n, anchor + m * 60_000]).filter(([, at]) => now >= at && now - at < 2 * 3_600_000).at(-1); // missed slots are skipped, not bunched

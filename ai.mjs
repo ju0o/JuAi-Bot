@@ -21,6 +21,9 @@ const COOLDOWN_MS = 30 * 60_000;
 const benched = new Map(); // model -> until
 /** Which model produced the last successful answer (read right after awaiting ai(); the queue is serial). */
 export let lastModel;
+let alertHook = () => {};
+/** bot.mjs registers a Founder-DM alert; called when every free model failed. */
+export const onAllFreeModelsDown = (fn) => { alertHook = fn; };
 const CHILD_ENV = Object.fromEntries(["PATH", "HOME", "USER", "LANG", "LC_ALL", "TERM", "XDG_RUNTIME_DIR", "CLAUDE_CONFIG_DIR"].filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
 
 mkdirSync(SANDBOX, { recursive: true });
@@ -79,6 +82,7 @@ async function runWithFallback(engine, prompt, opts = {}) {
     try { const out = await run(engine, prompt, { ...opts, model, timeoutMs: opts.timeoutMs ?? 90_000 }); lastModel = model; return out; }
     catch (e) { lastError = e; benched.set(model, Date.now() + COOLDOWN_MS); console.warn(`opencode ${model} 실패 → 다음 모델 (${e.message.slice(0, 120)})`); }
   }
+  alertHook(lastError);
   throw lastError;
 }
 

@@ -76,7 +76,26 @@ async function sayLong(who, channelId, text, replyTo) {
   return first;
 }
 const log = (text) => ids.botlog ? say("CLAUDE", ids.botlog, L.redact(text).slice(0, 1900)).catch(() => {}) : undefined;
-function fail(where, e) { console.error(where, e); log(`⚠️ ${where}: ${e.message}`); }
+const recentErrors = [];
+function fail(where, e) {
+  console.error(where, e); log(`⚠️ ${where}: ${e.message}`);
+  const now = Date.now(); recentErrors.push(now); while (recentErrors.length && now - recentErrors[0] > 30 * 60_000) recentErrors.shift();
+  if (recentErrors.length >= 8) alertFounder("errors", `최근 30분 동안 오류가 ${recentErrors.length}번 났어요. 가장 최근: **${where}** — ${String(e.message).slice(0, 200)}\n자세한 기록은 <#${ids.botlog}>에 있어요.`);
+}
+
+/** Founder runs the server from Discord only, so real problems go to their DMs. Same alert at most every 3 hours. */
+async function alertFounder(key, text) {
+  const k = `alert:${key}`; if (Date.now() - (kvGet(db, k) || 0) < 3 * 3_600_000) return;
+  kvSet(db, k, Date.now());
+  for (const f of founders || []) {
+    const user = await as("CLAUDE").users.fetch(f).catch(() => null);
+    await user?.send({ content: `🚨 **JuAi 알림**\n${text}\n-# 같은 알림은 3시간에 한 번만 보내요. 해결이 안 되면 Claude Code에서 "JuAi 봇 확인해줘"라고 말해주세요.`, allowedMentions: { parse: [] } }).catch(() => {});
+  }
+  log(`🚨 Founder에게 알림: ${text.split("\n")[0]}`);
+}
+
+// Per-feature usage counters for the weekly report (Founder 9/25: observe a week before adding more).
+const stat = (name) => db.prepare(`INSERT INTO usage(user_id,day,count,last_at) VALUES(?,?,1,?) ON CONFLICT(user_id,day) DO UPDATE SET count=count+1`).run(`stat:${name}`, L.quotaDay(), Date.now());
 const isStaff = (member) => founders.has(member?.id) || (staffRole && member?.roles?.cache?.has(staffRole.id));
 const name = (m) => m.member?.displayName || m.author.globalName || m.author.username;
 
@@ -178,6 +197,7 @@ async function onSolved(before, after) {
 /** Already solved? Point at the old answer instead of spending an AI call and the member's quota. */
 async function faqReply(question, channelId, who, followUp) {
   const hit = L.bestFaq(db.prepare("SELECT * FROM faq").all(), question); if (!hit) return false;
+  stat("FAQ 재사용");
   await say(who, channelId, `📚 **비슷한 질문이 예전에 해결됐어요**\n**Q.** ${hit.question.replace(/\s+/g, " ").slice(0, 120)}\n**A.** ${hit.answer.replace(/-# .*$/gm, "").slice(0, 500)}\n🔗 ${hit.url}\n\n${followUp}`);
   return true;
 }
@@ -201,7 +221,8 @@ async function onDirect(m) {
   const anon = /^!익명\s+([\s\S]+)/.exec(text);
   const q = L.takeQuota(db, m.author.id, { staff: isStaff(member) });
   if (!q.ok) return reply(L.quotaMessage(q));
-  if (anon) return anonymousQuestion(m, anon[1].trim(), q, reply);
+  if (anon) { stat("익명 질문"); return anonymousQuestion(m, anon[1].trim(), q, reply); }
+  stat("DM 대화");
   const history = [...(await m.channel.messages.fetch({ limit: 11 })).values()].reverse().filter((x) => x.id !== m.id)
     .map((x) => `${x.author.id === oc.user.id ? "OpenCode" : "나"}: ${L.quote(x.content, 400)}`);
   await m.channel.sendTyping().catch(() => {});
@@ -225,6 +246,7 @@ async function anonymousQuestion(m, question, q, reply) {
 }
 
 async function summarizeThread(m) {
+  stat("스레드 요약");
   const q = L.takeQuota(db, m.author.id, { staff: isStaff(m.member) });
   if (!q.ok) return say("OPENCODE", m.channelId, { content: L.quotaMessage(q), reply: { messageReference: m.id } });
   const msgs = [...(await m.channel.messages.fetch({ limit: 60 })).values()].reverse().filter((x) => x.id !== m.id && x.content);
@@ -236,12 +258,14 @@ async function summarizeThread(m) {
 }
 
 async function labQuestion(m) {
+  stat("연구실 질문");
   const thread = await m.startThread({ name: m.content.replace(/\s+/g, " ").slice(0, 50) || "질문", autoArchiveDuration: 1440 });
   if (await faqReply(m.content, thread.id, "OPENCODE", "-# 이걸로 해결이 안 되면 이 스레드에 한 번 더 써 주세요. AI가 이어서 답해요. (이번엔 질문 횟수를 안 썼어요)")) return;
   await answer(m, thread.id, "OPENCODE", [], undefined);
 }
 
 async function threadChat(m) {
+  stat("스레드 대화");
   const msgs = [...(await m.channel.messages.fetch({ limit: 11 })).values()].reverse().filter((x) => x.id !== m.id);
   const starter = m.channel.parentId === ids.picks ? await m.channel.fetchStarterMessage().catch(() => null) : null;
   const history = [...(starter ? [`[추천 글] ${L.quote(starter.content, 1200)}`] : []), ...msgs.map((x) => `${x.author.bot ? x.author.username : name(x)}: ${L.quote(x.content, 400)}`)];
@@ -307,7 +331,7 @@ async function subscribe(m, text) {
   if (cmd === "!구독취소") { const n = db.prepare("DELETE FROM subs WHERE user_id=? AND keyword=?").run(m.author.id, kw).changes; return reply(n ? `\`${kw}\` 구독을 껐어요.` : `\`${kw}\`는 구독 중이 아니에요. \`!구독목록\`으로 확인해 보세요.`); }
   if (kw.length < 2) return reply("구독할 단어를 2글자 이상 붙여주세요. 예: `!구독 MCP`");
   if (mine().length >= SUB_MAX && !mine().includes(kw)) return reply(`구독은 ${SUB_MAX}개까지예요. \`!구독취소 단어\`로 하나 끄고 다시 해주세요.`);
-  db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)").run(m.author.id, kw);
+  db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)").run(m.author.id, kw); stat("키워드 구독");
   return reply(`🔔 \`${kw}\` 구독했어요! 오늘의 추천이나 새 글에 이 단어가 나오면 알려드릴게요.\n-# 구독 중: ${mine().join(", ")}`);
 }
 
@@ -333,7 +357,7 @@ async function requestTalk(m, raw) {
   const reply = (content) => say("CLAUDE", m.channelId, { content, reply: { messageReference: m.id } });
   if (topic.length < 4) return reply("보고 싶은 주제를 조금만 더 적어주세요. 예: `!봇수다 AI가 짠 코드 믿어도 될까`");
   if (db.prepare("SELECT count(*) n FROM talk_requests WHERE user_id=? AND used=0").get(m.author.id).n >= 2) return reply("신청한 주제 2개가 아직 대기 중이에요. 그게 끝나면 또 신청해 주세요!");
-  db.prepare("INSERT INTO talk_requests(user_id,topic,at) VALUES(?,?,?)").run(m.author.id, topic, Date.now());
+  db.prepare("INSERT INTO talk_requests(user_id,topic,at) VALUES(?,?,?)").run(m.author.id, topic, Date.now()); stat("봇수다 신청");
   const pos = db.prepare("SELECT count(*) n FROM talk_requests WHERE used=0").get().n;
   return reply(`🎙️ 신청 받았어요! <#${ids.playground}>에서 봇들이 **${topic}** 얘기를 할 거예요. (대기 ${pos}번째)`);
 }
@@ -490,6 +514,7 @@ async function resolveRepo(text) {
 
 /** "리뷰해줘" anywhere (channel or DM): link in the message, else the GitHub link from the member's profile. */
 async function reviewRequest(m, send, member) {
+  stat("리뷰 요청");
   const profileLink = db.prepare("SELECT github FROM profiles WHERE user_id=?").get(m.author.id)?.github || "";
   const source = /github\.com\//i.test(m.content) ? m.content : profileLink;
   if (!source) return send("리뷰할 GitHub 링크를 같이 보내주세요. 예: `리뷰해줘 https://github.com/아이디/저장소`\n-# #자기소개 프로필에 GitHub를 적어두면 링크 없이 \"리뷰해줘\"만 써도 돼요.");
@@ -571,7 +596,7 @@ async function saveProfile(i) {
   db.prepare(`INSERT INTO profiles(user_id,sns,making,github,message_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET
     sns=excluded.sns,making=excluded.making,github=excluded.github,message_id=excluded.message_id,updated_at=excluded.updated_at`).run(i.user.id, sns, making, github, msg.id, Date.now());
   await i.editReply(`소개를 올렸어요! ${msg.url}\n고치고 싶으면 [프로필 작성] 버튼을 다시 누르세요.`);
-  if (!prev) await suggestUsage(i, msg, making).catch((e) => fail("suggest", e));
+  if (!prev) { stat("프로필 작성"); await suggestUsage(i, msg, making).catch((e) => fail("suggest", e)); }
 }
 
 /** First profile → personal "이렇게 활용해보세요" reply, so a quiet server still starts a conversation. */
@@ -947,6 +972,7 @@ async function opsReport() {
     `• AI 질문 ${sum("*")}회 (하루 평균 ${Math.round(sum("*") / 7)}회, 사용자-일 ${people}) · 한도 초과 ${sum("reject:*")}회`,
     `• 새 글: ${[["showcase", "쇼케이스"], ["feedback", "피드백"], ["qa", "질문"], ["coproject", "공동 프로젝트"], ["suggest", "건의"]].map(([k, n]) => `${n} ${posts[ids[k]] || 0}`).join(" · ")}`,
     ...answerQuality(since),
+    (() => { const rows = db.prepare(`SELECT substr(user_id,6) name, SUM(count) n FROM usage WHERE user_id LIKE 'stat:%' AND day>=? GROUP BY user_id ORDER BY n DESC`).all(L.quotaDay(since)); return `• 기능별 사용: ${rows.map((r) => `${r.name} ${r.n}`).join(" · ") || "아직 없음"}`; })(),
     sum("reject:*") > 10 ? "-# 한도 초과가 많아요. #운영진에 \"하루 한도 7회로 올려줘\"라고 말하면 바꿔드려요." : ""].filter(Boolean).join("\n"));
 }
 
@@ -1017,6 +1043,7 @@ async function bootstrap() {
   await createCard("notice", "환영 공지", data.notice, { text: data.notice });
 }
 
+const JOB_NAME = { summary: "어제 요약", picks: "오늘의 오픈소스", talk: "봇 수다", starter: "오늘의 질문", weekly: "주간 건의 정리", ops: "운영 리포트", highlight: "주간 하이라이트", badge: "피드백 장인", backup: "DB 백업", projects: "프로젝트 목록", "release-check": "릴리즈 점검", prune: "기록 정리" };
 const running = new Set();
 async function job(key, fn) {
   if (kvGet(db, `done:${key}`) || running.has(key)) return;
@@ -1024,7 +1051,8 @@ async function job(key, fn) {
   try { await fn(); kvSet(db, `done:${key}`, true); }
   catch (e) {
     const tries = (kvGet(db, `tries:${key}`) || 0) + 1; kvSet(db, `tries:${key}`, tries);
-    fail(`${key} (${tries}/3)`, e); if (tries >= 3) kvSet(db, `done:${key}`, "failed");
+    fail(`${key} (${tries}/3)`, e);
+    if (tries >= 3) { kvSet(db, `done:${key}`, "failed"); alertFounder(`job:${key.split(":")[0]}`, `**${JOB_NAME[key.split(":")[0]] || key}** 작업이 3번 연속 실패해서 오늘은 건너뛰어요.\n이유: ${String(e.message).slice(0, 200)}`); }
   } finally { running.delete(key); }
 }
 
@@ -1078,9 +1106,12 @@ async function tick() {
 await connect();
 await ensureProfileButton().catch((e) => fail("profile-button", e));
 console.log(`JuAi bot ONLINE · ${guild.name} · rss ${Math.round(process.memoryUsage().rss / 1e6)}MB`);
+AI.onAllFreeModelsDown((e) => alertFounder("ai-free", `무료 AI 모델이 전부 응답하지 않아요. 멤버 질문에 답을 못 하고 있을 수 있어요.\n마지막 오류: ${String(e?.message || e).slice(0, 200)}\n-# 보통 30분~몇 시간 안에 풀려요. 계속되면 알려주세요.`));
+const starts = [...(kvGet(db, "starts") || []), Date.now()].filter((t) => Date.now() - t < 15 * 60_000); kvSet(db, "starts", starts);
+if (starts.length >= 3) alertFounder("restarts", `봇이 15분 동안 ${starts.length}번 다시 시작됐어요. 무언가 계속 실패하는 것 같아요. <#${ids.botlog}>를 확인해 주세요.`);
 const deployFile = path.join(ROOT, "data/deploy.json"), rollbackFile = path.join(ROOT, "data/rollback.json");
 if (existsSync(deployFile)) { const d = JSON.parse(readFileSync(deployFile, "utf8")); rmSync(deployFile); log(`🚀 card ${d.card} 새 버전이 정상적으로 켜졌어요`); }
-if (existsSync(rollbackFile)) { const d = JSON.parse(readFileSync(rollbackFile, "utf8")); rmSync(rollbackFile); log(`↩️ card ${d.card} 새 버전이 켜지지 않아 이전 버전(${d.prev.slice(0, 7)})으로 되돌렸어요. 코드는 feature/card-${d.card} 브랜치에 남아 있어요`); }
+if (existsSync(rollbackFile)) { const d = JSON.parse(readFileSync(rollbackFile, "utf8")); rmSync(rollbackFile); const msg = `↩️ card ${d.card} 새 버전이 켜지지 않아 이전 버전(${d.prev.slice(0, 7)})으로 되돌렸어요. 코드는 feature/card-${d.card} 브랜치에 남아 있어요`; log(msg); alertFounder(`rollback:${d.card}`, msg); }
 setTimeout(() => void tick().catch((e) => fail("tick", e)), 20_000);
 scheduleTalk(); // resume a bot talk that was mid-way when we restarted
 setInterval(() => void tick().catch((e) => fail("tick", e)), 5 * 60_000);

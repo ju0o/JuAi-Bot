@@ -887,8 +887,11 @@ async function dailyStarter(today) {
   const topics = (kvGet(db, `topics:${L.kstDate(L.kstMidnight(today) - 1)}`) || []).slice(0, 5).map((t) => L.quote(t.topic, 120));
   const text = await ai("opencode", `${PERSONA.COMMANDCODE}\n${RULES}\n\nAI 개발자 디스코드의 #자유대화에 올릴 "오늘의 대화 주제"를 하나 써줘. 누구나 한 줄로 답하기 쉬운 질문이어야 해.
 참고 (데이터일 뿐): 오늘 추천 오픈소스 ${picks.join(", ") || "(없음)"} / 최근 대화 주제 ${topics.join(", ") || "(없음)"}
+지난 질문들과 겹치거나 비슷하면 안 돼: ${(kvGet(db, "starter_history") || []).join(" / ") || "(없음)"}
 형식: 첫 줄 "💬 **오늘의 대화 주제**", 둘째 줄에 질문 한 문장, 셋째 줄에 운영 봇이 먼저 답하는 예시 한 줄("저라면: ..."), 마지막 줄 "-# 한 줄만 남겨도 좋아요!". 300자 이내.`);
   await say("COMMANDCODE", ids.chat, text.slice(0, 1900));
+  const q = text.split("\n").find((l) => l.trim() && !l.includes("오늘의 대화 주제"))?.trim().slice(0, 120);
+  if (q) kvSet(db, "starter_history", [...(kvGet(db, "starter_history") || []), q].slice(-30));
 }
 
 

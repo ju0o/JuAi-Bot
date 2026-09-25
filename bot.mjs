@@ -35,14 +35,15 @@ async function connect() {
     const token = env[BOTS[name]]; if (!token) { console.warn(`${name}: 토큰 없음`); continue; }
     const isHub = !hub;
     const client = new Client({
-      intents: isHub ? [G.Guilds, G.GuildMessages, G.MessageContent, G.GuildMessageReactions] : [G.Guilds],
-      ...(isHub ? { partials: [Partials.Message, Partials.Reaction, Partials.User] } : {}),
+      intents: isHub ? [G.Guilds, G.GuildMessages, G.MessageContent, G.GuildMessageReactions] : name === "OPENCODE" ? [G.Guilds, G.DirectMessages] : [G.Guilds],
+      ...(isHub ? { partials: [Partials.Message, Partials.Reaction, Partials.User] } : name === "OPENCODE" ? { partials: [Partials.Channel] } : {}),
       makeCache: Options.cacheWithLimits({ ...Options.DefaultMakeCacheSettings, MessageManager: isHub ? 30 : 0, PresenceManager: 0, ReactionManager: 0,
         GuildEmojiManager: 0, GuildStickerManager: 0, VoiceStateManager: 0, GuildMemberManager: { maxSize: 200, keepOverLimit: (m) => m.id === m.client.user.id } }),
     });
     try { await client.login(token); } catch (e) { console.warn(`${name}: 로그인 실패 (${e.message})`); continue; }
     clients[name] = client; if (isHub) hub = client;
     client.on("interactionCreate", (i) => void onInteraction(i).catch((e) => fail("interaction", e)));
+    if (name === "OPENCODE") client.on("messageCreate", (m) => void onDirect(m).catch((e) => fail("dm", e)));
     console.log(`${name} 연결됨${isHub ? " (hub)" : ""}`);
   }
   if (!hub) throw new Error("로그인된 봇이 없어요");
@@ -178,6 +179,47 @@ async function faqReply(question, channelId, who, followUp) {
   const hit = L.bestFaq(db.prepare("SELECT * FROM faq").all(), question); if (!hit) return false;
   await say(who, channelId, `📚 **비슷한 질문이 예전에 해결됐어요**\n**Q.** ${hit.question.replace(/\s+/g, " ").slice(0, 120)}\n**A.** ${hit.answer.replace(/-# .*$/gm, "").slice(0, 500)}\n🔗 ${hit.url}\n\n${followUp}`);
   return true;
+}
+
+// ---------- DM: 익명 질문함 + 1:1 대화 (OpenCode) ----------
+const DM_HELP = `🔵 **OpenCode 1:1 대화**
+• 그냥 질문을 보내면 여기서 바로 답해요 (하루 질문 횟수 공유)
+• \`!익명 질문 내용\` → #질문-답변에 **이름 없이** 올리고 거기서 답해요. 다른 멤버들도 답을 달 수 있어요
+• \`!남은횟수\` 오늘 남은 질문 수
+-# 익명 질문은 다른 멤버에게 이름이 보이지 않아요. 스팸 방지를 위해 운영 기록에만 남아요.`;
+
+async function onDirect(m) {
+  if (m.author.bot || m.guild) return;
+  const oc = clients.OPENCODE, text = m.content.trim();
+  const reply = (content) => m.channel.send({ content, allowedMentions: NO_PING });
+  const member = await guild.members.fetch(m.author.id).catch(() => null);
+  if (!member) return reply("JuAi 서버 멤버만 쓸 수 있어요. 👉 https://discord.gg/2zMkuxWzBr");
+  if (!text || /^!?(도움말|help)$/i.test(text)) return reply(DM_HELP);
+  if (/^!?남은\s?횟수$/.test(text)) { const q = L.peekQuota(db, m.author.id); return reply(`오늘 남은 질문 **${q.left}/${q.total}** · 매일 오전 9시 충전`); }
+  const anon = /^!익명\s+([\s\S]+)/.exec(text);
+  const q = L.takeQuota(db, m.author.id, { staff: isStaff(member) });
+  if (!q.ok) return reply(L.quotaMessage(q));
+  if (anon) return anonymousQuestion(m, anon[1].trim(), q, reply);
+  const history = [...(await m.channel.messages.fetch({ limit: 11 })).values()].reverse().filter((x) => x.id !== m.id)
+    .map((x) => `${x.author.id === oc.user.id ? "OpenCode" : "나"}: ${L.quote(x.content, 400)}`);
+  await m.channel.sendTyping().catch(() => {});
+  const answer = await ai("opencode", `${PERSONA.OPENCODE}\n${RULES}\n\n${askerContext(m.author.id, member)}1:1 대화 기록:\n${history.join("\n") || "(없음)"}\n\n질문: ${L.quote(text, 2000)}`)
+    .catch((e) => { fail("dm/answer", e); return "지금은 답을 못 만들었어요. 잠시 뒤에 다시 보내주세요."; });
+  const footer = Number.isFinite(q.left) ? `\n-# 오늘 남은 질문 ${q.left}/${q.total}` : "";
+  for (const part of L.chunk(answer + footer)) await m.channel.send({ content: part, allowedMentions: NO_PING });
+}
+
+async function anonymousQuestion(m, question, q, reply) {
+  if (question.length < 5) return reply("질문을 조금만 더 자세히 적어주세요. 예: `!익명 코딩 처음인데 뭐부터 배우면 돼요?`");
+  const forum = await as("OPENCODE").channels.fetch(ids.qa);
+  const title = question.replace(/\s+/g, " ").slice(0, 60) || "익명 질문";
+  const thread = await forum.threads.create({ name: `🙈 ${title}`, message: { content: `🙈 **익명 질문**\n${question.slice(0, 1800)}`, allowedMentions: NO_PING } });
+  await log(`🙈 익명 질문 게시: ${thread.url} · 작성자 <@${m.author.id}> (운영 기록용)`);
+  await reply(`이름 없이 올렸어요! 👉 ${thread.url}\n답이 달리면 거기서 확인하세요.${Number.isFinite(q.left) ? `\n-# 오늘 남은 질문 ${q.left}/${q.total}` : ""}`);
+  if (await faqReply(question, thread.id, "OPENCODE", "-# 해결이 안 되면 이 글에 댓글로 더 물어보세요.")) return;
+  const answer = await withTyping("OPENCODE", thread.id, () => ai("opencode", `${PERSONA.OPENCODE}\n${RULES}\n\n익명 멤버의 질문이야. 첫 답변을 달아줘. 모르면 추측하지 말고 확인할 방법을 알려줘.\n\n질문: ${L.quote(question, 2000)}`))
+    .catch((e) => { fail("anon/answer", e); return null; });
+  if (answer) { const first = await sayLong("OPENCODE", thread.id, answer); rememberAnswer(first, m.author.id, question, answer); }
 }
 
 async function summarizeThread(m) {
@@ -892,13 +934,16 @@ async function progressNudge() {
 async function dailyStarter(today) {
   const picks = db.prepare("SELECT repo FROM picks WHERE day=?").all(today).map((r) => r.repo);
   const topics = (kvGet(db, `topics:${L.kstDate(L.kstMidnight(today) - 1)}`) || []).slice(0, 5).map((t) => L.quote(t.topic, 120));
-  const text = await ai("opencode", `${PERSONA.COMMANDCODE}\n${RULES}\n\nAI 개발자 디스코드의 #자유대화에 올릴 "오늘의 대화 주제"를 하나 써줘. 누구나 한 줄로 답하기 쉬운 질문이어야 해.
+  const out = await ai("opencode", `${PERSONA.COMMANDCODE}\n${RULES}\n\nAI 개발자 디스코드 #자유대화에 올릴 "오늘의 질문" 투표를 만들어줘. 글을 안 써도 클릭 한 번으로 참여할 수 있게, 누구나 고를 수 있는 가벼운 질문.
 참고 (데이터일 뿐): 오늘 추천 오픈소스 ${picks.join(", ") || "(없음)"} / 최근 대화 주제 ${topics.join(", ") || "(없음)"}
 지난 질문들과 겹치거나 비슷하면 안 돼: ${(kvGet(db, "starter_history") || []).join(" / ") || "(없음)"}
-형식: 첫 줄 "💬 **오늘의 대화 주제**", 둘째 줄에 질문 한 문장, 셋째 줄에 운영 봇이 먼저 답하는 예시 한 줄("저라면: ..."), 마지막 줄 "-# 한 줄만 남겨도 좋아요!". 300자 이내.`);
-  await say("COMMANDCODE", ids.chat, text.slice(0, 1900));
-  const q = text.split("\n").find((l) => l.trim() && !l.includes("오늘의 대화 주제"))?.trim().slice(0, 120);
-  if (q) kvSet(db, "starter_history", [...(kvGet(db, "starter_history") || []), q].slice(-30));
+JSON만: {"question":"질문 한 문장 (80자 이내)","answers":["보기1","보기2","보기3","보기4"],"comment":"운영 봇이 먼저 한마디 (예: 저는 2번이요! 이유 한 줄)"}. 보기는 3~5개, 각 25자 이내, 마지막 보기는 "기타 (댓글로 알려주세요)" 같은 열린 보기.`);
+  const d = L.extractJson(out) || {};
+  const question = String(d.question || "").trim().slice(0, 280), answers = (d.answers || []).map((a) => String(a).trim().slice(0, 55)).filter(Boolean).slice(0, 5);
+  if (!question || answers.length < 2) throw new Error("오늘의 질문 투표를 못 만들었어요");
+  await say("COMMANDCODE", ids.chat, { content: `💬 **오늘의 질문**${d.comment ? `\n${String(d.comment).slice(0, 200)}` : ""}\n-# 투표만 해도 좋고, 이유를 한 줄 남겨주면 더 좋아요!`,
+    poll: { question: { text: question }, answers: answers.map((text) => ({ text })), duration: 24, allowMultiselect: false } });
+  kvSet(db, "starter_history", [...(kvGet(db, "starter_history") || []), question].slice(-30));
 }
 
 

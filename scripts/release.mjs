@@ -16,7 +16,7 @@ const subjects = sh("git", ["log", "--format=%s", last ? `${last}..HEAD` : "HEAD
 if (!subjects.length) { console.log("NO_CHANGES"); process.exit(0); }
 
 const notes = (await ai("claude", `JuAi 디스코드 봇의 새 버전 ${version} 릴리즈 노트를 한국어로 써줘. 아래 커밋 제목을 디스코드 멤버가 이해할 수 있는 말로 바꿔서 "### 새 기능", "### 개선", "### 고친 것" 제목 아래 • 목록으로 정리해 (항목당 한 줄, 기술 용어는 최소화, 비슷한 건 합치기, 최대 12줄). 해당 없는 제목은 빼. 마크다운만 출력.
-${subjects.map((s) => `- ${s}`).join("\n")}`)).trim();
+${subjects.map((s) => `- ${s}`).join("\n")}`)).trim().replace(/^```\w*\n?|\n?```$/g, "").trim(); // models like to fence markdown
 
 sh("git", ["tag", "-a", version, "-m", `JuAi Bot ${version}`]);
 sh("git", ["push", "origin", "main"]);

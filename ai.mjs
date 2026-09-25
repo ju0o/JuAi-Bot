@@ -15,6 +15,8 @@ const CODEX_BIN = realpathSync(path.join(HOME, ".local/bin/codex")); // lives un
 // Free models in preference order (checked 2026-09-24 inside the sandbox; the nemotron ones time out).
 const OPENCODE_MODELS = process.env.JUAI_OPENCODE_MODELS ? process.env.JUAI_OPENCODE_MODELS.split(",")
   : ["opencode/muse-spark-1.3-contributor-free", "opencode/mimo-v2.6-flash-free", "opencode/ling-3.0-flash-fin-free", "opencode/muse-spark-1.2-contributor-free"];
+// CommandCode's own free model (checked 2026-09-25; LongCat's free tier was retired). Falls back to the OpenCode chain.
+const COMMANDCODE_MODEL = process.env.JUAI_COMMANDCODE_MODEL || "poolside/laguna-s-2.1-free";
 const COOLDOWN_MS = 30 * 60_000;
 const benched = new Map(); // model -> until
 /** Which model produced the last successful answer (read right after awaiting ai(); the queue is serial). */
@@ -34,6 +36,8 @@ function command(engine, prompt, model, cwd) {
   if (engine === "codex") return [...bwrap(["--bind", path.join(HOME, ".codex"), path.join(HOME, ".codex")],
     [CODEX_BIN, "exec", "--skip-git-repo-check", "-s", "read-only", "--ephemeral", "--color", "never", prompt]), undefined];
   if (engine === "opencode") return [...bwrap([], ["opencode", "run", "-m", model, prompt]), undefined];
+  if (engine === "commandcode") return [...bwrap(["--bind", path.join(HOME, ".commandcode"), path.join(HOME, ".commandcode")],
+    ["commandcode", "-p", prompt, "-m", model || COMMANDCODE_MODEL, "--max-turns", "3", "--no-session"]), undefined];
   throw new Error(`unknown engine ${engine}`);
 }
 
@@ -61,6 +65,13 @@ let queue = Promise.resolve();
 export let pending = 0;
 /** OpenCode: walk the free-model list, benching a failing model for 30 minutes so the next call skips it. */
 async function runWithFallback(engine, prompt, opts = {}) {
+  if (engine === "commandcode" && !opts.model) {
+    if ((benched.get(COMMANDCODE_MODEL) || 0) < Date.now()) {
+      try { const out = await run(engine, prompt, { ...opts, timeoutMs: opts.timeoutMs ?? 90_000 }); lastModel = COMMANDCODE_MODEL; return out; }
+      catch (e) { benched.set(COMMANDCODE_MODEL, Date.now() + COOLDOWN_MS); console.warn(`commandcode ${COMMANDCODE_MODEL} 실패 → OpenCode 무료 모델 (${e.message.slice(0, 120)})`); }
+    }
+    engine = "opencode";
+  }
   if (engine !== "opencode" || opts.model) { const out = await run(engine, prompt, opts); lastModel = opts.model || engine; return out; }
   const now = Date.now(), order = OPENCODE_MODELS.filter((m) => (benched.get(m) || 0) < now);
   let lastError;

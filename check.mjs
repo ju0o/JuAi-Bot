@@ -8,6 +8,7 @@ import { HELP_TEXT } from "./layout.mjs";
 const help = HELP_TEXT((k) => `#${k}`);
 assert.ok(help.length < 1900);
 assert.ok(help.includes("!남은횟수"));
+for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST
@@ -51,6 +52,7 @@ assert.equal(stripAnsi("hello \x1b[31mred\x1b[0m!"), "hello red!");
 
 const parts = chunk("```\n" + "x\n".repeat(1500) + "```");
 assert.ok(parts.length > 1 && parts.every((p) => p.length <= 1910 && (p.match(/```/g) || []).length % 2 === 0));
+assert.deepEqual(chunk("abcdefghij", 3), ["abc", "def", "ghi", "j"]);
 
 assert.deepEqual(extractJson('sure! ```json\n{"a":{"b":"}"}}\n```'), { a: { b: "}" } });
 assert.equal(extractJson("no json"), null);
@@ -58,6 +60,12 @@ assert.equal(extractJson("no json"), null);
 assert.equal(validateAdminPlan({ action: "rm -rf", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: 99999 } }).params.minutes, 7 * 24 * 60);
+assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: -1 } }).params.minutes, 1);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: 0 } }).params.last, 20);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: -1 } }).params.last, 1);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: 999 } }).params.last, 100);
+assert.equal(validateAdminPlan({ action: "answer", params: {} }), null);
+assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).summary, "answer");
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).action, "answer");
 
 const pruneNow = Date.parse("2026-09-25T00:00:00Z");

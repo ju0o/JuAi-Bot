@@ -56,7 +56,7 @@ for (const action of ["delete_messages", "timeout", "create_channel", "delete_ch
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 const kvDb = new DatabaseSync(":memory:"); kvDb.exec(SCHEMA);
 assert.equal(kvGet(kvDb, "missing"), undefined);
-for (const [key, value] of [["number", 42], ["boolean", true], ["object", { nested: [1, "two"] }]]) {
+for (const [key, value] of [["string", "hello"], ["empty", ""], ["zero", 0], ["false", false], ["null", null], ["array", [1, "two"]], ["number", 42], ["boolean", true], ["object", { nested: [1, "two"] }]]) {
   kvSet(kvDb, key, value);
   assert.deepEqual(kvGet(kvDb, key), value);
 }

@@ -336,6 +336,7 @@ assert.equal(rankedFaq?.score, similarity("hello world", "hello world"));
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
 assert.deepEqual(matchSubs([], "MCP 서버"), new Map());
+assert.deepEqual(matchSubs([{ user_id: "a", keyword: "" }], "any text"), new Map([["", ["a"]]]));
 assert.deepEqual([...hits.keys()].sort(), ["MCP", "Next js", "mcp"]);
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "x", keyword: "MCP" }], "MCP 서버"), new Map([["MCP", ["a", "x"]]]));
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "discord bot" }], "DiscordBot 만들기"), new Map([["discord bot", ["a"]]]));

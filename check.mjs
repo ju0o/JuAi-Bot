@@ -126,6 +126,9 @@ for (const [d, prev] of [["2026-09-24", "2026-09-23"], ["2026-09-30", "2026-09-2
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));
 assert.equal(redact("mail user@example.com, phones 010-1234-5678 / 01012345678"), "mail [가림], phones [가림] / [가림]");
+assert.equal(redact("mail USER@Example.COM"), "mail [가림]");
+assert.equal(redact("call 011-1234-5678 or 0101234567890"), "call 011-1234-5678 or 0101234567890");
+assert.equal(redact("a 010-1111-2222 b 010-3333-4444"), "a [가림] b [가림]");
 assert.equal(quote("  a \n b  "), JSON.stringify(" a b "));
 assert.equal(quote("123456", 3), '"123"');
 assert.equal(quote('"x"'), '"\\"x\\""');

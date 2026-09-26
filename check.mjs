@@ -160,6 +160,21 @@ assert.equal(boundaryDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-
 assert.equal(boundaryDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-27'").get().n, 1);
 assert.equal(boundaryDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-26'").get().n, 0);
 
+const userKeyDb = new DatabaseSync(":memory:"); userKeyDb.exec(SCHEMA);
+const userKeyNow = Date.parse("2026-09-25T00:00:00Z");
+for (const prefix of ["mentor:", "subsent:"]) {
+  userKeyDb.prepare("INSERT INTO kv VALUES (?, 'old')").run(`${prefix}user-1:2026-08-10`);
+  userKeyDb.prepare("INSERT INTO kv VALUES (?, 'recent')").run(`${prefix}user-1:2026-08-11`);
+}
+pruneState(userKeyDb, userKeyNow);
+for (const prefix of ["mentor:", "subsent:"]) {
+  assert.equal(userKeyDb.prepare("SELECT count(*) n FROM kv WHERE key=?").get(`${prefix}user-1:2026-08-10`).n, 0);
+  assert.equal(userKeyDb.prepare("SELECT value FROM kv WHERE key=?").get(`${prefix}user-1:2026-08-11`).value, "recent");
+}
+const userKeyAfterPrune = userKeyDb.prepare("SELECT key, value FROM kv ORDER BY key").all();
+pruneState(userKeyDb, userKeyNow);
+assert.deepEqual(userKeyDb.prepare("SELECT key, value FROM kv ORDER BY key").all(), userKeyAfterPrune);
+
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
 assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?").score >= 0.3);

@@ -22,7 +22,8 @@ const daily = takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs });
 assert.equal(daily.reason, "daily");
 assert.match(quotaMessage(daily), new RegExp(`${daily.total}개`));
 assert.match(quotaMessage(daily), new RegExp(`${LIMITS.bonusMax}회`));
-assert.ok(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs, staff: true }).ok, "staff is unlimited");
+assert.equal(db.prepare("SELECT count FROM usage WHERE user_id='reject:*' AND day='2026-09-24'").get().count, 1);
+assert.equal(takeQuota(db, "u1", { now: t0 + 99 * LIMITS.gapMs, staff: true }).left, Infinity);
 assert.ok(takeQuota(db, "u1", { now: Date.parse("2026-09-25T00:00:01Z") }).ok, "refills at 09:00 KST");
 assert.ok(grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }) && grantBonus(db, "u1", { now: t0 }));
 assert.equal(grantBonus(db, "u1", { now: t0 }), false, "bonus capped");
@@ -91,5 +92,7 @@ assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
 assert.deepEqual([...hits.keys()].sort(), ["MCP", "Next js", "mcp"]);
+assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "x", keyword: "MCP" }], "MCP 서버"), new Map([["MCP", ["a", "x"]]]));
+assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }], "discord"), new Map());
 
 console.log("check ok");

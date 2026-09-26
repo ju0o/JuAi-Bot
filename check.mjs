@@ -133,6 +133,9 @@ assert.equal(quote("  a \n b  "), JSON.stringify(" a b "));
 assert.equal(quote("123456", 3), '"123"');
 assert.equal(quote('"x"'), '"\\"x\\""');
 assert.equal(stripAnsi("hello \x1b[31mred\x1b[0m!"), "hello red!");
+assert.equal(stripAnsi("\x1b[1;32mok\x1b[0m"), "ok");
+assert.equal(stripAnsi("a\x1b[2Kb"), "ab");
+assert.equal(stripAnsi("[31m"), "[31m");
 
 const parts = chunk("```\n" + "x\n".repeat(1500) + "```");
 assert.ok(parts.length > 1 && parts.every((p) => p.length <= 1910 && (p.match(/```/g) || []).length % 2 === 0));

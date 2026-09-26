@@ -77,6 +77,14 @@ assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits
 assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), false);
 assert.deepEqual(peekQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }), { used: 0, total: 2, left: 2, bonus: 1 });
 assert.equal(takeQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }).left, 1);
+const bonusDb = new DatabaseSync(":memory:"); bonusDb.exec(SCHEMA);
+const bonusNow = Date.parse("2026-09-26T00:00:00Z");
+assert.equal(grantBonus(bonusDb, "capped", { now: bonusNow, limits: customLimits }), true);
+assert.equal(grantBonus(bonusDb, "capped", { now: bonusNow, limits: customLimits }), false);
+assert.equal(grantBonus(bonusDb, "other", { now: bonusNow, limits: customLimits }), true);
+const nextBonusDay = Date.parse("2026-09-27T00:00:00Z");
+assert.deepEqual(peekQuota(bonusDb, "capped", { now: nextBonusDay, limits: customLimits }), { used: 0, total: 1, left: 1, bonus: 0 });
+assert.equal(grantBonus(bonusDb, "capped", { now: nextBonusDay, limits: customLimits }), true);
 const globalDb = new DatabaseSync(":memory:"); globalDb.exec(SCHEMA);
 globalDb.prepare("INSERT INTO usage VALUES('*','2026-09-26',?,?)").run(customLimits.globalDaily, quotaNow);
 assert.equal(takeQuota(globalDb, "staff-global", { now: quotaNow, staff: true, limits: customLimits }).reason, "global");

@@ -14,8 +14,9 @@ const mention = (key) => {
 };
 assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
 
-const help = HELP_TEXT((k) => `#${k}`);
-assert.ok(help.length < 1900);
+const help = HELP_TEXT(mention);
+assert.ok(help.length <= 2000);
+for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
 

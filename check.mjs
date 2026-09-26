@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
-import { HELP_TEXT } from "./layout.mjs";
+import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ROLES, SUMMARY_KEYS } from "./layout.mjs";
+
+assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
+assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
+for (const key of SUMMARY_KEYS) assert.ok(channelByKey[key]);
+assert.ok(GUIDE((k) => `#${k}`).every((message) => message.length <= 2000));
 
 const help = HELP_TEXT((k) => `#${k}`);
 assert.ok(help.length < 1900);

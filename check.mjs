@@ -160,6 +160,17 @@ for (const [d, prev] of [["2026-09-24", "2026-09-23"], ["2026-09-30", "2026-09-2
   assert.equal(quotaDay(kstMidnight(d) + 9 * 3_600_000), d); // quota rolls over at 09:00 KST
 }
 
+let b = Date.now(), defaultDate = kstDate(), a = Date.now();
+assert.ok(defaultDate === kstDate(b) || defaultDate === kstDate(a), "kstDate() default now mismatch");
+b = Date.now(); const defaultHour = kstHour(); a = Date.now();
+assert.ok(defaultHour >= 0 && defaultHour <= 23, "kstHour() out of range");
+assert.ok(defaultHour === kstHour(b) || defaultHour === kstHour(a), "kstHour() default now mismatch");
+b = Date.now(); const defaultDay = kstDay(); a = Date.now();
+assert.ok(defaultDay >= 0 && defaultDay <= 6, "kstDay() out of range");
+assert.ok(defaultDay === kstDay(b) || defaultDay === kstDay(a), "kstDay() default now mismatch");
+b = Date.now(); const defaultQuotaDay = quotaDay(); a = Date.now();
+assert.ok(defaultQuotaDay === quotaDay(b) || defaultQuotaDay === quotaDay(a), "quotaDay() default now mismatch");
+
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));
 assert.equal(redact("mail user@example.com, phones 010-1234-5678 / 01012345678"), "mail [가림], phones [가림] / [가림]");

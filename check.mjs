@@ -195,6 +195,12 @@ assert.deepEqual(extractJson('{"a":1} {"b":2}'), { a: 1 });
 assert.deepEqual(extractJson('x } {"a":1}'), { a: 1 });
 
 assert.equal(validateAdminPlan({ action: "rm -rf", params: {} }), null);
+assert.equal(validateAdminPlan(null), null);
+assert.equal(validateAdminPlan("plan"), null);
+assert.equal(validateAdminPlan({}), null);
+assert.equal(validateAdminPlan({ action: "answer", params: "x" }), null);
+assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: "30" } }).params.minutes, 30);
+assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi", count: 3 } }).params.count, 3);
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: 99999 } }).params.minutes, 7 * 24 * 60);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: -1 } }).params.minutes, 1);

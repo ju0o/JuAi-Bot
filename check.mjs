@@ -240,6 +240,7 @@ assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:20
 assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-01-01'").get().n, 0);
 
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
+assert.equal(bestFaq([], "anything"), null);
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
 assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?").score >= 0.3);
 assert.equal(bestFaq(faqRows, "디스코드 봇 토큰은 어디서 받아?"), null);
@@ -247,14 +248,17 @@ assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포
 assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
 assert.equal(similarity("Hello, World!", "hello world"), 1);
 assert.equal(similarity("a", "a"), 0);
+assert.equal(similarity("hello world", "hello worlds"), similarity("hello worlds", "hello world"));
 const rankedFaq = bestFaq([{ id: 1, question: "hello worlds" }, { id: 2, question: "hello world" }], "hello world");
 assert.ok(similarity("hello worlds", "hello world") >= 0.3);
 assert.equal(rankedFaq?.id, 2);
 assert.equal(rankedFaq?.score, similarity("hello world", "hello world"));
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
+assert.deepEqual(matchSubs([], "MCP 서버"), new Map());
 assert.deepEqual([...hits.keys()].sort(), ["MCP", "Next js", "mcp"]);
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "x", keyword: "MCP" }], "MCP 서버"), new Map([["MCP", ["a", "x"]]]));
+assert.deepEqual(matchSubs([{ user_id: "a", keyword: "discord bot" }], "DiscordBot 만들기"), new Map([["discord bot", ["a"]]]));
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }], "discord"), new Map());
 
 console.log("check ok");

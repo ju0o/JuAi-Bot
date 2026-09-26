@@ -13,6 +13,7 @@ assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()
 assert.equal(new Set(CATEGORIES.map(({ name }) => name)).size, CATEGORIES.length, "category names must be unique");
 assert.ok(CHANNELS.every(({ name }) => typeof name === "string" && name.trim()), "channel names must be non-empty");
 assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "channel names must be unique");
+assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");
 const accessKinds = new Set(["open", "readonly", "botsonly", "private"]);
 const channelTypes = new Set(["text", "forum", "voice"]);
 for (const channel of CHANNELS) {

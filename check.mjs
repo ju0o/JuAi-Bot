@@ -216,6 +216,13 @@ const userKeyAfterPrune = userKeyDb.prepare("SELECT key, value FROM kv ORDER BY 
 pruneState(userKeyDb, userKeyNow);
 assert.deepEqual(userKeyDb.prepare("SELECT key, value FROM kv ORDER BY key").all(), userKeyAfterPrune);
 
+const invalidDateDb = new DatabaseSync(":memory:"); invalidDateDb.exec(SCHEMA);
+invalidDateDb.exec("INSERT INTO kv VALUES ('done:2026-13-45','1'), ('done:2026-01-01','1')");
+invalidDateDb.exec("INSERT INTO usage VALUES ('invalid-day','2026-02-30',1,0)");
+assert.doesNotThrow(() => pruneState(invalidDateDb, pruneNow));
+assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-13-45'").get().n, 1);
+assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-01-01'").get().n, 0);
+
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
 assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?").score >= 0.3);

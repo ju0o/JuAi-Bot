@@ -123,6 +123,16 @@ assert.equal(db.prepare("SELECT count(*) n FROM kv WHERE key IN ('other:2026-08-
 assert.equal(db.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-01'").get().n, 0);
 assert.equal(db.prepare("SELECT count(*) n FROM usage WHERE day IN ('2026-09-01','not-a-date')").get().n, 2);
 
+const boundaryDb = new DatabaseSync(":memory:"); boundaryDb.exec(SCHEMA);
+const boundaryNow = Date.parse("2026-09-25T00:00:00Z");
+boundaryDb.exec("INSERT INTO kv VALUES ('done:2026-08-11','1'), ('done:2026-08-10','1')");
+boundaryDb.exec("INSERT INTO usage VALUES ('kept','2026-07-27',1,0), ('deleted','2026-07-26',1,0)");
+pruneState(boundaryDb, boundaryNow);
+assert.equal(boundaryDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-08-11'").get().n, 1);
+assert.equal(boundaryDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-08-10'").get().n, 0);
+assert.equal(boundaryDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-27'").get().n, 1);
+assert.equal(boundaryDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-26'").get().n, 0);
+
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
 assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?").score >= 0.3);

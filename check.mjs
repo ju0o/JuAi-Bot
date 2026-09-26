@@ -129,6 +129,7 @@ assert.match(quotaMessage({ reason: "global" }), /서버 전체/);
 
 const quotaDb = new DatabaseSync(":memory:"); quotaDb.exec(SCHEMA);
 const customLimits = { ...LIMITS, daily: 1, bonusMax: 1 };
+const zeroBonusLimits = { ...LIMITS, bonusMax: 0 };
 const quotaNow = Date.parse("2026-09-26T03:00:00Z");
 const rejectDb = new DatabaseSync(":memory:"); rejectDb.exec(SCHEMA);
 assert.equal(takeQuota(rejectDb, "reject-member", { now: quotaNow, limits: customLimits }).ok, true);
@@ -146,6 +147,7 @@ assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits
 assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), false);
 assert.deepEqual(peekQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }), { used: 0, total: 2, left: 2, bonus: 1 });
 assert.equal(takeQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }).left, 1);
+assert.equal(grantBonus(quotaDb, "zero-bonus", { now: quotaNow, limits: zeroBonusLimits }), false);
 const bonusDb = new DatabaseSync(":memory:"); bonusDb.exec(SCHEMA);
 const bonusNow = Date.parse("2026-09-26T00:00:00Z");
 assert.equal(grantBonus(bonusDb, "capped", { now: bonusNow, limits: customLimits }), true);

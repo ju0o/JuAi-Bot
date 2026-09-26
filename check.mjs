@@ -222,9 +222,11 @@ assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi", count: 
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: 99999 } }).params.minutes, 7 * 24 * 60);
 assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: -1 } }).params.minutes, 1);
+assert.equal(validateAdminPlan({ action: "timeout", params: { user_id: "1", minutes: "invalid" } }).params.minutes, 60);
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: 0 } }).params.last, 20);
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: -1 } }).params.last, 1);
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: 999 } }).params.last, 100);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: "invalid" } }).params.last, 20);
 assert.equal(validateAdminPlan({ action: "create_channel", params: {} }), null);
 assert.deepEqual(validateAdminPlan({ action: "create_channel", params: { name: "updates" } }), { action: "create_channel", params: { name: "updates" }, summary: "create_channel" });
 assert.equal(validateAdminPlan({ action: "delete_channel", params: {} }), null);

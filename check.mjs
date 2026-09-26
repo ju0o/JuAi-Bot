@@ -184,6 +184,10 @@ assert.ok(defaultQuotaDay === quotaDay(b) || defaultQuotaDay === quotaDay(a), "q
 
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));
+assert.equal(redact(["eyJ" + "a".repeat(10), "b".repeat(10), "c".repeat(10)].join(".")), "[가림]");
+assert.equal(redact("token gh" + "p_" + "a".repeat(30)), "token [가림]");
+assert.equal(redact("key AKIA" + "A".repeat(16)), "key [가림]");
+assert.equal(redact("key -----BEGIN " + "RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----"), "key [가림]");
 assert.equal(redact("mail user@example.com, phones 010-1234-5678 / 01012345678"), "mail [가림], phones [가림] / [가림]");
 assert.equal(redact("mail USER@Example.COM"), "mail [가림]");
 assert.equal(redact("call 011-1234-5678 or 0101234567890"), "call 011-1234-5678 or 0101234567890");

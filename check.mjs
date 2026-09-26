@@ -5,10 +5,24 @@ import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
-import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
+import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
+const accessKinds = new Set(["open", "readonly", "botsonly", "private"]);
+const channelTypes = new Set(["text", "forum", "voice"]);
+for (const channel of CHANNELS) {
+  assert.ok(accessKinds.has(channel.access), `unknown channel access: ${channel.key}`);
+  assert.ok(channelTypes.has(channel.type), `unknown channel type: ${channel.key}`);
+  const parent = CATEGORIES.find(({ channels }) => channels.some(({ key }) => key === channel.key));
+  assert.ok(parent, `channel has no category: ${channel.key}`);
+  assert.equal(channel.category, parent.name, `channel category mismatch: ${channel.key}`);
+  if (channel.type === "forum") {
+    assert.ok(Array.isArray(channel.tags) && channel.tags.length > 0, `forum has no tags: ${channel.key}`);
+    assert.equal(new Set(channel.tags).size, channel.tags.length, `forum tags duplicate: ${channel.key}`);
+  }
+}
+assert.ok(channelByKey.lab.topic.includes(String(LIMITS.daily)), "lab topic omits LIMITS.daily");
 for (const key of SUMMARY_KEYS) assert.ok(channelByKey[key]);
 const roleKeys = new Set(ROLES.map(({ key }) => key));
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");

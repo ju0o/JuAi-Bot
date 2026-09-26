@@ -3,11 +3,18 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet } from "./db.mjs";
-import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ROLES, SUMMARY_KEYS } from "./layout.mjs";
+import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SUMMARY_KEYS } from "./layout.mjs";
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 for (const key of SUMMARY_KEYS) assert.ok(channelByKey[key]);
+const roleKeys = new Set(ROLES.map(({ key }) => key));
+assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
+for (const { title, options } of ONBOARDING) {
+  assert.ok(title, "onboarding question needs a title");
+  assert.ok(options.length > 0, `onboarding question has no options: ${title}`);
+  for (const option of options) for (const key of option.roles) assert.ok(roleKeys.has(key), `unknown onboarding role key: ${key}`);
+}
 const mention = (key) => {
   assert.ok(channelByKey[key], `unknown channel key: ${key}`);
   return `<#${"0".repeat(20)}>`;

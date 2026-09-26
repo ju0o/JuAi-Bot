@@ -1,8 +1,10 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
-import { SCHEMA, kvGet, kvSet } from "./db.mjs";
+import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
@@ -48,6 +50,20 @@ kvSet(kvDb, "replace", 1);
 kvSet(kvDb, "replace", { replaced: true });
 assert.deepEqual(kvGet(kvDb, "replace"), { replaced: true });
 assert.equal(kvDb.prepare("SELECT count(*) AS count FROM kv WHERE key=?").get("replace").count, 1);
+const dbDir = fs.mkdtempSync(`${os.tmpdir()}/`);
+try {
+  const diskDb = openDb(dbDir);
+  assert.ok(fs.existsSync(`${dbDir}/juai.db`));
+  kvSet(diskDb, "persisted", { value: true });
+  diskDb.close();
+  let reopened;
+  assert.doesNotThrow(() => { reopened = openDb(dbDir); });
+  assert.deepEqual(kvGet(reopened, "persisted"), { value: true });
+  assert.ok(reopened.prepare("PRAGMA table_info(picks)").all().some(({ name }) => name === "msg_id"));
+  reopened.close();
+} finally {
+  fs.rmSync(dbDir, { recursive: true, force: true });
+}
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST
 assert.deepEqual(peekQuota(db, "new-user", { now: t0 }), { used: 0, total: LIMITS.daily, left: LIMITS.daily, bonus: 0 });
 assert.equal(takeQuota(db, "u1", { now: t0 }).left, LIMITS.daily - 1);

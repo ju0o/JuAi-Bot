@@ -85,6 +85,9 @@ assert.equal(stripAnsi("hello \x1b[31mred\x1b[0m!"), "hello red!");
 const parts = chunk("```\n" + "x\n".repeat(1500) + "```");
 assert.ok(parts.length > 1 && parts.every((p) => p.length <= 1910 && (p.match(/```/g) || []).length % 2 === 0));
 assert.deepEqual(chunk("abcdefghij", 3), ["abc", "def", "ghi", "j"]);
+assert.deepEqual(chunk("aaa\nbbb\nccc", 7), ["aaa\nbbb", "ccc"]);
+assert.deepEqual(chunk(""), []);
+assert.ok(chunk("```\na\n```\nb", 7)[1].startsWith("```\n"));
 
 assert.deepEqual(extractJson('sure! ```json\n{"a":{"b":"}"}}\n```'), { a: { b: "}" } });
 assert.equal(extractJson("no json"), null);

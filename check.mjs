@@ -63,6 +63,8 @@ assert.deepEqual(chunk("abcdefghij", 3), ["abc", "def", "ghi", "j"]);
 
 assert.deepEqual(extractJson('sure! ```json\n{"a":{"b":"}"}}\n```'), { a: { b: "}" } });
 assert.equal(extractJson("no json"), null);
+assert.equal(extractJson('{"a":1'), null);
+assert.equal(extractJson('{a:1}'), null);
 
 assert.equal(validateAdminPlan({ action: "rm -rf", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "timeout", params: {} }), null);
@@ -74,6 +76,13 @@ assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "
 assert.equal(validateAdminPlan({ action: "answer", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).summary, "answer");
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).action, "answer");
+assert.equal(validateAdminPlan({ action: "set_topic", params: { channel: "general" } }), null);
+assert.equal(validateAdminPlan({ action: "set_topic", params: { channel: "general", topic: "   " } }), null);
+const longText = "x".repeat(1900);
+const boundedPlan = validateAdminPlan({ action: "answer", params: { text: longText }, summary: "y".repeat(400) });
+assert.equal(boundedPlan.params.text.length, 1800);
+assert.equal(boundedPlan.summary.length, 300);
+assert.equal(validateAdminPlan({ action: "set_topic", params: { channel: "general", topic: "hello" }, summary: "   " }).summary, "set_topic");
 
 const pruneNow = Date.parse("2026-09-25T00:00:00Z");
 for (const prefix of ["subsent:", "mentor:", "done:", "tries:", "boot:", "topics:", "summary:"]) {
@@ -93,7 +102,9 @@ assert.equal(db.prepare("SELECT count(*) n FROM usage WHERE day IN ('2026-09-01'
 
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);
+assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?").score >= 0.3);
 assert.equal(bestFaq(faqRows, "디스코드 봇 토큰은 어디서 받아?"), null);
+assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?", 1), null);
 assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");

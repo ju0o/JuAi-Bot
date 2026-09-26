@@ -71,6 +71,9 @@ for (const [key, value] of [["string", "hello"], ["empty", ""], ["zero", 0], ["f
   kvSet(kvDb, key, value);
   assert.deepEqual(kvGet(kvDb, key), value);
 }
+const specialKey = "quote'\";--";
+kvSet(kvDb, specialKey, { roundTrip: true });
+assert.deepEqual(kvGet(kvDb, specialKey), { roundTrip: true });
 assert.throws(() => kvSet(kvDb, "undefined", undefined));
 kvSet(kvDb, "replace", 1);
 kvSet(kvDb, "replace", { replaced: true });

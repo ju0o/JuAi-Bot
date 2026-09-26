@@ -302,9 +302,10 @@ assert.deepEqual(userKeyDb.prepare("SELECT key, value FROM kv ORDER BY key").all
 const invalidDateDb = new DatabaseSync(":memory:"); invalidDateDb.exec(SCHEMA);
 invalidDateDb.exec("INSERT INTO kv VALUES ('done:2026-13-45','1'), ('done:2026-01-01','1')");
 invalidDateDb.exec("INSERT INTO usage VALUES ('invalid-day','2026-02-30',1,0)");
-assert.doesNotThrow(() => pruneState(invalidDateDb, pruneNow));
+assert.doesNotThrow(() => pruneState(invalidDateDb, Date.parse("2026-04-30T00:00:00Z")));
 assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-13-45'").get().n, 1);
 assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-01-01'").get().n, 0);
+assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-02-30'").get().n, 1);
 
 const bonusPruneDb = new DatabaseSync(":memory:"); bonusPruneDb.exec(SCHEMA);
 const bonusPruneNow = Date.parse("2026-09-25T00:00:00Z");

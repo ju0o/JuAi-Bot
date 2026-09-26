@@ -237,6 +237,7 @@ assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).sum
 assert.equal(validateAdminPlan({ action: "answer", params: { text: "hi" } }).action, "answer");
 assert.equal(validateAdminPlan({ action: "set_topic", params: { channel: "general" } }), null);
 assert.equal(validateAdminPlan({ action: "set_topic", params: { channel: "general", topic: "   " } }), null);
+assert.deepEqual(validateAdminPlan({ action: "set_topic", params: { channel: "  general  ", topic: "  hello  " } }), { action: "set_topic", params: { channel: "general", topic: "hello" }, summary: "set_topic" });
 assert.equal(validateAdminPlan({ action: "post_notice", params: {} }), null);
 assert.deepEqual(validateAdminPlan({ action: "post_notice", params: { text: "  notice  " } }), { action: "post_notice", params: { text: "notice" }, summary: "post_notice" });
 assert.equal(validateAdminPlan({ action: "add_rule", params: {} }), null);

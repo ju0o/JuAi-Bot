@@ -120,6 +120,9 @@ assert.deepEqual(chunk("abcdefghij", 3), ["abc", "def", "ghi", "j"]);
 assert.deepEqual(chunk("aaa\nbbb\nccc", 7), ["aaa\nbbb", "ccc"]);
 assert.deepEqual(chunk(""), []);
 assert.deepEqual(chunk("```\naaaa\nbbbb\n```", 9), ["```\naaaa\n```", "```\nbbbb\n```"]);
+assert.deepEqual(chunk("```\nabc"), ["```\nabc\n```"]);
+const longCodeLineParts = chunk("```\n" + "x".repeat(25) + "\n```", 10);
+assert.ok(longCodeLineParts.length > 1 && longCodeLineParts.every((p) => p.length <= 18 && (p.match(/```/g) || []).length % 2 === 0));
 
 assert.deepEqual(extractJson('sure! ```json\n{"a":{"b":"}"}}\n```'), { a: { b: "}" } });
 assert.equal(extractJson("no json"), null);

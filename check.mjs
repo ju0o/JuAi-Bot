@@ -23,7 +23,10 @@ for (const channel of CHANNELS) {
   }
 }
 assert.ok(channelByKey.lab.topic.includes(String(LIMITS.daily)), "lab topic omits LIMITS.daily");
-for (const key of SUMMARY_KEYS) assert.ok(channelByKey[key]);
+for (const key of SUMMARY_KEYS) {
+  assert.ok(channelByKey[key]);
+  assert.ok(!["private", "botsonly"].includes(channelByKey[key].access), `summary channel is inaccessible: ${key}`);
+}
 const roleKeys = new Set(ROLES.map(({ key }) => key));
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
 for (const { title, options } of ONBOARDING) {

@@ -116,6 +116,12 @@ assert.equal(kstHour(Date.parse("2026-09-23T15:00:00Z")), 0);
 assert.equal(kstDay(Date.parse("2026-09-23T14:59:59Z")), 3);
 assert.equal(kstDay(Date.parse("2026-09-23T15:00:00Z")), 4);
 assert.equal(kstMidnight("2026-09-24"), Date.parse("2026-09-23T15:00:00Z"));
+for (const [d, prev] of [["2026-09-24", "2026-09-23"], ["2026-09-30", "2026-09-29"], ["2026-12-31", "2026-12-30"], ["2026-10-01", "2026-09-30"], ["2027-01-01", "2026-12-31"]]) {
+  assert.equal(kstDate(kstMidnight(d)), d);
+  assert.equal(kstHour(kstMidnight(d)), 0);
+  assert.equal(kstDate(kstMidnight(d) - 1), prev);
+  assert.equal(quotaDay(kstMidnight(d) + 9 * 3_600_000), d); // quota rolls over at 09:00 KST
+}
 
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));

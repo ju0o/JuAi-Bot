@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet } from "./db.mjs";
-import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SUMMARY_KEYS } from "./layout.mjs";
+import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
@@ -26,6 +26,10 @@ assert.ok(help.length <= 2000);
 for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
+assert.ok(STAFF_GUIDE(mention).length <= 2000);
+assert.ok(SOURCE_GUIDE.length <= 2000);
+for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);
+assert.ok(channelByKey.qa && channelByKey.suggest, "setup.mjs fills SOURCE_GUIDE with #qa and #suggest");
 
 assert.deepEqual([...DIRECT_ACTIONS].sort(), ["answer", "set_topic"]);
 for (const action of DIRECT_ACTIONS) assert.ok(ADMIN_ACTIONS.includes(action));

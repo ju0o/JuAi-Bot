@@ -80,6 +80,7 @@ const dbDir = fs.mkdtempSync(`${os.tmpdir()}/`);
 try {
   const diskDb = openDb(dbDir);
   assert.ok(fs.existsSync(`${dbDir}/juai.db`));
+  assert.equal(diskDb.prepare("PRAGMA journal_mode").get().journal_mode, "wal");
   kvSet(diskDb, "persisted", { value: true });
   diskDb.close();
   let reopened;

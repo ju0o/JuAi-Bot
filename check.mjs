@@ -54,6 +54,10 @@ for (const action of ["delete_messages", "timeout", "create_channel", "delete_ch
 }
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
+assert.deepEqual(
+  db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(({ name }) => name),
+  ["answers", "cards", "faq", "kv", "picks", "profiles", "subs", "talk_requests", "usage", "votes"]
+);
 const kvDb = new DatabaseSync(":memory:"); kvDb.exec(SCHEMA);
 assert.equal(kvGet(kvDb, "missing"), undefined);
 for (const [key, value] of [["string", "hello"], ["empty", ""], ["zero", 0], ["false", false], ["null", null], ["array", [1, "two"]], ["number", 42], ["boolean", true], ["object", { nested: [1, "two"] }]]) {

@@ -204,6 +204,7 @@ assert.equal(redact("call 1010-1234-5678 or 101012345678"), "call 1010-1234-5678
 assert.equal(redact("a 010-1111-2222 b 010-3333-4444"), "a [가림] b [가림]");
 assert.equal(quote("  a \n b  "), JSON.stringify(" a b "));
 assert.equal(quote("123456", 3), '"123"');
+assert.equal(quote("x".repeat(301)), JSON.stringify("x".repeat(300)));
 assert.equal(quote('"x"'), '"\\"x\\""');
 assert.equal(stripAnsi("hello \x1b[31mred\x1b[0m!"), "hello red!");
 assert.equal(stripAnsi("\x1b[1;32mok\x1b[0m"), "ok");

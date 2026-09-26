@@ -144,6 +144,12 @@ assert.ok(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하
 assert.equal(bestFaq(faqRows, "디스코드 봇 토큰은 어디서 받아?"), null);
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?", 1), null);
 assert.ok(similarity("abc", "abc") === 1 && similarity("", "abc") === 0);
+assert.equal(similarity("Hello, World!", "hello world"), 1);
+assert.equal(similarity("a", "a"), 0);
+const rankedFaq = bestFaq([{ id: 1, question: "hello worlds" }, { id: 2, question: "hello world" }], "hello world");
+assert.ok(similarity("hello worlds", "hello world") >= 0.3);
+assert.equal(rankedFaq?.id, 2);
+assert.equal(rankedFaq?.score, similarity("hello world", "hello world"));
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
 assert.deepEqual([...hits.keys()].sort(), ["MCP", "Next js", "mcp"]);

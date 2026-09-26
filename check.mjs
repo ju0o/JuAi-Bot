@@ -1,7 +1,7 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
 import { SCHEMA } from "./db.mjs";
 import { HELP_TEXT } from "./layout.mjs";
 
@@ -9,6 +9,12 @@ const help = HELP_TEXT((k) => `#${k}`);
 assert.ok(help.length < 1900);
 assert.ok(help.includes("!남은횟수"));
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
+
+assert.deepEqual([...DIRECT_ACTIONS].sort(), ["answer", "set_topic"]);
+for (const action of DIRECT_ACTIONS) assert.ok(ADMIN_ACTIONS.includes(action));
+for (const action of ["delete_messages", "timeout", "create_channel", "delete_channel", "implement_feature"]) {
+  assert.ok(!DIRECT_ACTIONS.has(action));
+}
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST

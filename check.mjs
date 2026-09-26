@@ -8,7 +8,11 @@ import { CHANNELS, channelByKey, GUIDE, HELP_TEXT, ROLES, SUMMARY_KEYS } from ".
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 for (const key of SUMMARY_KEYS) assert.ok(channelByKey[key]);
-assert.ok(GUIDE((k) => `#${k}`).every((message) => message.length <= 2000));
+const mention = (key) => {
+  assert.ok(channelByKey[key], `unknown channel key: ${key}`);
+  return `<#${"0".repeat(20)}>`;
+};
+assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
 
 const help = HELP_TEXT((k) => `#${k}`);
 assert.ok(help.length < 1900);

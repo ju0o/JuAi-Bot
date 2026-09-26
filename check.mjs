@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -276,6 +276,16 @@ invalidDateDb.exec("INSERT INTO usage VALUES ('invalid-day','2026-02-30',1,0)");
 assert.doesNotThrow(() => pruneState(invalidDateDb, pruneNow));
 assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-13-45'").get().n, 1);
 assert.equal(invalidDateDb.prepare("SELECT count(*) n FROM kv WHERE key='done:2026-01-01'").get().n, 0);
+
+const bonusPruneDb = new DatabaseSync(":memory:"); bonusPruneDb.exec(SCHEMA);
+const bonusPruneNow = Date.parse("2026-09-25T00:00:00Z");
+grantBonus(bonusPruneDb, "u1", { now: bonusPruneNow - 61 * DAY_MS });
+grantBonus(bonusPruneDb, "u1", { now: bonusPruneNow - 10 * DAY_MS });
+bonusPruneDb.exec("INSERT INTO usage VALUES ('u2','2026-07-01',1,0)");
+pruneState(bonusPruneDb, bonusPruneNow);
+assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='bonus:u1' AND day=?").get(quotaDay(bonusPruneNow - 61 * DAY_MS)).n, 0);
+assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='bonus:u1' AND day=?").get(quotaDay(bonusPruneNow - 10 * DAY_MS)).n, 1);
+assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='u2'").get().n, 0);
 
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq([], "anything"), null);

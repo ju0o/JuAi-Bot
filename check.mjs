@@ -56,6 +56,8 @@ const customLimits = { ...LIMITS, daily: 1, bonusMax: 1 };
 const quotaNow = Date.parse("2026-09-26T03:00:00Z");
 assert.equal(takeQuota(quotaDb, "staff", { now: quotaNow, limits: customLimits }).ok, true);
 assert.equal(takeQuota(quotaDb, "staff", { now: quotaNow + 1000, staff: true, limits: customLimits }).ok, true);
+assert.deepEqual(peekQuota(quotaDb, "staff", { now: quotaNow, limits: customLimits }), { used: 2, total: 1, left: 0, bonus: 0 });
+assert.equal(quotaMessage({ reason: "unknown" }), undefined);
 assert.deepEqual(peekQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }), { used: 0, total: 1, left: 1, bonus: 0 });
 assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), true);
 assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), false);

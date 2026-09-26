@@ -42,6 +42,20 @@ db.exec("UPDATE usage SET count=999 WHERE user_id='*'");
 assert.equal(takeQuota(db, "u2", { now: Date.parse("2026-09-25T00:10:00Z") }).reason, "global");
 assert.match(quotaMessage({ reason: "global" }), /서버 전체/);
 
+const quotaDb = new DatabaseSync(":memory:"); quotaDb.exec(SCHEMA);
+const customLimits = { ...LIMITS, daily: 1, bonusMax: 1 };
+const quotaNow = Date.parse("2026-09-26T03:00:00Z");
+assert.equal(takeQuota(quotaDb, "staff", { now: quotaNow, limits: customLimits }).ok, true);
+assert.equal(takeQuota(quotaDb, "staff", { now: quotaNow + 1000, staff: true, limits: customLimits }).ok, true);
+assert.deepEqual(peekQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }), { used: 0, total: 1, left: 1, bonus: 0 });
+assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), true);
+assert.equal(grantBonus(quotaDb, "custom", { now: quotaNow, limits: customLimits }), false);
+assert.deepEqual(peekQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }), { used: 0, total: 2, left: 2, bonus: 1 });
+assert.equal(takeQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits }).left, 1);
+const globalDb = new DatabaseSync(":memory:"); globalDb.exec(SCHEMA);
+globalDb.prepare("INSERT INTO usage VALUES('*','2026-09-26',?,?)").run(customLimits.globalDaily, quotaNow);
+assert.equal(takeQuota(globalDb, "staff-global", { now: quotaNow, staff: true, limits: customLimits }).reason, "global");
+
 assert.equal(kstDate(Date.parse("2026-09-23T15:00:00Z")), "2026-09-24");
 assert.equal(kstHour(Date.parse("2026-09-23T14:59:59Z")), 23);
 assert.equal(kstHour(Date.parse("2026-09-23T15:00:00Z")), 0);

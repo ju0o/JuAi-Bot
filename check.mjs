@@ -71,6 +71,7 @@ for (const [key, value] of [["string", "hello"], ["empty", ""], ["zero", 0], ["f
   kvSet(kvDb, key, value);
   assert.deepEqual(kvGet(kvDb, key), value);
 }
+assert.throws(() => kvSet(kvDb, "undefined", undefined));
 kvSet(kvDb, "replace", 1);
 kvSet(kvDb, "replace", { replaced: true });
 assert.deepEqual(kvGet(kvDb, "replace"), { replaced: true });

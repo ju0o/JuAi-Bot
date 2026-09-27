@@ -54,7 +54,7 @@ for (const { title, options } of ONBOARDING) {
   for (const option of options) {
     const optionTitle = typeof option.title === "string" ? option.title.trim() : "";
     assert.ok(optionTitle, `onboarding option needs a title: ${title}`);
-    assert.ok(option.title.length <= 100, `onboarding option title exceeds Discord limit: ${title} / ${optionTitle}`);
+    assert.ok(option.title.length <= 50, `onboarding option title exceeds Discord limit: ${title} / ${optionTitle}`);
     if (option.description !== undefined) assert.ok(option.description.length <= 100, `onboarding option description exceeds Discord limit: ${title} / ${optionTitle}`);
     assert.ok(!optionTitles.has(optionTitle), `duplicate onboarding option title: ${title} / ${optionTitle}`);
     optionTitles.add(optionTitle);

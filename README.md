@@ -30,7 +30,7 @@ node check.mjs              # 로직 점검
 node bot.mjs                # 실행 (상시 실행은 juai-bot.service)
 ```
 
-필요한 것: Node 22.13+, 설치·로그인된 `claude` / `codex` / `opencode` CLI, `bwrap`(bubblewrap).
+필요한 것: Node 22.13+, 설치·로그인된 `claude` / `codex` / `opencode` / `commandcode` CLI, `bwrap`(bubblewrap).
 
 ## 구조
 
@@ -43,7 +43,7 @@ node bot.mjs                # 실행 (상시 실행은 juai-bot.service)
 
 ## 안전장치
 
-- 멤버 글이 들어가는 AI는 격리 실행: Claude는 도구를 끄고, OpenCode·Codex는 bwrap 임시 홈에서만 실행. 자식 프로세스에는 봇 토큰이 없습니다.
+- 멤버 글이 들어가는 AI는 격리 실행: Claude는 도구를 끄고, OpenCode·Codex·CommandCode는 bwrap 임시 홈에서만 실행. 자식 프로세스에는 봇 토큰이 없습니다.
 - AI 출력은 토큰·키·이메일·전화번호를 가린 뒤에만 디스코드로 나갑니다.
 - 삭제·타임아웃·채널 변경·코드 변경은 서버 주인의 승인 카드를 거칩니다.
 - 멤버 AI 대화는 무료 모델만, 1인 기본 하루 5회(피드백 보너스 최대 +3) · 30초 간격 · 서버 전체 하루 300회 · 서버 주인(Founder)·운영진은 일일 제한 없음.

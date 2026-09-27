@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -81,6 +81,7 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIM
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");
 assert.ok(GUIDE(mention).some((message) => message.includes(`입문자 질문이면 같은 분야 실무자 최대 ${MENTOR_MAX}명도 불러요`)), "guide omits mentor cap");
+assert.deepEqual(capMentors(["mentor-1", "mentor-2", "mentor-3"], MENTOR_MAX), ["mentor-1", "mentor-2"], "mentor ping must cap mentions");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`)), "guide omits keyword length");
 const feedbackGuidePhrases = GUIDE(mention).filter((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`));

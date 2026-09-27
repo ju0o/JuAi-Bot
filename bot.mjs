@@ -308,13 +308,14 @@ async function mentorPing(t, starter, post) {
   const fields = want.filter((f) => INTERESTS.includes(f)); if (!fields.length) return;
   const day = L.kstDate(), pool = new Set([...db.prepare("SELECT user_id FROM profiles").all().map((r) => r.user_id),
     ...db.prepare("SELECT key FROM kv WHERE key LIKE 'joined:%'").all().map((r) => r.key.slice(7))]);
-  const mentors = [];
+  const candidates = [];
   for (const uid of pool) {
-    if (mentors.length >= L.MENTOR_MAX || uid === starter.author.id || kvGet(db, `mentor:${uid}:${day}`)) continue;
+    if (uid === starter.author.id || kvGet(db, `mentor:${uid}:${day}`)) continue;
     const mem = await guild.members.fetch(uid).catch(() => null); if (!mem || mem.user.bot) continue;
     const names = new Set(mem.roles.cache.map((r) => r.name));
-    if (names.has("실무") && !names.has("AI 언급 제외") && fields.some((f) => names.has(f))) mentors.push(uid);
+    if (names.has("실무") && !names.has("AI 언급 제외") && fields.some((f) => names.has(f))) candidates.push(uid);
   }
+  const mentors = L.capMentors(candidates, L.MENTOR_MAX);
   if (!mentors.length) return;
   for (const uid of mentors) kvSet(db, `mentor:${uid}:${day}`, true); // at most one call per mentor per day
   await say("COMMANDCODE", t.id, { content: `🙋 ${mentors.map((u) => `<@${u}>`).join(" ")}님, **${fields.join(" · ")}** 실무 경험 있는 분의 한마디가 큰 도움이 될 것 같아요! 시간 되실 때 한 줄만 남겨주세요 🙏`,

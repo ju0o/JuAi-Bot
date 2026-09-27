@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
+import { FEEDBACK_MIN, LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -117,7 +117,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 
 ## ⚠️ 알아두세요
 • AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초. 서버 주인과 운영진은 하루 AI 질문 제한이 없어요. 매일 **오전 9시**에 충전돼요.
-• 🎁 다른 사람의 쇼케이스·피드백 글에 **30자 이상 피드백**을 달면 그날 **+1회** (하루 최대 ${LIMITS.bonusMax}회).
+• 🎁 다른 사람의 쇼케이스·피드백 글에 **${FEEDBACK_MIN}자 이상 피드백**을 달면 그날 **+1회** (하루 최대 ${LIMITS.bonusMax}회).
 • 🏅 한 달 동안 피드백을 가장 많이 준 3명은 **"피드백 장인"** 역할을 받아요 (매달 1일 발표).
 • 무료 AI 모델이라 입력한 내용이 모델 개선에 쓰일 수 있어요. **비밀번호·API 키·개인정보는 절대 올리지 마세요.**
 • 추천·요약에서 내 글이 언급되기 싫으면 입장 질문에서 **"언급하지 말아주세요"**를 고르세요.
@@ -156,7 +156,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 **반응으로**
 • AI 답변에 👍/👎 → 좋은 답은 **자주 묻는 질문**으로 저장되고, 나쁜 답은 운영진이 보고 고쳐요
 • ${c("picks")} 추천에 👍/👎 → 다음 추천에 반영
-• 남의 글에 30자 이상 피드백 → 🎁 +1회 (하루 최대 ${LIMITS.bonusMax}회)`,
+• 남의 글에 ${FEEDBACK_MIN}자 이상 피드백 → 🎁 +1회 (하루 최대 ${LIMITS.bonusMax}회)`,
 ];
 
 export const HELP_TEXT = (c) => `## ⌨️ JuAi 명령어

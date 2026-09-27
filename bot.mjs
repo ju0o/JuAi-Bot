@@ -127,7 +127,7 @@ async function onMessage(m) {
   if (REVIEW_ASK.test(text)) return reviewRequest(m, (content) => say("OPENCODE", m.channelId, { content, reply: { messageReference: m.id, failIfNotExists: false } }), m.member);
   const talkAsk = /^!봇수다\s+(.+)/.exec(text) || /봇들?(끼리|아|들아|이랑).{0,30}(얘기|이야기|대화|토론|수다).{0,10}(해\s?줘|해\s?봐|했으면|하면 좋겠)/.test(text) && [null, text];
   if (talkAsk) return requestTalk(m, talkAsk[1]);
-  if ((parent === ids.feedback || parent === ids.showcase) && m.channel.ownerId !== m.author.id && m.content.length >= 30) {
+  if ((parent === ids.feedback || parent === ids.showcase) && m.channel.ownerId !== m.author.id && m.content.length >= L.FEEDBACK_MIN) {
     db.prepare(`INSERT INTO usage(user_id,day,count,last_at) VALUES(?,?,1,?) ON CONFLICT(user_id,day) DO UPDATE SET count=count+1`).run(`fb:${m.author.id}`, L.kstDate().slice(0, 7), Date.now()); // monthly badge tally
     if (L.grantBonus(db, m.author.id)) await m.react("🎁").catch(() => {}); // feedback on someone else's post → +1 AI question today
   }

@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, FEEDBACK_MIN, LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -79,7 +79,9 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`)), "guide omits keyword length");
-assert.ok(GUIDE(mention).some((message) => message.includes("남의 글에 30자 이상 피드백") && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
+const feedbackGuidePhrases = GUIDE(mention).filter((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`));
+assert.equal(feedbackGuidePhrases.length, 2, "guide must include both feedback minimum phrases");
+assert.ok(feedbackGuidePhrases.every((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`) && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
 
 const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);

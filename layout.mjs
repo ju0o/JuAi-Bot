@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
+import { ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -128,7 +128,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 
 **🔵 OpenCode에게 DM(개인 메시지)으로**
 • 그냥 질문을 보내면 1:1로 답해요 (공개가 부담스러울 때)
-• \`!익명 질문 내용\` → ${c("qa")}에 **이름 없이** 올리고 거기서 답해요
+• \`!익명 질문 내용\` → ${c("qa")}에 **이름 없이** 올리고 거기서 답해요 (질문 ${ANON_MIN}자 이상)
 
 **어디서나**
 • \`리뷰해줘 https://github.com/아이디/저장소\` → 🔵 OpenCode가 저장소를 보고 코드 리뷰 (1회). 프로필에 GitHub를 적어두면 \`리뷰해줘\`만 써도 돼요
@@ -162,7 +162,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 export const HELP_TEXT = (c) => `## ⌨️ JuAi 명령어
 **🔵 OpenCode에게 DM(개인 메시지)으로**
 • 그냥 질문을 보내면 1:1로 답해요 (공개가 부담스러울 때)
-• \`!익명 질문 내용\` → ${c("qa")}에 **이름 없이** 올리고 거기서 답해요
+• \`!익명 질문 내용\` → ${c("qa")}에 **이름 없이** 올리고 거기서 답해요 (질문 ${ANON_MIN}자 이상)
 
 **어디서나**
 • \`리뷰해줘 https://github.com/아이디/저장소\` → 🔵 OpenCode가 저장소를 보고 코드 리뷰 (1회). 프로필에 GitHub를 적어두면 \`리뷰해줘\`만 써도 돼요

@@ -205,7 +205,7 @@ async function faqReply(question, channelId, who, followUp) {
 // ---------- DM: 익명 질문함 + 1:1 대화 (OpenCode) ----------
 const DM_HELP = `🔵 **OpenCode 1:1 대화**
 • 그냥 질문을 보내면 여기서 바로 답해요 (하루 질문 횟수 공유)
-• \`!익명 질문 내용\` → #질문-답변에 **이름 없이** 올리고 거기서 답해요. 다른 멤버들도 답을 달 수 있어요
+• \`!익명 질문 내용\` → #질문-답변에 **이름 없이** 올리고 거기서 답해요 (질문 ${L.ANON_MIN}자 이상). 다른 멤버들도 답을 달 수 있어요
 • \`!남은횟수\` 오늘 남은 질문 수
 -# 익명 질문은 다른 멤버에게 이름이 보이지 않아요. 스팸 방지를 위해 운영 기록에만 남아요.`;
 
@@ -233,7 +233,7 @@ async function onDirect(m) {
 }
 
 async function anonymousQuestion(m, question, q, reply) {
-  if (question.length < 5) return reply("질문을 조금만 더 자세히 적어주세요. 예: `!익명 코딩 처음인데 뭐부터 배우면 돼요?`");
+  if (question.length < L.ANON_MIN) return reply(`질문을 ${L.ANON_MIN}자 이상 조금만 더 자세히 적어주세요. 예: \`!익명 코딩 처음인데 뭐부터 배우면 돼요?\``);
   const forum = await as("OPENCODE").channels.fetch(ids.qa);
   const title = question.replace(/\s+/g, " ").slice(0, 60) || "익명 질문";
   const thread = await forum.threads.create({ name: `🙈 ${title}`, message: { content: `🙈 **익명 질문**\n${question.slice(0, 1800)}`, allowedMentions: NO_PING } });

@@ -43,7 +43,15 @@ assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #c
 for (const { title, options } of ONBOARDING) {
   assert.ok(title, "onboarding question needs a title");
   assert.ok(options.length > 0, `onboarding question has no options: ${title}`);
-  for (const option of options) for (const key of option.roles) assert.ok(roleKeys.has(key), `unknown onboarding role key: ${key}`);
+  const optionTitles = new Set();
+  for (const option of options) {
+    const optionTitle = typeof option.title === "string" ? option.title.trim() : "";
+    assert.ok(optionTitle, `onboarding option needs a title: ${title}`);
+    assert.ok(!optionTitles.has(optionTitle), `duplicate onboarding option title: ${title} / ${optionTitle}`);
+    optionTitles.add(optionTitle);
+    assert.ok(Array.isArray(option.roles), `onboarding option roles must be an array: ${title} / ${optionTitle}`);
+    for (const key of option.roles) assert.ok(roleKeys.has(key), `unknown onboarding role key: ${key}`);
+  }
 }
 const mention = (key) => {
   assert.ok(channelByKey[key], `unknown channel key: ${key}`);

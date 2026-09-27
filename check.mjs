@@ -129,6 +129,13 @@ try {
 }
 const t0 = Date.parse("2026-09-24T03:00:00Z"); // 12:00 KST
 assert.deepEqual(peekQuota(db, "new-user", { now: t0 }), { used: 0, total: LIMITS.daily, left: LIMITS.daily, bonus: 0 });
+const peekDb = new DatabaseSync(":memory:"); peekDb.exec(SCHEMA);
+peekDb.exec("INSERT INTO usage VALUES ('peek-member','2026-09-24',2,123), ('*','2026-09-24',7,456)");
+const peekMemberBefore = peekDb.prepare("SELECT count,last_at FROM usage WHERE user_id='peek-member' AND day='2026-09-24'").get();
+const peekGlobalBefore = peekDb.prepare("SELECT count,last_at FROM usage WHERE user_id='*' AND day='2026-09-24'").get();
+assert.deepEqual(peekQuota(peekDb, "peek-member", { now: t0 }), { used: 2, total: LIMITS.daily, left: 3, bonus: 0 });
+assert.deepEqual(peekDb.prepare("SELECT count,last_at FROM usage WHERE user_id='peek-member' AND day='2026-09-24'").get(), peekMemberBefore);
+assert.deepEqual(peekDb.prepare("SELECT count,last_at FROM usage WHERE user_id='*' AND day='2026-09-24'").get(), peekGlobalBefore);
 assert.equal(takeQuota(db, "u1", { now: t0 }).left, LIMITS.daily - 1);
 const gap = takeQuota(db, "u1", { now: t0 + 1000 });
 assert.equal(gap.reason, "gap");

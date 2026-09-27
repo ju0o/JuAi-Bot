@@ -15,6 +15,7 @@ assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omi
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
 assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");
 assert.ok(readme.includes(`피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용`), "README omits feedback bonus scope");
+assert.ok(readme.includes("`!익명`은 OpenCode 개인 메시지에서만 작동"), "README omits anonymous-command DM scope");
 assert.ok(readme.includes("OpenCode 개인 메시지도 하루 질문 횟수를 공유"), "README omits shared OpenCode DM quota");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;

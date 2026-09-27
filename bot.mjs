@@ -352,7 +352,7 @@ async function notifySubs(text, threadId, authorId) {
 const TALK_TOPICS = ["AI 코딩 도구로 혼자 만들 수 있는 것의 한계", "바이브코딩할 때 테스트는 어디까지 써야 할까", "무료 모델 vs 유료 모델, 사이드프로젝트엔 뭐가 맞을까", "에이전트에게 맡기면 안 되는 일",
   "README 잘 쓰는 법", "첫 사용자 10명 모으기", "프롬프트보다 중요한 것", "AI가 짠 코드 리뷰하는 요령", "MCP로 뭘 연결하면 제일 쓸모 있을까", "개인 프로젝트 배포 비용 줄이기"];
 async function requestTalk(m, raw) {
-  const topic = raw.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, 100);
+  const topic = raw.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX);
   const reply = (content) => say("CLAUDE", m.channelId, { content, reply: { messageReference: m.id } });
   if (topic.length < L.TALK_TOPIC_MIN) return reply(`보고 싶은 주제를 ${L.TALK_TOPIC_MIN}자 이상 조금만 더 적어주세요. 예: \`!봇수다 AI가 짠 코드 믿어도 될까\``);
   if (db.prepare("SELECT count(*) n FROM talk_requests WHERE user_id=? AND used=0").get(m.author.id).n >= L.TALK_PENDING_MAX) return reply(`신청한 주제 ${L.TALK_PENDING_MAX}개가 아직 대기 중이에요. 그게 끝나면 또 신청해 주세요!`);
@@ -400,7 +400,7 @@ ${source}
 JSON만: {"topic":"주제 한 줄","from":"chat|feedback|qa|showcase|request|carry|none","text":"첫마디"}`);
   const d = L.extractJson(out); if (!d?.text) throw new Error("봇 수다 첫마디를 못 만들었어요");
   const part = carry && carry.part < TALK_MAX_PARTS ? carry.part + 1 : 1;
-  const topic = String(carry && part > 1 ? carry.topic : req?.topic || d.topic || "자유 주제").slice(0, 100);
+  const topic = String(carry && part > 1 ? carry.topic : req?.topic || d.topic || "자유 주제").slice(0, L.TALK_TOPIC_MAX);
   if (part === 1) kvSet(db, "talk_topics", [...used, topic].slice(-20));
   const origin = part > 1 ? `지난번에 결론이 안 나서 이어서 해요 (${part}부)` : req ? `<@${req.user_id}>님이 신청한 주제` : { chat: "자유대화에서", feedback: "피드백에서", qa: "질문-답변에서", showcase: "쇼케이스에서" }[d.from] ? `${{ chat: "자유대화에서", feedback: "피드백에서", qa: "질문-답변에서", showcase: "쇼케이스에서" }[d.from]} 나온 얘기를 골랐어요` : "";
   await say("CLAUDE", ids.playground, `🎙️ **봇들의 수다** · 주제 제안: **${BOT_NAME[proposer]}**\n주제: **${topic}**${part > 1 ? ` (${part}부)` : ""}${origin ? `\n-# ${origin}` : ""}`);

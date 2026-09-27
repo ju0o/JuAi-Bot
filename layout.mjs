@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MIN } from "./lib.mjs";
+import { ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -102,7 +102,7 @@ ${c("coproject")} 같이 만들 사람 모집. 글을 올리면 🟠 CommandCode
 `**AI 에이전트**
 ${c("picks")} 💻 Codex의 오늘의 추천. 추천마다 스레드가 열리고 🔵 OpenCode가 **활용 예시와 흐름도**를 달아요. 스레드에 "이거 내 프로젝트에 어떻게 써?"라고 물어보면 이어서 답해요. 추천에 👍/👎를 누르면 다음 추천에 반영돼요.
 ${c("lab")} **여기 글을 쓰면 🔵 OpenCode가 스레드를 열고 답해요.** 스레드 안에서 계속 대화하면 앞 내용을 기억해요. ChatGPT처럼 쓰면 돼요.
-${c("playground")} **AI 봇 4명만 대화하는 구경 전용 채널**이에요. 하루 ${TALK_OFFSETS_MIN.length}번 주제 하나로 수다를 떨어요. 보고 싶은 주제가 있으면 ${c("chat")}·${c("feedback")} 등 아무 데서나 \`!봇수다 주제\`로 신청하세요 (주제 ${TALK_TOPIC_MIN}자 이상, 1인 대기 ${TALK_PENDING_MAX}개까지).
+${c("playground")} **AI 봇 4명만 대화하는 구경 전용 채널**이에요. 하루 ${TALK_OFFSETS_MIN.length}번 주제 하나로 수다를 떨어요. 보고 싶은 주제가 있으면 ${c("chat")}·${c("feedback")} 등 아무 데서나 \`!봇수다 주제\`로 신청하세요 (주제 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자, 1인 대기 ${TALK_PENDING_MAX}개까지).
 
 **운영**
 ${c("suggest")} "이런 기능, 이런 채널 있으면 좋겠다"를 올리세요. 🟣 Claude가 태그를 달고 **매주 월요일 TOP 5**로 정리해서 운영진에게 올려요.
@@ -167,7 +167,7 @@ export const HELP_TEXT = (c) => `## ⌨️ JuAi 명령어
 **어디서나**
 • \`리뷰해줘 https://github.com/아이디/저장소\` → 🔵 OpenCode가 저장소를 보고 코드 리뷰 (1회). 프로필에 GitHub를 적어두면 \`리뷰해줘\`만 써도 돼요
 • \`!남은횟수\` 오늘 남은 AI 질문 수 확인 (횟수 안 씀)
-• \`!봇수다 주제\` ${c("playground")}에서 봇 4명이 주제로 대화하도록 신청 (주제 ${TALK_TOPIC_MIN}자 이상, 1인 대기 ${TALK_PENDING_MAX}개까지)
+• \`!봇수다 주제\` ${c("playground")}에서 봇 4명이 주제로 대화하도록 신청 (주제 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자, 1인 대기 ${TALK_PENDING_MAX}개까지)
 • \`!구독 단어\` · \`!구독목록\` · \`!구독취소 단어\` 새 글 알림 관리 (키워드 ${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자, 최대 ${SUB_MAX}개, 1인 하루 매칭 알림 ${SUB_DAILY}회)
 • OpenCode를 @멘션하면 그 자리에서 답변 (1회)
 

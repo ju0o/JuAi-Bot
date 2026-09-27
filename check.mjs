@@ -17,6 +17,7 @@ assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "REA
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()), "category names must be non-empty");
+assert.ok(CATEGORIES.every(({ name }) => name.length <= 100), "category names must be at most 100 characters");
 assert.equal(new Set(CATEGORIES.map(({ name }) => name)).size, CATEGORIES.length, "category names must be unique");
 for (const category of CATEGORIES) {
   assert.ok(Array.isArray(category.channels) && category.channels.length > 0, `category has no channels: ${category.name}`);
@@ -25,8 +26,10 @@ for (const category of CATEGORIES) {
   }
 }
 assert.ok(CHANNELS.every(({ name }) => typeof name === "string" && name.trim()), "channel names must be non-empty");
+assert.ok(CHANNELS.every(({ name }) => name.length <= 100), "channel names must be at most 100 characters");
 assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "channel names must be unique");
 assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");
+assert.ok(ROLES.every(({ name }) => name.length <= 100), "role names must be at most 100 characters");
 for (const role of ROLES) assert.ok(Number.isInteger(role.color) && role.color >= 0 && role.color <= 0xFFFFFF, `role color must be an integer from 0 to 0xFFFFFF: ${role.key}`);
 for (const role of ROLES) for (const perm of role.perms) {
   assert.ok(Object.hasOwn(PermissionFlagsBits, perm), `unknown role permission: ${role.key}/${perm}`);

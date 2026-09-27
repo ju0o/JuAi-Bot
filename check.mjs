@@ -272,7 +272,11 @@ assert.equal(takeQuota(quotaDb, "custom", { now: quotaNow, limits: customLimits 
 assert.equal(grantBonus(quotaDb, "zero-bonus", { now: quotaNow, limits: zeroBonusLimits }), false);
 const bonusDb = new DatabaseSync(":memory:"); bonusDb.exec(SCHEMA);
 const bonusNow = Date.parse("2026-09-26T00:00:00Z");
+bonusDb.prepare("INSERT INTO usage VALUES('*',?,?,?)").run(quotaDay(bonusNow), 7, bonusNow - 1);
+const globalBeforeBonus = bonusDb.prepare("SELECT count,last_at FROM usage WHERE user_id='*' AND day=?").get(quotaDay(bonusNow));
 assert.equal(grantBonus(bonusDb, "capped", { now: bonusNow, limits: customLimits }), true);
+assert.deepEqual(bonusDb.prepare("SELECT count,last_at FROM usage WHERE user_id='*' AND day=?").get(quotaDay(bonusNow)), globalBeforeBonus);
+assert.deepEqual({ ...bonusDb.prepare("SELECT count,last_at FROM usage WHERE user_id='bonus:capped' AND day=?").get(quotaDay(bonusNow)) }, { count: 1, last_at: bonusNow });
 assert.equal(grantBonus(bonusDb, "capped", { now: bonusNow, limits: customLimits }), false);
 assert.equal(grantBonus(bonusDb, "other", { now: bonusNow, limits: customLimits }), true);
 const nextBonusDay = Date.parse("2026-09-27T00:00:00Z");

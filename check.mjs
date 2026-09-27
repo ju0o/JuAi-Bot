@@ -73,7 +73,7 @@ const mention = (key) => {
 };
 assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
-assert.ok(GUIDE(mention).some((message) => message.includes(`서버 전체 AI 질문은 **하루 ${LIMITS.globalDaily}회**`)), "guide omits LIMITS.globalDaily");
+assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`)), "guide omits subscription max");
 assert.ok(GUIDE(mention).some((message) => message.includes("남의 글에 30자 이상 피드백") && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
 

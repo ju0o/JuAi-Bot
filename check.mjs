@@ -126,6 +126,7 @@ const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);
 for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
+assert.ok(help.includes("하루 질문 횟수 공유"), "help omits shared DM quota");
 assert.ok(help.includes(`주제 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자`) && help.includes(`대기 ${TALK_PENDING_MAX}개까지`), "help omits talk limits");
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
 assert.ok(help.includes(`최대 ${SUB_MAX}개`) && help.includes(`하루 매칭 알림 ${SUB_DAILY}회`), "help omits subscription caps");

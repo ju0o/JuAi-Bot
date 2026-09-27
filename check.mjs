@@ -287,6 +287,10 @@ assert.ok(defaultQuotaDay === quotaDay(b) || defaultQuotaDay === quotaDay(a), "q
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
 assert.equal(redact("short " + "M" + "A".repeat(22) + ".abc.def"), "short " + "M" + "A".repeat(22) + ".abc.def");
 assert.equal(redact("short gh" + "p_" + "a".repeat(29)), "short gh" + "p_" + "a".repeat(29));
+for (const prefix of ["gho_", "ghu_", "ghs_", "ghr_"]) {
+  assert.equal(redact("token " + prefix + "a".repeat(30)), "token [가림]");
+}
+assert.equal(redact("token gh" + "x_" + "a".repeat(30)), "token gh" + "x_" + "a".repeat(30));
 assert.equal(redact("short AKIA" + "A".repeat(15)), "short AKIA" + "A".repeat(15));
 assert.equal(redact("short sk-" + "a".repeat(19)), "short sk-" + "a".repeat(19));
 const discordToken = ["M" + "A".repeat(23), "abc123", "x".repeat(27)].join(".");

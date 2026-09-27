@@ -35,6 +35,8 @@ export function pruneState(db, now = Date.now()) {
 }
 
 export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300, bonusMax: 3 };
+export const SUB_MAX = 5;
+export const SUB_DAILY = 3;
 
 /** +1 question for giving feedback on someone else's post, at most bonusMax per quota day. Stored as usage rows "bonus:<id>". */
 export function grantBonus(db, userId, { now = Date.now(), limits = LIMITS } = {}) {

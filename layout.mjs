@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { LIMITS } from "./lib.mjs";
+import { LIMITS, SUB_DAILY, SUB_MAX } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -134,7 +134,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 • \`리뷰해줘 https://github.com/아이디/저장소\` → 🔵 OpenCode가 저장소를 보고 코드 리뷰 (1회). 프로필에 GitHub를 적어두면 \`리뷰해줘\`만 써도 돼요
 • \`!남은횟수\` 오늘 남은 AI 질문 수 확인 (횟수 안 씀)
 • \`!봇수다 AI가 짠 코드 믿어도 될까\` 봇 4명이 ${c("playground")}에서 이 주제로 대화해요 (신청 순서대로)
-• \`!구독 MCP\` 이 단어가 오늘의 추천·새 글에 나오면 알림 (최대 5개) · \`!구독목록\` · \`!구독취소 MCP\`
+• \`!구독 MCP\` 이 단어가 오늘의 추천·새 글에 나오면 알림 (최대 ${SUB_MAX}개) · \`!구독목록\` · \`!구독취소 MCP\`
 • \`@OpenCode 질문\` 그 자리에서 바로 답해요 (1회)
 
 **${c("lab")}**
@@ -156,7 +156,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 **반응으로**
 • AI 답변에 👍/👎 → 좋은 답은 **자주 묻는 질문**으로 저장되고, 나쁜 답은 운영진이 보고 고쳐요
 • ${c("picks")} 추천에 👍/👎 → 다음 추천에 반영
-• 남의 글에 30자 이상 피드백 → 🎁 +1회 (하루 최대 3회)`,
+• 남의 글에 30자 이상 피드백 → 🎁 +1회 (하루 최대 ${SUB_DAILY}회)`,
 ];
 
 export const HELP_TEXT = (c) => `## ⌨️ JuAi 명령어

@@ -48,11 +48,14 @@ const roleKeys = new Set(ROLES.map(({ key }) => key));
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
 for (const { title, options } of ONBOARDING) {
   assert.ok(title, "onboarding question needs a title");
+  assert.ok(title.length <= 100, `onboarding question title exceeds Discord limit: ${title}`);
   assert.ok(options.length > 0, `onboarding question has no options: ${title}`);
   const optionTitles = new Set();
   for (const option of options) {
     const optionTitle = typeof option.title === "string" ? option.title.trim() : "";
     assert.ok(optionTitle, `onboarding option needs a title: ${title}`);
+    assert.ok(option.title.length <= 100, `onboarding option title exceeds Discord limit: ${title} / ${optionTitle}`);
+    if (option.description !== undefined) assert.ok(option.description.length <= 100, `onboarding option description exceeds Discord limit: ${title} / ${optionTitle}`);
     assert.ok(!optionTitles.has(optionTitle), `duplicate onboarding option title: ${title} / ${optionTitle}`);
     optionTitles.add(optionTitle);
     assert.ok(Array.isArray(option.roles), `onboarding option roles must be an array: ${title} / ${optionTitle}`);

@@ -315,6 +315,15 @@ assert.equal(validateAdminPlan({ action: "post_notice", params: {} }), null);
 assert.deepEqual(validateAdminPlan({ action: "post_notice", params: { text: "  notice  " } }), { action: "post_notice", params: { text: "notice" }, summary: "post_notice" });
 assert.equal(validateAdminPlan({ action: "add_rule", params: {} }), null);
 assert.deepEqual(validateAdminPlan({ action: "add_rule", params: { text: "  rule  " } }), { action: "add_rule", params: { text: "rule" }, summary: "add_rule" });
+for (const [action, params] of [
+  ["answer", { text: "   " }],
+  ["post_notice", { text: "\t" }],
+  ["add_rule", { text: "\n" }],
+  ["create_channel", { name: "  " }],
+  ["delete_channel", { channel: " \t " }],
+  ["implement_feature", { description: "\t\n" }],
+  ["timeout", { user_id: "   ", minutes: 30 }],
+]) assert.equal(validateAdminPlan({ action, params }), null);
 const longText = "x".repeat(1900);
 const boundedPlan = validateAdminPlan({ action: "answer", params: { text: longText }, summary: "y".repeat(400) });
 assert.equal(boundedPlan.params.text.length, 1800);

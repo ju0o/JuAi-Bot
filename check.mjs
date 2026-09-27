@@ -32,9 +32,11 @@ for (const channel of CHANNELS) {
   const parent = CATEGORIES.find(({ channels }) => channels.some(({ key }) => key === channel.key));
   assert.ok(parent, `channel has no category: ${channel.key}`);
   assert.equal(channel.category, parent.name, `channel category mismatch: ${channel.key}`);
+  if (channel.topic !== undefined) assert.ok(channel.topic.length <= 1024, `channel topic exceeds Discord limit: ${channel.key}`);
   if (channel.type === "forum") {
     assert.ok(Array.isArray(channel.tags) && channel.tags.length > 0, `forum has no tags: ${channel.key}`);
     assert.equal(new Set(channel.tags).size, channel.tags.length, `forum tags duplicate: ${channel.key}`);
+    assert.ok(channel.tags.every((name) => name.length <= 20), `forum tag name exceeds Discord limit: ${channel.key}`);
   }
 }
 assert.ok(channelByKey.lab.topic.includes(String(LIMITS.daily)), "lab topic omits LIMITS.daily");

@@ -13,6 +13,7 @@ const setup = fs.readFileSync("setup.mjs", "utf8");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
 assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");
+assert.ok(readme.includes(`피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용`), "README omits feedback bonus scope");
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);

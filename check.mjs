@@ -97,6 +97,9 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIM
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");
 assert.ok(GUIDE(mention).some((message) => message.includes(`입문자 질문이면 같은 분야 실무자 최대 ${MENTOR_MAX}명도 불러요`)), "guide omits mentor cap");
+assert.deepEqual(capMentors([]), [], "empty mentor list must stay empty");
+assert.deepEqual(capMentors(["mentor-1"]), ["mentor-1"], "mentor list under default cap must be preserved");
+assert.deepEqual(capMentors(["mentor-1", "mentor-2"]), ["mentor-1", "mentor-2"], "mentor list at default cap must be preserved");
 assert.deepEqual(capMentors(["mentor-1", "mentor-2", "mentor-3"], MENTOR_MAX), ["mentor-1", "mentor-2"], "mentor ping must cap mentions");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`)), "guide omits keyword length");

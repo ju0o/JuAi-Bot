@@ -235,6 +235,8 @@ assert.equal(redact("key AKIA" + "A".repeat(16)), "key [가림]");
 assert.equal(redact("key -----BEGIN " + "RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----"), "key [가림]");
 assert.equal(redact("key -----BEGIN " + "PRIVATE KEY-----\nfake\nsecret"), "key [가림]");
 assert.equal(redact("key -----BEGIN " + "PRIVATE KEY-----\nfake\n-----END PRIVATE KEY----- after"), "key [가림] after");
+assert.equal(redact("key -----BEGIN " + "PRIVATE KEY-----\nfake\ntrailing text"), "key [가림]");
+assert.equal(redact("key -----BEGIN " + "PRIVATE KEY-----\nfake\n-----END " + "PRIVATE KEY----- after"), "key [가림] after");
 assert.equal(redact("mail user@example.com, phones 010-1234-5678 / 01012345678"), "mail [가림], phones [가림] / [가림]");
 assert.equal(redact("mail USER@Example.COM"), "mail [가림]");
 assert.equal(redact("call 011-1234-5678 or 0101234567890"), "call 011-1234-5678 or 0101234567890");

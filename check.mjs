@@ -9,6 +9,7 @@ import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
 const readme = fs.readFileSync("README.md", "utf8");
+const setup = fs.readFileSync("setup.mjs", "utf8");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
 assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");
@@ -59,6 +60,14 @@ for (const key of SUMMARY_KEYS) {
 }
 const roleKeys = new Set(ROLES.map(({ key }) => key));
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
+const defaultChannelKeys = setup.match(/default_channel_ids:\s*\[([\s\S]*?)\]\.map/)?.[1].matchAll(/"([^"]+)"/g);
+assert.ok(defaultChannelKeys, "setup.mjs must define onboarding default channels");
+for (const [, key] of defaultChannelKeys) {
+  const channel = channelByKey[key];
+  assert.ok(channel, `onboarding default channel key is unknown: ${key}`);
+  assert.notEqual(channel.access, "private", `onboarding default channel is private: ${key}`);
+  assert.ok(["text", "forum"].includes(channel.type), `onboarding default channel must be text or forum: ${key}`);
+}
 for (const { title, single, required, options } of ONBOARDING) {
   assert.ok(title, "onboarding question needs a title");
   assert.ok(title.length <= 100, `onboarding question title exceeds Discord limit: ${title}`);

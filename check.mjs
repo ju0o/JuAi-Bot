@@ -387,4 +387,25 @@ assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "x", ke
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "discord bot" }], "DiscordBot 만들기"), new Map([["discord bot", ["a"]]]));
 assert.deepEqual(matchSubs([{ user_id: "a", keyword: "MCP" }], "discord"), new Map());
 
+const subDb = new DatabaseSync(":memory:"); subDb.exec(SCHEMA);
+const addSubscription = (userId, keyword) => {
+  const mine = subDb.prepare("SELECT keyword FROM subs WHERE user_id=?").all(userId).map(({ keyword: value }) => value);
+  if (mine.length >= SUB_MAX && !mine.includes(keyword)) return false;
+  subDb.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)").run(userId, keyword);
+  return true;
+};
+for (let i = 0; i < SUB_MAX; i++) assert.equal(addSubscription("subscriber", `word-${i}`), true);
+assert.equal(addSubscription("subscriber", "word-new"), false, "subscription max must reject a new keyword");
+assert.equal(addSubscription("subscriber", "word-0"), true, "subscription max must allow an existing keyword");
+assert.equal(subDb.prepare("SELECT count(*) AS count FROM subs WHERE user_id=?").get("subscriber").count, SUB_MAX);
+
+const subscriptionNotifications = (userId, authorId, sent) => {
+  if (userId === authorId || sent >= SUB_DAILY) return false;
+  subDb.prepare("INSERT INTO kv(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(`subsent:${userId}:2026-09-27`, String(sent + 1));
+  return true;
+};
+for (let sent = 0; sent < SUB_DAILY; sent++) assert.equal(subscriptionNotifications("subscriber", "other", sent), true);
+assert.equal(subscriptionNotifications("subscriber", "other", SUB_DAILY), false, "subscription notifications must stop at the daily limit");
+assert.equal(kvGet(subDb, "subsent:subscriber:2026-09-27"), SUB_DAILY);
+
 console.log("check ok");

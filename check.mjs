@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_PENDING_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -93,6 +93,8 @@ const mention = (key) => {
   return `<#${"0".repeat(20)}>`;
 };
 assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
+assert.deepEqual(TALK_OFFSETS_MIN, [30, 270, 510], "talk offsets must stay unchanged");
+assert.ok(GUIDE(mention).some((message) => message.includes(`하루 ${TALK_OFFSETS_MIN.length}번 주제 하나`)), "guide omits daily talk count");
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");

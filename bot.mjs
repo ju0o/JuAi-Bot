@@ -349,7 +349,6 @@ async function notifySubs(text, threadId, authorId) {
 
 // ---------- 봇 놀이터: AI끼리 대화 ----------
 // ASUS is not always on (AutoNight), so talks are timed from the day's first start, not the clock.
-const TALK_OFFSETS_MIN = [30, 270, 510]; // 30분 후, 4시간 30분 후, 8시간 30분 후
 const TALK_TOPICS = ["AI 코딩 도구로 혼자 만들 수 있는 것의 한계", "바이브코딩할 때 테스트는 어디까지 써야 할까", "무료 모델 vs 유료 모델, 사이드프로젝트엔 뭐가 맞을까", "에이전트에게 맡기면 안 되는 일",
   "README 잘 쓰는 법", "첫 사용자 10명 모으기", "프롬프트보다 중요한 것", "AI가 짠 코드 리뷰하는 요령", "MCP로 뭘 연결하면 제일 쓸모 있을까", "개인 프로젝트 배포 비용 줄이기"];
 async function requestTalk(m, raw) {
@@ -1091,7 +1090,7 @@ async function tick() {
   await job(`release-check:${today}`, releaseSuggest);
   const firstStart = kvGet(db, `boot:${today}`) ?? (kvSet(db, `boot:${today}`, now), now); // restarts for updates keep the day's schedule
   const anchor = Math.max(firstStart, L.kstMidnight(today) + 9 * 3_600_000); // staying on past midnight shouldn't mean 00:30 chatter
-  const due = TALK_OFFSETS_MIN.map((m, n) => [n, anchor + m * 60_000]).filter(([, at]) => now >= at && now - at < 2 * 3_600_000).at(-1); // missed slots are skipped, not bunched
+  const due = L.TALK_OFFSETS_MIN.map((m, n) => [n, anchor + m * 60_000]).filter(([, at]) => now >= at && now - at < 2 * 3_600_000).at(-1); // missed slots are skipped, not bunched
   if (due && !kvGet(db, "talk_session")) await job(`talk:${today}:${due[0]}`, startTalk);
   // Founder 9/25: every day, shortly after the computer starts, one easy question in #자유대화. No per-person nudges.
   if (now >= anchor + 10 * 60_000) await job(`starter:${today}`, () => dailyStarter(today));

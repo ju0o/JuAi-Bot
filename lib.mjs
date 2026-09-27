@@ -45,6 +45,7 @@ export const SUB_KEYWORD_MIN = 2;
 export const SUB_KEYWORD_MAX = 20;
 export const TALK_TOPIC_MIN = 4;
 export const TALK_PENDING_MAX = 2;
+export const TALK_OFFSETS_MIN = [30, 270, 510];
 export const normalizeSubKeyword = (text) => String(text).trim().slice(0, SUB_KEYWORD_MAX);
 export const isValidSubKeyword = (text) => text.length >= SUB_KEYWORD_MIN;
 

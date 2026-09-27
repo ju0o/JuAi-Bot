@@ -199,7 +199,12 @@ assert.deepEqual(peekQuota(bonusDb, "capped", { now: nextBonusDay, limits: custo
 assert.equal(grantBonus(bonusDb, "capped", { now: nextBonusDay, limits: customLimits }), true);
 const globalDb = new DatabaseSync(":memory:"); globalDb.exec(SCHEMA);
 globalDb.prepare("INSERT INTO usage VALUES('*','2026-09-26',?,?)").run(customLimits.globalDaily, quotaNow);
-assert.equal(takeQuota(globalDb, "staff-global", { now: quotaNow, staff: true, limits: customLimits }).reason, "global");
+for (const [userId, options] of [["member-global", {}], ["staff-global", { staff: true }]]) {
+  assert.equal(takeQuota(globalDb, userId, { now: quotaNow, ...options, limits: customLimits }).reason, "global");
+  assert.equal(globalDb.prepare("SELECT count FROM usage WHERE user_id='*' AND day=?").get("2026-09-26").count, customLimits.globalDaily);
+  assert.equal(globalDb.prepare("SELECT count(*) n FROM usage WHERE user_id=? AND day=?").get(userId, "2026-09-26").n, 0);
+  assert.equal(globalDb.prepare("SELECT count(*) n FROM usage WHERE user_id='reject:*' AND day=?").get("2026-09-26").n, 0);
+}
 
 assert.equal(kstDate(Date.parse("2026-09-23T15:00:00Z")), "2026-09-24");
 assert.equal(kstHour(Date.parse("2026-09-23T14:59:59Z")), 23);

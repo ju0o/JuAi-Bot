@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
+import { PermissionFlagsBits } from "discord.js";
 import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
@@ -20,6 +21,9 @@ for (const category of CATEGORIES) {
 assert.ok(CHANNELS.every(({ name }) => typeof name === "string" && name.trim()), "channel names must be non-empty");
 assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "channel names must be unique");
 assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");
+for (const role of ROLES) for (const perm of role.perms) {
+  assert.ok(Object.hasOwn(PermissionFlagsBits, perm), `unknown role permission: ${role.key}/${perm}`);
+}
 const accessKinds = new Set(["open", "readonly", "botsonly", "private"]);
 const channelTypes = new Set(["text", "forum", "voice"]);
 for (const channel of CHANNELS) {

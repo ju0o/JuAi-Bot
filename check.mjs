@@ -96,6 +96,8 @@ for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(h
 assert.ok(help.includes(`최대 ${SUB_MAX}개`) && help.includes(`하루 매칭 알림 ${SUB_DAILY}회`), "help omits subscription caps");
 assert.ok(help.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`), "help omits keyword length");
 assert.equal(isValidSubKeyword(normalizeSubKeyword("a")), false, "one-character subscriptions must be rejected");
+assert.equal(isValidSubKeyword(normalizeSubKeyword(` ${"a".repeat(SUB_KEYWORD_MIN)} `)), true, "padded minimum-length subscriptions must be accepted");
+assert.equal(isValidSubKeyword(normalizeSubKeyword(" ".repeat(SUB_KEYWORD_MIN))), false, "whitespace-only subscriptions must be rejected");
 assert.equal(normalizeSubKeyword("a".repeat(SUB_KEYWORD_MAX + 1)).length, SUB_KEYWORD_MAX, "subscriptions must be capped at the maximum length");
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);

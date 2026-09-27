@@ -216,6 +216,8 @@ b = Date.now(); const defaultQuotaDay = quotaDay(); a = Date.now();
 assert.ok(defaultQuotaDay === quotaDay(b) || defaultQuotaDay === quotaDay(a), "quotaDay() default now mismatch");
 
 assert.equal(redact("key sk-abcdefghijklmnopqrstuvwxyz0123 ok"), "key [가림] ok");
+const discordToken = ["M" + "A".repeat(23), "abc123", "x".repeat(27)].join(".");
+assert.equal(redact(`before ${discordToken} after`), "before [가림] after");
 assert.ok(!redact(["MTUzNjIxODM5MzMwMzMyMjY1NA", "GAbcde", "abcdefghijklmnopqrstuvwxyz0123456"].join(".") /* built at runtime so secret scanners skip this fake token */).includes("GAbcde"));
 assert.equal(redact(["eyJ" + "a".repeat(10), "b".repeat(10), "c".repeat(10)].join(".")), "[가림]");
 assert.equal(redact("token gh" + "p_" + "a".repeat(30)), "token [가림]");

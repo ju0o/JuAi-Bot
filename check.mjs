@@ -197,6 +197,12 @@ assert.equal(grantBonus(bonusDb, "other", { now: bonusNow, limits: customLimits 
 const nextBonusDay = Date.parse("2026-09-27T00:00:00Z");
 assert.deepEqual(peekQuota(bonusDb, "capped", { now: nextBonusDay, limits: customLimits }), { used: 0, total: 1, left: 1, bonus: 0 });
 assert.equal(grantBonus(bonusDb, "capped", { now: nextBonusDay, limits: customLimits }), true);
+const oneUnderGlobalDb = new DatabaseSync(":memory:"); oneUnderGlobalDb.exec(SCHEMA);
+const oneUnderGlobalNow = Date.parse("2026-09-26T03:00:00Z");
+const oneUnderGlobalDay = quotaDay(oneUnderGlobalNow);
+oneUnderGlobalDb.prepare("INSERT INTO usage VALUES('*',?,?,?)").run(oneUnderGlobalDay, LIMITS.globalDaily - 1, oneUnderGlobalNow);
+assert.equal(takeQuota(oneUnderGlobalDb, "global-boundary-member", { now: oneUnderGlobalNow }).ok, true);
+assert.equal(oneUnderGlobalDb.prepare("SELECT count FROM usage WHERE user_id='*' AND day=?").get(oneUnderGlobalDay).count, LIMITS.globalDaily);
 const globalDb = new DatabaseSync(":memory:"); globalDb.exec(SCHEMA);
 globalDb.prepare("INSERT INTO usage VALUES('*','2026-09-26',?,?)").run(customLimits.globalDaily, quotaNow);
 for (const [userId, options] of [["member-global", {}], ["staff-global", { staff: true }]]) {

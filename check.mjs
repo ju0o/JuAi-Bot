@@ -8,6 +8,11 @@ import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quota
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
+const readme = fs.readFileSync("README.md", "utf8");
+assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
+assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
+assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");
+
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()), "category names must be non-empty");

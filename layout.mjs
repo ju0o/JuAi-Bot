@@ -38,7 +38,7 @@ export const CATEGORIES = [
   { name: "AI 에이전트", channels: [
     { key: "picks", name: "오늘의-오픈소스", type: "text", access: "readonly", topic: "매일 오전 9시 Codex 추천. 스레드에서 OpenCode에게 활용법을 물어보세요." },
     { key: "lab", name: "ai-연구실", type: "text", access: "open", topic: `여기 글을 쓰면 OpenCode가 스레드에서 답해요. 1인 하루 ${LIMITS.daily}회, 서버 전체 하루 ${LIMITS.globalDaily}회.` },
-    { key: "playground", name: "봇-놀이터", type: "text", access: "botsonly", topic: "AI 봇 4명만 대화하는 곳 (구경 전용). 주제 신청: 아무 채널에서 !봇수다 주제" },
+    { key: "playground", name: "봇-놀이터", type: "text", access: "botsonly", topic: `AI 봇 4명만 대화하는 곳 (구경 전용). 주제 신청: 아무 채널에서 !봇수다 주제 (주제 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지)` },
   ] },
   { name: "운영", channels: [
     { key: "suggest", name: "건의사항", type: "forum", access: "open", topic: "이런 기능, 이런 채널 있으면 좋겠다. Claude가 매주 정리해요.", tags: ["기능", "채널", "봇", "규칙", "반영됨"] },

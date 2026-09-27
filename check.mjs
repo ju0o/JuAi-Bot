@@ -65,6 +65,7 @@ for (const channel of CHANNELS) {
 }
 assert.ok(channelByKey.lab.topic.includes(String(LIMITS.daily)), "lab topic omits LIMITS.daily");
 assert.ok(channelByKey.lab.topic.includes(String(LIMITS.globalDaily)), "lab topic omits LIMITS.globalDaily");
+assert.ok(channelByKey.playground.topic.includes(`주제 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지`), "playground topic omits talk limits");
 for (const key of SUMMARY_KEYS) {
   assert.ok(channelByKey[key]);
   assert.ok(!["private", "botsonly"].includes(channelByKey[key].access), `summary channel is inaccessible: ${key}`);

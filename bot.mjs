@@ -619,13 +619,10 @@ const recent = new Map();
 async function spam(m) {
   if (isStaff(m.member)) return false;
   const now = Date.now();
-  const list = (recent.get(m.author.id) || []).filter((x) => now - x.at < 120_000); list.push({ c: m.content, ch: m.channelId, id: m.id, at: now }); recent.set(m.author.id, list);
-  const repeated = m.content.length > 10 && new Set(list.filter((x) => x.c === m.content).map((x) => x.ch)).size >= 3;
-  const fresh = m.member?.joinedTimestamp && now - m.member.joinedTimestamp < L.DAY_MS;
-  const links = (m.content.match(/https?:\/\//g) || []).length;
-  if (!repeated && !(fresh && links >= 4) && !(fresh && /@everyone|@here/.test(m.content))) return false;
+  const list = (recent.get(m.author.id) || []).filter((x) => now - x.at < L.SPAM_WINDOW_MS); list.push({ c: m.content, ch: m.channelId, id: m.id, at: now }); recent.set(m.author.id, list);
+  if (!L.isSpam(m.content, list, m.member?.joinedTimestamp, now)) return false;
   for (const x of list.filter((x) => x.c === m.content)) await (await hub.channels.fetch(x.ch)).messages.delete(x.id).catch(() => {});
-  await m.member?.timeout(3_600_000, "JuAi 스팸 감지").catch(() => {});
+  await m.member?.timeout(L.SPAM_TIMEOUT_MS, "JuAi 스팸 감지").catch(() => {});
   await log(`🚫 스팸 의심: <@${m.author.id}> 메시지 삭제 + 1시간 타임아웃\n\`\`\`${m.content.slice(0, 500).replace(/`/g, "'")}\`\`\``);
   await createCard("spam", `스팸 의심: ${name(m)}`, `같은 글을 여러 채널에 올리거나 링크를 많이 붙였어요. 메시지를 지우고 1시간 타임아웃했어요.\n1일 타임아웃으로 늘릴까요?`, { user_id: m.author.id });
   recent.delete(m.author.id);

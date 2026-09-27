@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, BADGE_MIN, BADGE_TOP, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, BADGE_MIN, BADGE_TOP, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SPAM_LINK_MIN, SPAM_MIN_LEN, SPAM_REPEAT_CHANNELS, SPAM_TIMEOUT_MS, SPAM_WINDOW_MS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN, isSpam, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -141,6 +141,13 @@ assert.equal(isValidSubKeyword(normalizeSubKeyword("a")), false, "one-character 
 assert.equal(isValidSubKeyword(normalizeSubKeyword(` ${"a".repeat(SUB_KEYWORD_MIN)} `)), true, "padded minimum-length subscriptions must be accepted");
 assert.equal(isValidSubKeyword(normalizeSubKeyword(" ".repeat(SUB_KEYWORD_MIN))), false, "whitespace-only subscriptions must be rejected");
 assert.equal(normalizeSubKeyword("a".repeat(SUB_KEYWORD_MAX + 1)).length, SUB_KEYWORD_MAX, "subscriptions must be capped at the maximum length");
+const spamNow = Date.parse("2026-09-28T00:00:00Z");
+const repeatedSpam = [{ c: "12345678901", ch: "a", at: spamNow }, { c: "12345678901", ch: "b", at: spamNow }];
+assert.equal(isSpam("12345678901", [...repeatedSpam, { c: "12345678901", ch: "c", at: spamNow }], spamNow - DAY_MS + 1, spamNow), true);
+assert.equal(isSpam("1234567890", [...repeatedSpam, { c: "1234567890", ch: "c", at: spamNow }], spamNow - DAY_MS + 1, spamNow), false);
+assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY_MS + 1, spamNow), true);
+assert.equal(isSpam("@everyone", [], spamNow - DAY_MS + 1, spamNow), true);
+assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY_MS, spamNow), false);
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);
 for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);

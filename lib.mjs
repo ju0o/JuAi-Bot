@@ -49,8 +49,20 @@ export const TALK_TOPIC_MIN = 4;
 export const TALK_TOPIC_MAX = 100;
 export const TALK_PENDING_MAX = 2;
 export const TALK_OFFSETS_MIN = [30, 270, 510];
+export const SPAM_WINDOW_MS = 120_000;
+export const SPAM_MIN_LEN = 10;
+export const SPAM_REPEAT_CHANNELS = 3;
+export const SPAM_LINK_MIN = 4;
+export const SPAM_TIMEOUT_MS = 3_600_000;
 export const normalizeSubKeyword = (text) => String(text).trim().slice(0, SUB_KEYWORD_MAX);
 export const isValidSubKeyword = (text) => text.length >= SUB_KEYWORD_MIN;
+
+export function isSpam(content, recent, joinedTimestamp, now = Date.now()) {
+  const repeated = content.length > SPAM_MIN_LEN && new Set(recent.filter((x) => x.c === content).map((x) => x.ch)).size >= SPAM_REPEAT_CHANNELS;
+  const fresh = joinedTimestamp && now - joinedTimestamp < DAY_MS;
+  const links = (content.match(/https?:\/\//g) || []).length;
+  return repeated || (fresh && links >= SPAM_LINK_MIN) || (fresh && /@everyone|@here/.test(content));
+}
 
 /** +1 question for giving feedback on someone else's post, at most bonusMax per quota day. Stored as usage rows "bonus:<id>". */
 export function grantBonus(db, userId, { now = Date.now(), limits = LIMITS } = {}) {

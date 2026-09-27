@@ -332,6 +332,9 @@ assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: -1 } }).params.last, 1);
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: 999 } }).params.last, 100);
 assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "general", last: "invalid" } }).params.last, 20);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: {} }), null);
+assert.equal(validateAdminPlan({ action: "delete_messages", params: { channel: "   " } }), null);
+assert.deepEqual(validateAdminPlan({ action: "delete_messages", params: { channel: "  general  " } }), { action: "delete_messages", params: { channel: "general", last: 20 }, summary: "delete_messages" });
 assert.equal(validateAdminPlan({ action: "create_channel", params: {} }), null);
 assert.equal(validateAdminPlan({ action: "create_channel", params: { name: true } }), null);
 assert.deepEqual(validateAdminPlan({ action: "create_channel", params: { name: "updates" } }), { action: "create_channel", params: { name: "updates" }, summary: "create_channel" });

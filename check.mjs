@@ -34,6 +34,10 @@ for (const channel of CHANNELS) {
   assert.ok(parent, `channel has no category: ${channel.key}`);
   assert.equal(channel.category, parent.name, `channel category mismatch: ${channel.key}`);
   if (channel.topic !== undefined) assert.ok(channel.topic.length <= 1024, `channel topic exceeds Discord limit: ${channel.key}`);
+  if (channel.type === "voice") {
+    assert.ok(!Object.hasOwn(channel, "topic"), `voice channel must not have a topic: ${channel.key}`);
+    assert.ok(!Object.hasOwn(channel, "tags"), `voice channel must not have tags: ${channel.key}`);
+  }
   if (channel.type === "forum") {
     assert.ok(Array.isArray(channel.tags) && channel.tags.length > 0, `forum has no tags: ${channel.key}`);
     assert.equal(new Set(channel.tags).size, channel.tags.length, `forum tags duplicate: ${channel.key}`);

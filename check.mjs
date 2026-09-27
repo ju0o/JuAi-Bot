@@ -67,6 +67,7 @@ const mention = (key) => {
   return `<#${"0".repeat(20)}>`;
 };
 assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
+assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
 
 const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);

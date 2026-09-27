@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, SUB_DAILY, SUB_MAX, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -77,6 +77,7 @@ assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
+assert.ok(GUIDE(mention).some((message) => message.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`)), "guide omits keyword length");
 assert.ok(GUIDE(mention).some((message) => message.includes("남의 글에 30자 이상 피드백") && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
 
 const help = HELP_TEXT(mention);
@@ -85,6 +86,7 @@ for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.
 assert.ok(help.includes("!남은횟수"));
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
 assert.ok(help.includes(`최대 ${SUB_MAX}개`) && help.includes(`하루 매칭 알림 ${SUB_DAILY}회`), "help omits subscription caps");
+assert.ok(help.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`), "help omits keyword length");
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);
 for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);

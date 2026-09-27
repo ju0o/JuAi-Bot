@@ -268,6 +268,7 @@ assert.deepEqual(extractJson('sure! ```json\n{"a":{"b":"}"}}\n```'), { a: { b: "
 assert.equal(extractJson("no json"), null);
 assert.equal(extractJson('{"a":1'), null);
 assert.equal(extractJson('{a:1}'), null);
+assert.equal(extractJson('{a:1} {"b":2}'), null);
 assert.deepEqual(extractJson('{"x":"q\\"}"}'), { x: 'q"}' });
 assert.deepEqual(extractJson('{"a":1} {"b":2}'), { a: 1 });
 assert.deepEqual(extractJson('x } {"a":1}'), { a: 1 });

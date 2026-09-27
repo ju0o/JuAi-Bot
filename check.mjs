@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, BADGE_MIN, BADGE_TOP, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -122,6 +122,8 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`!익명`) && messag
 const feedbackGuidePhrases = GUIDE(mention).filter((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`));
 assert.equal(feedbackGuidePhrases.length, 2, "guide must include both feedback minimum phrases");
 assert.ok(feedbackGuidePhrases.every((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`) && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
+const badgeGuide = GUIDE(mention).find((message) => message.includes('"피드백 장인"'));
+assert.ok(badgeGuide.includes(`최소 ${BADGE_MIN}개 이상`) && badgeGuide.includes(`${BADGE_TOP}명`), "guide omits badge minimum or top count");
 
 const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);

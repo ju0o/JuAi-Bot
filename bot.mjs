@@ -976,7 +976,7 @@ async function opsReport() {
 }
 
 async function monthlyBadge(month) {
-  const top = db.prepare("SELECT user_id,count FROM usage WHERE user_id LIKE 'fb:%' AND day=? AND count>=3 ORDER BY count DESC LIMIT 3").all(month)
+  const top = db.prepare(`SELECT user_id,count FROM usage WHERE user_id LIKE 'fb:%' AND day=? AND count>=${L.BADGE_MIN} ORDER BY count DESC LIMIT ${L.BADGE_TOP}`).all(month)
     .map((r) => ({ id: r.user_id.slice(3), n: r.count }));
   if (!top.length) return;
   const text = `🏅 **${Number(month.slice(5))}월의 피드백 장인**\n\n${top.map((x, i) => `${["🥇", "🥈", "🥉"][i]} <@${x.id}> · 피드백 ${x.n}개`).join("\n")}\n\n다른 사람의 프로젝트에 정성껏 피드백해 주셔서 고마워요! 이번 달 "피드백 장인" 역할을 드려요.`;

@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN } from "./lib.mjs";
+import { ANON_MIN, BADGE_MIN, BADGE_TOP, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_OFFSETS_MIN, TALK_PENDING_MAX, TALK_TOPIC_MAX, TALK_TOPIC_MIN } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -118,7 +118,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 ## ⚠️ 알아두세요
 • AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초. 서버 주인과 운영진은 하루 AI 질문 제한이 없어요. 매일 **오전 9시**에 충전돼요.
 • 🎁 다른 사람의 쇼케이스·피드백 글에 **${FEEDBACK_MIN}자 이상 피드백**을 달면 그날 **+1회** (하루 최대 ${LIMITS.bonusMax}회).
-• 🏅 한 달 동안 피드백을 가장 많이 준 3명은 **"피드백 장인"** 역할을 받아요 (매달 1일 발표).
+• 🏅 한 달 동안 피드백을 최소 ${BADGE_MIN}개 이상 준 사람 중 가장 많이 준 ${BADGE_TOP}명은 **"피드백 장인"** 역할을 받아요 (매달 1일 발표).
 • 무료 AI 모델이라 입력한 내용이 모델 개선에 쓰일 수 있어요. **비밀번호·API 키·개인정보는 절대 올리지 마세요.**
 • 추천·요약에서 내 글이 언급되기 싫으면 입장 질문에서 **"언급하지 말아주세요"**를 고르세요.
 • AI 답은 틀릴 수 있어요. 중요한 건 한 번 더 확인!`,

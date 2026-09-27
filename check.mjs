@@ -345,6 +345,8 @@ assert.deepEqual(chunk("aaa\nbbb\nccc", 7), ["aaa\nbbb", "ccc"]);
 assert.deepEqual(chunk(""), []);
 assert.deepEqual(chunk("abc", 3), ["abc"]);
 assert.deepEqual(chunk("ab\ncd", 5), ["ab\ncd"]);
+assert.deepEqual(chunk("x".repeat(1900)), ["x".repeat(1900)]);
+assert.ok(chunk("x".repeat(1901)).every((part) => part.length <= 1900));
 assert.deepEqual(chunk("```\naaaa\nbbbb\n```", 9), ["```\naaaa\n```", "```\nbbbb\n```"]);
 assert.deepEqual(chunk("```\nabc"), ["```\nabc\n```"]);
 const longCodeLineParts = chunk("```\n" + "x".repeat(25) + "\n```", 10);

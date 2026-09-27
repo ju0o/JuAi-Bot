@@ -119,6 +119,21 @@ assert.deepEqual(
   db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(({ name }) => name),
   ["answers", "cards", "faq", "kv", "picks", "profiles", "subs", "talk_requests", "usage", "votes"]
 );
+const schemaColumns = {
+  usage: ["user_id", "day", "count", "last_at"],
+  kv: ["key", "value"],
+  cards: ["id", "kind", "payload", "status", "message_id", "remind_at", "created_at"],
+  picks: ["repo", "day"],
+  answers: ["msg_id", "asker", "question", "answer", "url", "model", "at"],
+  votes: ["msg_id", "user_id", "vote", "at"],
+  faq: ["id", "source", "question", "answer", "url", "at"],
+  talk_requests: ["id", "user_id", "topic", "at", "used"],
+  subs: ["user_id", "keyword"],
+  profiles: ["user_id", "sns", "making", "github", "message_id", "updated_at"]
+};
+for (const [table, columns] of Object.entries(schemaColumns)) {
+  assert.deepEqual(db.prepare(`PRAGMA table_info(${table})`).all().map(({ name }) => name), columns, `${table} columns`);
+}
 const kvDb = new DatabaseSync(":memory:"); kvDb.exec(SCHEMA);
 assert.equal(kvGet(kvDb, "missing"), undefined);
 for (const [key, value] of [["string", "hello"], ["empty", ""], ["zero", 0], ["false", false], ["null", null], ["array", [1, "two"]], ["number", 42], ["boolean", true], ["object", { nested: [1, "two"] }]]) {

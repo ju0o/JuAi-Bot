@@ -51,9 +51,11 @@ for (const key of SUMMARY_KEYS) {
 }
 const roleKeys = new Set(ROLES.map(({ key }) => key));
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
-for (const { title, options } of ONBOARDING) {
+for (const { title, single, required, options } of ONBOARDING) {
   assert.ok(title, "onboarding question needs a title");
   assert.ok(title.length <= 100, `onboarding question title exceeds Discord limit: ${title}`);
+  assert.equal(typeof single, "boolean", `onboarding question single must be boolean: ${title}`);
+  assert.equal(typeof required, "boolean", `onboarding question required must be boolean: ${title}`);
   assert.ok(options.length > 0, `onboarding question has no options: ${title}`);
   const optionTitles = new Set();
   for (const option of options) {

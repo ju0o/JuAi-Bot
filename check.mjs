@@ -11,6 +11,12 @@ assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()), "category names must be non-empty");
 assert.equal(new Set(CATEGORIES.map(({ name }) => name)).size, CATEGORIES.length, "category names must be unique");
+for (const category of CATEGORIES) {
+  assert.ok(Array.isArray(category.channels) && category.channels.length > 0, `category has no channels: ${category.name}`);
+  for (const { key } of category.channels) {
+    assert.equal(CHANNELS.filter((channel) => channel.key === key).length, 1, `category channel must map exactly once: ${key}`);
+  }
+}
 assert.ok(CHANNELS.every(({ name }) => typeof name === "string" && name.trim()), "channel names must be non-empty");
 assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "channel names must be unique");
 assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");

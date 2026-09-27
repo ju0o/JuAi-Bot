@@ -488,6 +488,7 @@ assert.ok(similarity("hello worlds", "hello world") >= 0.3);
 assert.equal(rankedFaq?.id, 2);
 assert.equal(rankedFaq?.score, similarity("hello world", "hello world"));
 assert.equal(bestFaq([{ id: 1, question: "same question" }, { id: 2, question: "same question" }], "same question")?.id, 2);
+assert.equal(bestFaq([{ id: 1, question: "same question" }], "same question", 1)?.id, 1);
 
 const hits = matchSubs([{ user_id: "a", keyword: "MCP" }, { user_id: "b", keyword: "mcp" }, { user_id: "c", keyword: "Next js" }], "새 mcp 서버를 NextJS로 만들었어요");
 assert.deepEqual(matchSubs([], "MCP 서버"), new Map());

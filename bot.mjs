@@ -310,7 +310,7 @@ async function mentorPing(t, starter, post) {
     ...db.prepare("SELECT key FROM kv WHERE key LIKE 'joined:%'").all().map((r) => r.key.slice(7))]);
   const mentors = [];
   for (const uid of pool) {
-    if (mentors.length >= 2 || uid === starter.author.id || kvGet(db, `mentor:${uid}:${day}`)) continue;
+    if (mentors.length >= L.MENTOR_MAX || uid === starter.author.id || kvGet(db, `mentor:${uid}:${day}`)) continue;
     const mem = await guild.members.fetch(uid).catch(() => null); if (!mem || mem.user.bot) continue;
     const names = new Set(mem.roles.cache.map((r) => r.name));
     if (names.has("실무") && !names.has("AI 언급 제외") && fields.some((f) => names.has(f))) mentors.push(uid);

@@ -1,6 +1,6 @@
 // The whole JuAi server as data. setup.mjs applies it (idempotent, matched by name); bot.mjs looks channels up by key.
 
-import { FEEDBACK_MIN, LIMITS, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
+import { FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX } from "./lib.mjs";
 
 export const ROLES = [
   { key: "staff", name: "운영진", color: 0x2f7d6d, hoist: true, perms: ["ManageMessages", "ManageThreads", "ModerateMembers"] },
@@ -146,7 +146,7 @@ ${c("summary")} 🟣 Claude의 어제 대화 요약 (매일 오전 8시)
 • \`요약해줘\` 지금까지 대화를 3줄로 정리 (1회)
 
 **포럼에 글을 올리면 자동으로**
-• ${c("qa")} → 🔵 OpenCode 첫 답변 (입문자 질문이면 같은 분야 실무자도 불러요)
+• ${c("qa")} → 🔵 OpenCode 첫 답변 (입문자 질문이면 같은 분야 실무자 최대 ${MENTOR_MAX}명도 불러요)
 • ${c("feedback")} → 🟠 CommandCode 첫 피드백 + GitHub 링크가 있으면 🔵 코드 리뷰
 • ${c("showcase")} → GitHub 링크가 있으면 🔵 코드 리뷰
 • ${c("coproject")} → 🟠 찾는 분야 정리 + "공동프로젝트 알림" 역할에게 알림

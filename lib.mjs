@@ -35,6 +35,7 @@ export function pruneState(db, now = Date.now()) {
 }
 
 export const LIMITS = { daily: 5, gapMs: 30_000, globalDaily: 300, bonusMax: 3 };
+export const MENTOR_MAX = 2;
 export const FEEDBACK_MIN = 30;
 export const SUB_MAX = 5;
 export const SUB_DAILY = 3;

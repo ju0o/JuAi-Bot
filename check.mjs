@@ -73,7 +73,7 @@ const mention = (key) => {
 };
 assert.ok(GUIDE(mention).every((message) => message.length <= 2000));
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
-assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`)), "guide omits subscription max");
+assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
 assert.ok(GUIDE(mention).some((message) => message.includes("남의 글에 30자 이상 피드백") && message.includes(`하루 최대 ${LIMITS.bonusMax}회`)), "guide omits feedback bonus limit");
 
 const help = HELP_TEXT(mention);
@@ -81,6 +81,7 @@ assert.ok(help.length <= 2000);
 for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
+assert.ok(help.includes(`최대 ${SUB_MAX}개`) && help.includes(`하루 매칭 알림 ${SUB_DAILY}회`), "help omits subscription caps");
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);
 for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);

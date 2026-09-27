@@ -39,6 +39,8 @@ export const SUB_MAX = 5;
 export const SUB_DAILY = 3;
 export const SUB_KEYWORD_MIN = 2;
 export const SUB_KEYWORD_MAX = 20;
+export const normalizeSubKeyword = (text) => String(text).trim().slice(0, SUB_KEYWORD_MAX);
+export const isValidSubKeyword = (text) => text.length >= SUB_KEYWORD_MIN;
 
 /** +1 question for giving feedback on someone else's post, at most bonusMax per quota day. Stored as usage rows "bonus:<id>". */
 export function grantBonus(db, userId, { now = Date.now(), limits = LIMITS } = {}) {

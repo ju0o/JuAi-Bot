@@ -323,12 +323,12 @@ async function mentorPing(t, starter, post) {
 
 // ---------- 키워드 구독 ----------
 async function subscribe(m, text) {
-  const [cmd, ...rest] = text.split(/\s+/), kw = rest.join(" ").trim().slice(0, L.SUB_KEYWORD_MAX);
+  const [cmd, ...rest] = text.split(/\s+/), kw = L.normalizeSubKeyword(rest.join(" "));
   const reply = (content) => say("COMMANDCODE", m.channelId, { content, reply: { messageReference: m.id } });
   const mine = () => db.prepare("SELECT keyword FROM subs WHERE user_id=?").all(m.author.id).map((r) => r.keyword);
   if (cmd === "!구독목록") return reply(mine().length ? `🔔 구독 중: ${mine().map((k) => `\`${k}\``).join(", ")}\n-# 끄려면 \`!구독취소 단어\`` : "아직 구독한 단어가 없어요. `!구독 MCP`처럼 써보세요!");
   if (cmd === "!구독취소") { const n = db.prepare("DELETE FROM subs WHERE user_id=? AND keyword=?").run(m.author.id, kw).changes; return reply(n ? `\`${kw}\` 구독을 껐어요.` : `\`${kw}\`는 구독 중이 아니에요. \`!구독목록\`으로 확인해 보세요.`); }
-  if (kw.length < L.SUB_KEYWORD_MIN) return reply(`구독할 단어를 ${L.SUB_KEYWORD_MIN}글자 이상 붙여주세요. 예: \`!구독 MCP\``);
+  if (!L.isValidSubKeyword(kw)) return reply(`구독할 단어를 ${L.SUB_KEYWORD_MIN}글자 이상 붙여주세요. 예: \`!구독 MCP\``);
   if (mine().length >= L.SUB_MAX && !mine().includes(kw)) return reply(`구독은 ${L.SUB_MAX}개까지예요. \`!구독취소 단어\`로 하나 끄고 다시 해주세요.`);
   db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)").run(m.author.id, kw); stat("키워드 구독");
   return reply(`🔔 \`${kw}\` 구독했어요! 오늘의 추천이나 새 글에 이 단어가 나오면 알려드릴게요.\n-# 구독 중: ${mine().join(", ")}`);

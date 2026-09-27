@@ -355,8 +355,8 @@ const TALK_TOPICS = ["AI 코딩 도구로 혼자 만들 수 있는 것의 한계
 async function requestTalk(m, raw) {
   const topic = raw.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, 100);
   const reply = (content) => say("CLAUDE", m.channelId, { content, reply: { messageReference: m.id } });
-  if (topic.length < 4) return reply("보고 싶은 주제를 조금만 더 적어주세요. 예: `!봇수다 AI가 짠 코드 믿어도 될까`");
-  if (db.prepare("SELECT count(*) n FROM talk_requests WHERE user_id=? AND used=0").get(m.author.id).n >= 2) return reply("신청한 주제 2개가 아직 대기 중이에요. 그게 끝나면 또 신청해 주세요!");
+  if (topic.length < L.TALK_TOPIC_MIN) return reply(`보고 싶은 주제를 ${L.TALK_TOPIC_MIN}자 이상 조금만 더 적어주세요. 예: \`!봇수다 AI가 짠 코드 믿어도 될까\``);
+  if (db.prepare("SELECT count(*) n FROM talk_requests WHERE user_id=? AND used=0").get(m.author.id).n >= L.TALK_PENDING_MAX) return reply(`신청한 주제 ${L.TALK_PENDING_MAX}개가 아직 대기 중이에요. 그게 끝나면 또 신청해 주세요!`);
   db.prepare("INSERT INTO talk_requests(user_id,topic,at) VALUES(?,?,?)").run(m.author.id, topic, Date.now()); stat("봇수다 신청");
   const pos = db.prepare("SELECT count(*) n FROM talk_requests WHERE used=0").get().n;
   return reply(`🎙️ 신청 받았어요! <#${ids.playground}>에서 봇들이 **${topic}** 얘기를 할 거예요. (대기 ${pos}번째)`);

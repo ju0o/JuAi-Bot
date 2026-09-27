@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { PermissionFlagsBits } from "discord.js";
-import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
+import { matchSubs, bestFaq, similarity, grantBonus, peekQuota, takeQuota, quotaMessage, quotaDay, kstDate, kstHour, kstDay, kstMidnight, redact, stripAnsi, quote, chunk, extractJson, validateAdminPlan, pruneState, capMentors, ANON_MIN, FEEDBACK_MIN, LIMITS, MENTOR_MAX, SUB_DAILY, SUB_KEYWORD_MAX, SUB_KEYWORD_MIN, SUB_MAX, TALK_PENDING_MAX, TALK_TOPIC_MIN, isValidSubKeyword, normalizeSubKeyword, ADMIN_ACTIONS, DIRECT_ACTIONS, DAY_MS } from "./lib.mjs";
 import { SCHEMA, kvGet, kvSet, openDb } from "./db.mjs";
 import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES, SOURCE_GUIDE, STAFF_GUIDE, SUMMARY_KEYS } from "./layout.mjs";
 
@@ -84,6 +84,7 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`입문자 질문이
 assert.deepEqual(capMentors(["mentor-1", "mentor-2", "mentor-3"], MENTOR_MAX), ["mentor-1", "mentor-2"], "mentor ping must cap mentions");
 assert.ok(GUIDE(mention).some((message) => message.includes("!구독 MCP") && message.includes(`최대 ${SUB_MAX}개`) && message.includes(`하루 매칭 알림 ${SUB_DAILY}회`)), "guide omits subscription caps");
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`)), "guide omits keyword length");
+assert.ok(GUIDE(mention).some((message) => message.includes(`주제 ${TALK_TOPIC_MIN}자 이상`) && message.includes(`대기 ${TALK_PENDING_MAX}개까지`)), "guide omits talk limits");
 assert.ok(GUIDE(mention).some((message) => message.includes(`!익명`) && message.includes(`${ANON_MIN}자 이상`)), "guide omits anonymous-question minimum");
 const feedbackGuidePhrases = GUIDE(mention).filter((message) => message.includes(`${FEEDBACK_MIN}자 이상 피드백`));
 assert.equal(feedbackGuidePhrases.length, 2, "guide must include both feedback minimum phrases");
@@ -93,6 +94,7 @@ const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);
 for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
+assert.ok(help.includes(`주제 ${TALK_TOPIC_MIN}자 이상`) && help.includes(`대기 ${TALK_PENDING_MAX}개까지`), "help omits talk limits");
 for (const command of ["!구독", "!구독목록", "!구독취소"]) assert.ok(help.includes(command));
 assert.ok(help.includes(`최대 ${SUB_MAX}개`) && help.includes(`하루 매칭 알림 ${SUB_DAILY}회`), "help omits subscription caps");
 assert.ok(help.includes(`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`), "help omits keyword length");

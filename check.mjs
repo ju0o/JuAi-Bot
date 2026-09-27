@@ -47,6 +47,7 @@ for (const channel of CHANNELS) {
   }
 }
 assert.ok(channelByKey.lab.topic.includes(String(LIMITS.daily)), "lab topic omits LIMITS.daily");
+assert.ok(channelByKey.lab.topic.includes(String(LIMITS.globalDaily)), "lab topic omits LIMITS.globalDaily");
 for (const key of SUMMARY_KEYS) {
   assert.ok(channelByKey[key]);
   assert.ok(!["private", "botsonly"].includes(channelByKey[key].access), `summary channel is inaccessible: ${key}`);

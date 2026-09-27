@@ -21,6 +21,7 @@ for (const category of CATEGORIES) {
 assert.ok(CHANNELS.every(({ name }) => typeof name === "string" && name.trim()), "channel names must be non-empty");
 assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "channel names must be unique");
 assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");
+for (const role of ROLES) assert.ok(Number.isInteger(role.color) && role.color >= 0 && role.color <= 0xFFFFFF, `role color must be an integer from 0 to 0xFFFFFF: ${role.key}`);
 for (const role of ROLES) for (const perm of role.perms) {
   assert.ok(Object.hasOwn(PermissionFlagsBits, perm), `unknown role permission: ${role.key}/${perm}`);
 }

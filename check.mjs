@@ -40,6 +40,8 @@ for (const channel of CHANNELS) {
   }
   if (channel.type === "forum") {
     assert.ok(Array.isArray(channel.tags) && channel.tags.length > 0, `forum has no tags: ${channel.key}`);
+    assert.ok(channel.tags.length <= 20, `forum has too many tags: ${channel.key}`);
+    assert.ok(channel.tags.every((name) => typeof name === "string" && name.trim()), `forum tag names must be non-empty strings: ${channel.key}`);
     assert.equal(new Set(channel.tags).size, channel.tags.length, `forum tags duplicate: ${channel.key}`);
     assert.ok(channel.tags.every((name) => name.length <= 20), `forum tag name exceeds Discord limit: ${channel.key}`);
   }

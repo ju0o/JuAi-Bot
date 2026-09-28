@@ -13,6 +13,21 @@ const readme = fs.readFileSync("README.md", "utf8");
 const setup = fs.readFileSync("setup.mjs", "utf8");
 const bot = fs.readFileSync("bot.mjs", "utf8");
 const ai = fs.readFileSync("ai.mjs", "utf8");
+const botId = Function(`${setup.match(/export const botId = \(token\) => [^;]+;/)?.[0].replace("export ", "")}; return botId;`)();
+assert.equal(botId("MTIzNDU2Nzg5.MTIz.token"), "123456789", "setup must extract a bot id from the token prefix");
+assert.equal(botId(""), undefined, "setup must leave a missing bot token without an id");
+const findGuild = Function("env", `${setup.match(/export async function findGuild\(client\) \{[\s\S]*?\n\}/)?.[0].replace("export ", "")}; return findGuild;`)({});
+const guildCollection = (guilds) => ({
+  get: (id) => guilds.find((guild) => guild.id === id),
+  find: (predicate) => guilds.find(predicate),
+  values: () => guilds.values(),
+});
+const offlineGuildClient = (guilds) => ({ guilds: { fetch: async (id) => id ? guilds.find((guild) => guild.id === id) : guildCollection(guilds) } });
+const namedGuilds = [{ id: "1", name: "Other" }, { id: "2", name: "JuAi 운영" }];
+assert.equal((await findGuild(offlineGuildClient(namedGuilds))).id, "2", "setup must find a guild by the JuAi name");
+const configuredFindGuild = Function("env", `${setup.match(/export async function findGuild\(client\) \{[\s\S]*?\n\}/)?.[0].replace("export ", "")}; return findGuild;`)({ JUAI_GUILD_ID: "1" });
+assert.equal((await configuredFindGuild(offlineGuildClient(namedGuilds))).id, "1", "setup must prefer the configured guild id");
+await assert.rejects(() => findGuild(offlineGuildClient([{ id: "3", name: "Other" }])), /JuAi 서버를 못 찾았어요/, "setup must explain when no guild matches");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
 const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink(", bot.indexOf("async function onInteraction(i) {")));

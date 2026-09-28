@@ -247,6 +247,17 @@ assert.match(requestTalkSource, /if \(db\.prepare\("SELECT count\(\*\) n FROM ta
 assert.ok(requestTalkSource.indexOf("topic.length < L.TALK_TOPIC_MIN") < requestTalkSource.indexOf(talkInsert), "short talk guard must precede insertion");
 assert.ok(requestTalkSource.indexOf("n >= L.TALK_PENDING_MAX") < requestTalkSource.indexOf(talkInsert), "pending talk guard must precede insertion");
 
+const startTalkSource = bot.slice(bot.indexOf("async function startTalk() {"), bot.indexOf("\nfunction scheduleTalk()", bot.indexOf("async function startTalk() {")));
+assert.match(startTalkSource, /if \(kvGet\(db, "talk_session"\)\) return;/, "startTalk must return when a talk session already exists");
+const talkRequestClaim = 'req = db.prepare("SELECT * FROM talk_requests WHERE used=0 ORDER BY at LIMIT 1").get();';
+assert.ok(startTalkSource.includes(talkRequestClaim), "startTalk must claim the oldest unused talk request");
+assert.ok(startTalkSource.indexOf(talkRequestClaim) < startTalkSource.indexOf("const fallback ="), "talk requests must be claimed before fallback topics are chosen");
+assert.match(startTalkSource, /멤버 이름은 쓰지 마/, "talk opener prompt must forbid member names");
+assert.match(startTalkSource, /String\(carry && part > 1 \? carry\.topic : req\?\.topic \|\| d\.topic \|\| "자유 주제"\)\.slice\(0, L\.TALK_TOPIC_MAX\)/, "talk topics must use the shared maximum");
+const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot.indexOf("\n// ---------- 프로젝트 목록", bot.indexOf("async function talkStep() {")));
+assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
+assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");
+
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()), "category names must be non-empty");

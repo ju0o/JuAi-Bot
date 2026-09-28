@@ -73,6 +73,11 @@ const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bo
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
+const rememberAnswerSource = bot.slice(bot.indexOf("function rememberAnswer("), bot.indexOf("\nfunction addFaq("));
+assert.match(rememberAnswerSource, /for \(const e of \["👍", "👎"\]\) msg\.react\(e\)\.catch\(\(\) => \{\}\);/, "answers must get both thumbs-up and thumbs-down reactions");
+const onVoteSource = bot.slice(bot.indexOf("async function onVote("), bot.indexOf("\nasync function onSolved("));
+assert.equal([...onVoteSource.matchAll(/addFaq\(/g)].length, 1, "onVote must have one guarded FAQ insertion");
+assert.match(onVoteSource, /if \(vote === 1 && user\.id === row\.asker\) addFaq\(/, "only the original asker's thumbs-up may add a FAQ");
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";

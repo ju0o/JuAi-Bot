@@ -97,6 +97,12 @@ assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?ret
 assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?await codeReview\(t, starter\)/, "showcase threads must call codeReview");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.feedback\) await codeReview\(t, starter\);/, "feedback threads must call codeReview");
 assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "showcase refresh must return before the forum quota check");
+assert.ok(onThreadSource.includes("if (t.parentId === ids.coproject) return coprojectMatch(t, post);"), "coproject threads must call coprojectMatch");
+assert.ok(onThreadSource.indexOf("return coprojectMatch(t, post);") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "coproject matching must return before the forum quota check");
+const coprojectSource = bot.slice(bot.indexOf("async function coprojectMatch(t, post) {"), bot.indexOf("\n// ---------- welcome + profile ----------"));
+assert.match(coprojectSource, /await say\("COMMANDCODE", t\.id, \{/ , "coproject matching must post through CommandCode");
+assert.match(coprojectSource, /const fields = \(want\.fields \|\| \[\]\)\.filter\(\(f\) => INTERESTS\.includes\(f\)\);/, "coproject matching must keep only INTERESTS fields");
+assert.match(coprojectSource, /const ping = guild\.roles\.cache\.find\(\(r\) => r\.name === "공동프로젝트 알림"\);[\s\S]*allowedMentions: \{ roles: ping \? \[ping\.id\] : \[\] \}/, "coproject matching must ping only the 공동프로젝트 알림 role");
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));

@@ -156,8 +156,17 @@ assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.n
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");
 assert.match(mentorPingSource, /const mentors = L\.capMentors\(candidates, L\.MENTOR_MAX\);[\s\S]*mentors\.map\(\(u\) => `<@\$\{u\}>`\)/, "mentor ping must cap mentors before mentioning them");
 const subscribeSource = bot.slice(bot.indexOf("async function subscribe(m, text) {"), bot.indexOf("\nasync function notifySubs", bot.indexOf("async function subscribe(m, text) {")));
+const subscriptionListGuard = 'if (cmd === "!구독목록") return reply(mine()';
+const subscriptionCancelGuard = 'if (cmd === "!구독취소") { const n = db.prepare("DELETE FROM subs';
+const subscriptionKeywordValidation = "if (!L.isValidSubKeyword(kw)) return reply(";
 const subscriptionCapGuard = "if (mine().length >= L.SUB_MAX && !mine().includes(kw)) return reply(";
 const subscriptionInsert = 'db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)")';
+assert.ok(subscribeSource.includes('if (cmd === "!구독목록") return reply(mine().length ?') && subscribeSource.includes('"아직 구독한 단어가 없어요. `!구독 MCP`처럼 써보세요!"'), "empty subscription lists must explain how to subscribe");
+assert.ok(subscribeSource.includes('if (cmd === "!구독취소") {') && subscribeSource.includes("는 구독 중이 아니에요."), "cancelling an unsubscribed keyword must explain that it was not subscribed");
+assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription list must return before keyword validation");
+assert.ok(subscribeSource.indexOf(subscriptionCancelGuard) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription cancel must return before keyword validation");
+assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription list must return before insertion");
+assert.ok(subscribeSource.indexOf(subscriptionCancelGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cancel must return before insertion");
 assert.match(subscribeSource, /if \(mine\(\)\.length >= L\.SUB_MAX && !mine\(\)\.includes\(kw\)\) return reply\(`구독은 \$\{L\.SUB_MAX\}개까지예요\./, "subscription max must return the cap reply for a new keyword");
 assert.ok(subscribeSource.indexOf(subscriptionCapGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cap reply must precede keyword insertion");
 const notifySubsSource = bot.slice(bot.indexOf("async function notifySubs("), bot.indexOf("\n// ---------- 봇 놀이터", bot.indexOf("async function notifySubs(")));

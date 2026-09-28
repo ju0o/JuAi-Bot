@@ -29,7 +29,7 @@ assert.ok(readme.includes("OpenCode 개인 메시지도 하루 질문 횟수를 
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
 assert.ok(onDirectSource.indexOf(shortAnonGuard) < onDirectSource.indexOf("const q = L.takeQuota"), "short anonymous questions must skip quota before takeQuota");
-assert.ok(onDirectSource.includes("운영진은 AI 질문 횟수 제한이 없어요."), "DM quota check must preserve the staff sentence");
+assert.match(onDirectSource, /isStaff\(member\)\s*\?\s*"운영진은 AI 질문 횟수 제한이 없어요\."\s*:\s*`오늘 남은 질문 \*\*\$\{q\.left\}\/\$\{q\.total\}\*\* · 매일 오전 9시 충전`/, "DM quota response must branch on staff status");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;
 const talkTopic = talkInput.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, TALK_TOPIC_MAX);

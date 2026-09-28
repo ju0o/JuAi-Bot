@@ -64,7 +64,13 @@ for (const engine of ["codex", "opencode", "commandcode"]) {
 const childEnv = ai.match(/^const CHILD_ENV = .*$/m)?.[0] ?? "";
 assert.ok(childEnv && !/DISCORD|TOKEN|SECRET|KEY/i.test(childEnv), "child env must not allow Discord token keys");
 assert.match(ai, /const COMMANDCODE_MODEL = process\.env\.JUAI_COMMANDCODE_MODEL \|\| "poolside\/laguna-s-2\.1-free";/, "CommandCode must default to Laguna");
-assert.match(ai, /if \(engine === "commandcode"[\s\S]{0,900}engine = "opencode";/, "CommandCode must fall back to OpenCode");
+const fallbackSource = ai.slice(ai.indexOf("async function runWithFallback"), ai.indexOf("\nexport function ai("));
+assert.match(ai, /const COOLDOWN_MS = 30 \* 60_000;/, "failed free models must cool down for 30 minutes");
+assert.match(fallbackSource, /catch \(e\) \{ benched\.set\(COMMANDCODE_MODEL, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed CommandCode must be benched for the cooldown");
+assert.match(fallbackSource, /catch \(e\) \{ lastError = e; benched\.set\(model, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed OpenCode models must be benched for the cooldown");
+assert.match(fallbackSource, /OPENCODE_MODELS\.filter\(\(m\) => \(benched\.get\(m\) \|\| 0\) < now\)/, "OpenCode must skip models still inside the bench");
+assert.ok(fallbackSource.indexOf("alertHook(lastError);") < fallbackSource.indexOf("throw lastError;"), "all-free-model failure must alert before rethrowing");
+assert.match(fallbackSource, /if \(engine === "commandcode"[\s\S]{0,900}engine = "opencode";/, "CommandCode must fall back to OpenCode");
 assert.match(readme, /^\| Claude \|[^\n]*Claude Code CLI \(Haiku\) \|$/m, "README must name Claude as Haiku");
 assert.match(readme, /^\| CommandCode \|[^\n]*Laguna S 2\.1[^\n]*\|$/m, "README must name CommandCode as Laguna S 2.1");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");

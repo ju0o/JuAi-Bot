@@ -13,6 +13,9 @@ const readme = fs.readFileSync("README.md", "utf8");
 const setup = fs.readFileSync("setup.mjs", "utf8");
 const bot = fs.readFileSync("bot.mjs", "utf8");
 const ai = fs.readFileSync("ai.mjs", "utf8");
+const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
+assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
+assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
 for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);

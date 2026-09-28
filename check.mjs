@@ -119,6 +119,15 @@ const mentorPingSource = bot.slice(bot.indexOf("async function mentorPing("), bo
 assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.name === "입문"\)\) return;/, "mentor ping must return unless the asker has the 입문 role");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");
 assert.match(mentorPingSource, /const mentors = L\.capMentors\(candidates, L\.MENTOR_MAX\);[\s\S]*mentors\.map\(\(u\) => `<@\$\{u\}>`\)/, "mentor ping must cap mentors before mentioning them");
+const subscribeSource = bot.slice(bot.indexOf("async function subscribe(m, text) {"), bot.indexOf("\nasync function notifySubs", bot.indexOf("async function subscribe(m, text) {")));
+const subscriptionCapGuard = "if (mine().length >= L.SUB_MAX && !mine().includes(kw)) return reply(";
+const subscriptionInsert = 'db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)")';
+assert.match(subscribeSource, /if \(mine\(\)\.length >= L\.SUB_MAX && !mine\(\)\.includes\(kw\)\) return reply\(`구독은 \$\{L\.SUB_MAX\}개까지예요\./, "subscription max must return the cap reply for a new keyword");
+assert.ok(subscribeSource.indexOf(subscriptionCapGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cap reply must precede keyword insertion");
+const notifySubsSource = bot.slice(bot.indexOf("async function notifySubs("), bot.indexOf("\n// ---------- 봇 놀이터", bot.indexOf("async function notifySubs(")));
+const subscriptionWrite = "kvSet(db, key, sent + 1)";
+assert.match(notifySubsSource, /if \(uid === authorId \|\| sent >= L\.SUB_DAILY \|\| byUser\.has\(uid\)\) continue;/, "subscription notifications must skip the author and daily cap");
+assert.ok(notifySubsSource.indexOf("if (uid === authorId || sent >= L.SUB_DAILY || byUser.has(uid)) continue;") < notifySubsSource.indexOf(subscriptionWrite), "subscription notification skips must precede subsent writes");
 const rememberAnswerSource = bot.slice(bot.indexOf("function rememberAnswer("), bot.indexOf("\nfunction addFaq("));
 assert.match(rememberAnswerSource, /for \(const e of \["👍", "👎"\]\) msg\.react\(e\)\.catch\(\(\) => \{\}\);/, "answers must get both thumbs-up and thumbs-down reactions");
 const onVoteSource = bot.slice(bot.indexOf("async function onVote("), bot.indexOf("\nasync function onSolved("));

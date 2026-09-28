@@ -20,6 +20,11 @@ assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.repl
 assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
+const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map((model) => model.slice(1, -1)) ?? [];
+assert.ok(defaultModels.length > 0 && defaultModels.every((model) => model.includes("free")), "OpenCode default models must all be free");
+assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}model \|\| "haiku"/, "member Claude must default to Haiku");
+const commandSource = ai.slice(ai.indexOf("function command("), ai.indexOf("\nfunction run("));
+assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model]) => model === "sonnet" && commandSource.slice(0, commandSource.indexOf(model)).includes('engine === "claude-dev"')), "Sonnet must only be used by claude-dev");
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
 assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");
 assert.doesNotMatch(aiCloseSource, /resolve\(out\)/, "successful AI CLI close must not resolve raw stdout");

@@ -67,6 +67,7 @@ assert.ok(!guildRemainingQuotaBranch.includes("takeQuota"), "guild !남은횟수
 assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.'), "outside-thread summary must explain the required scope");
 assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");
 assert.match(onMessageSource, /if \(\(parent === ids\.feedback \|\| parent === ids\.showcase\) && m\.channel\.ownerId !== m\.author\.id && m\.content\.length >= L\.FEEDBACK_MIN\) \{[\s\S]*?L\.grantBonus\(db, m\.author\.id\)[\s\S]*?\n  \}\n  if \(m\.channelId === ids\.lab\) return labQuestion\(m\);/, "feedback bonus must be scoped and granted before labQuestion");
+assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(`fb:\$\{m\.author\.id\}`, L\.kstDate\(\)\.slice\(0, 7\), Date\.now\(\)\);[\s\S]*?L\.grantBonus\(db, m\.author\.id\)/, "feedback bonus must record monthly fb usage before granting the bonus");
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
@@ -81,6 +82,9 @@ assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.ind
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
+const monthlyBadgeSource = bot.slice(bot.indexOf("async function monthlyBadge(month) {"), bot.indexOf("\nconst snowflakeTime"));
+assert.match(monthlyBadgeSource, /user_id LIKE 'fb:%'[\s\S]*day=\?[\s\S]*count>=\$\{L\.BADGE_MIN\}[\s\S]*LIMIT \$\{L\.BADGE_TOP\}/, "monthly badge must select qualifying fb usage rows with the configured limit");
+assert.match(tickSource, /if \(today\.endsWith\("-01"\) && h >= 10\) \{[\s\S]*?monthlyBadge\(month\)/, "monthly badge must be scheduled on KST day 1 from 10:00");
 const mentorPingSource = bot.slice(bot.indexOf("async function mentorPing("), bot.indexOf("\n// ---------- 키워드 구독"));
 assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.name === "입문"\)\) return;/, "mentor ping must return unless the asker has the 입문 role");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");

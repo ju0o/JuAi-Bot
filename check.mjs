@@ -54,6 +54,8 @@ const commandPaths = {
 };
 for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includes(path), `bot path missing: ${command}`);
 const onMessageSource = bot.slice(bot.indexOf("async function onMessage(m) {"), bot.indexOf("\nconst PERSONA ="));
+const spamSource = bot.slice(bot.indexOf("async function spam(m) {"), bot.indexOf("\n// ----------", bot.indexOf("async function spam(m) {")));
+assert.ok(spamSource.indexOf("if (isStaff(m.member)) return false;") < spamSource.indexOf("L.isSpam("), "staff must skip spam detection");
 const summaryGuard = "if (/^!?요약(해\\s?줘)?$/.test(text)) {";
 const guildRemainingQuotaBranch = onMessageSource.slice(onMessageSource.indexOf(commandPaths["!남은횟수"]), onMessageSource.indexOf(summaryGuard));
 assert.ok(guildRemainingQuotaBranch.includes("L.peekQuota(db, m.author.id)"), "guild !남은횟수 must use peekQuota");
@@ -236,6 +238,7 @@ assert.equal(isSpam("@everyone", [], spamNow - DAY_MS + 1, spamNow), true);
 assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY_MS, spamNow), false);
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SPAM_WINDOW_MS / 60_000}분 안에 같은 글을 ${SPAM_REPEAT_CHANNELS}개 채널`)), "guide omits spam repeat boundary");
 assert.ok(GUIDE(mention).some((message) => message.includes(`링크 ${SPAM_LINK_MIN}개 이상`) && message.includes(`${SPAM_MIN_LEN}자 이하는 반복 글로 세지 않으며`) && message.includes(`${SPAM_TIMEOUT_MS / 3_600_000}시간 타임아웃`)), "guide omits dynamic spam limits");
+assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 제외돼요.")), "guide omits Founder/staff spam exemption");
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);
 for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);

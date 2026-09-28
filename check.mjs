@@ -183,6 +183,16 @@ assert.match(coprojectSource, /const fields = \(want\.fields \|\| \[\]\)\.filter
 assert.match(coprojectSource, /const ping = guild\.roles\.cache\.find\(\(r\) => r\.name === "공동프로젝트 알림"\);[\s\S]*allowedMentions: \{ roles: ping \? \[ping\.id\] : \[\] \}/, "coproject matching must ping only the 공동프로젝트 알림 role");
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
+const githubContextSource = bot.slice(bot.indexOf("async function githubContext(text) {"), bot.indexOf("\nasync function repoContext", bot.indexOf("async function githubContext(text) {")));
+assert.match(githubContextSource, /matchAll\(GH\)\]\.slice\(0, 3\)/, "githubContext must try at most three links");
+const repoContextSource = bot.slice(bot.indexOf("async function repoContext(hit) {"), bot.indexOf("\nconst reviewPrompt", bot.indexOf("async function repoContext(hit) {")));
+assert.match(repoContextSource, /const meta = await json\(""\); if \(!meta \|\| meta\.private\) return null;/, "repoContext must return null for missing or private repositories");
+const resolveRepoSource = bot.slice(bot.indexOf("async function resolveRepo(text) {"), bot.indexOf("\n/** \"리뷰해줘\"", bot.indexOf("async function resolveRepo(text) {")));
+assert.match(resolveRepoSource, /users\/\$\{user\}\/repos\?sort=pushed&per_page=10/, "resolveRepo must request user repositories sorted by pushed time");
+assert.match(resolveRepoSource, /const pick = list\.find\(\(r\) => !r\.fork && !r\.private\);/, "resolveRepo must select the first public non-fork repository");
+const reviewPromptSource = bot.slice(bot.indexOf("const reviewPrompt ="), bot.indexOf("\nasync function codeReview", bot.indexOf("const reviewPrompt =")));
+assert.match(reviewPromptSource, /코드 본문은 못 봤다는 걸 전제로/, "review prompt must say the code body was not read");
+assert.match(reviewPromptSource, /잘한 점 2개[\s\S]*개선하면 좋을 점 3개/, "review prompt must ask for two strengths and three improvements");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
 assert.match(tickSource, /SELECT id FROM cards WHERE status='HOLD' AND remind_at<=\?[\s\S]*setCard\(c\.id, "REVISED"\)/, "due HOLD cards must be marked revised");
 assert.match(tickSource, /createCard\(card\.kind, `다시 물어봐요: \$\{card\.payload\.title\}`, card\.payload\.body, card\.payload\)/, "due HOLD cards must become new cards");
@@ -298,6 +308,7 @@ const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");
+assert.match(reviewRequestSource, /if \(!repo\) return send\("저장소를 못 찾았어요\.[\s\S]*?\);[\s\S]*?const text = await ai\(/, "a resolveRepo miss must reply before calling ai");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;
 const talkTopic = talkInput.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, TALK_TOPIC_MAX);

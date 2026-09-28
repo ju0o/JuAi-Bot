@@ -451,6 +451,14 @@ for (const action of ADMIN_ACTIONS.filter((action) => !DIRECT_ACTIONS.has(action
   const route = action === "delete_messages" ? /if \(plan\.action === "delete_messages"\)[\s\S]*return createCard\("delete"/ : new RegExp(`${action}:.*createCard\\(`);
   assert.match(approvalBranch, route, `${action} must route through an approval card`);
 }
+const executeSource = bot.slice(bot.indexOf("async function execute(card) {"), bot.indexOf("\nasync function implement(", bot.indexOf("async function execute(card) {")));
+assert.match(executeSource, /case "notice":\s+await sayLong\("CLAUDE", ids\.notice, p\.text\)/, "notice cards must post to the notice channel");
+assert.match(executeSource, /case "rule":\s+\{[\s\S]*kvGet\(db, "rules"\)[\s\S]*kvSet\(db, "rules", rules\)[\s\S]*ids\.rules[\s\S]*msg\.edit\(content\)/, "rule cards must rewrite the rules message");
+assert.match(executeSource, /case "delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.channelId\)[\s\S]*ch\.bulkDelete\(p\.messageIds, true\)/, "delete cards must bulk-delete the listed messages");
+assert.match(executeSource, /case "timeout": case "spam":\s+\{[\s\S]*guild\.members\.fetch\(p\.user_id\)[\s\S]*card\.kind === "spam" \? 24 \* 60 : p\.minutes[\s\S]*member\.timeout\(minutes \* 60_000/, "timeout cards must use card minutes and spam cards 24 hours");
+assert.match(executeSource, /case "channel_create":\s+\{[\s\S]*guild\.channels\.create\(\{ name: p\.name,[\s\S]*p\.kind === "forum"/, "channel cards must create the named channel");
+assert.match(executeSource, /case "channel_delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.channelId\)[\s\S]*ch\.delete\(\)/, "channel delete cards must delete the named channel");
+assert.match(executeSource, /throw new Error\(`모르는 카드 종류: \$\{card\.kind\}`\)/, "unknown card kinds must throw the Korean error");
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 assert.deepEqual(

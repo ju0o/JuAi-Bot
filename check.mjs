@@ -223,6 +223,12 @@ assert.match(tickSource, /const due = L\.TALK_OFFSETS_MIN\.map\(\(m, n\) => \[n,
 const monthlyBadgeSource = bot.slice(bot.indexOf("async function monthlyBadge(month) {"), bot.indexOf("\nconst snowflakeTime"));
 assert.match(monthlyBadgeSource, /user_id LIKE 'fb:%'[\s\S]*day=\?[\s\S]*count>=\$\{L\.BADGE_MIN\}[\s\S]*LIMIT \$\{L\.BADGE_TOP\}/, "monthly badge must select qualifying fb usage rows with the configured limit");
 assert.match(tickSource, /if \(today\.endsWith\("-01"\) && h >= 10\) \{[\s\S]*?monthlyBadge\(month\)/, "monthly badge must be scheduled on KST day 1 from 10:00");
+const progressNudgeSource = bot.slice(bot.indexOf("async function progressNudge() {"), bot.indexOf("\n\nasync function dailyStarter", bot.indexOf("async function progressNudge() {")));
+assert.match(progressNudgeSource, /threadsSince\(\[ids\.showcase\], now - 120 \* L\.DAY_MS\)/, "progress nudge must inspect showcase threads only");
+assert.match(progressNudgeSource, /now - t\.createdTimestamp < 7 \* L\.DAY_MS \|\| now - last < 7 \* L\.DAY_MS \|\| now - last > 45 \* L\.DAY_MS/, "progress nudge must keep threads quiet for 7 to 45 days");
+assert.match(progressNudgeSource, /now - \(kvGet\(db, `nudge:\$\{t\.id\}`\) \|\| 0\) < 14 \* L\.DAY_MS/, "progress nudge must skip threads nudged within 14 days");
+assert.match(progressNudgeSource, /owner\.user\.bot \|\| \(optoutRole && owner\.roles\.cache\.has\(optoutRole\.id\)\)/, "progress nudge must skip bot owners and the AI 언급 제외 role");
+assert.match(progressNudgeSource, /if \(n >= 8\) break;[\s\S]*?await say\("COMMANDCODE", t\.id,/, "progress nudge must stop after eight posts and ask CommandCode");
 const mentorPingSource = bot.slice(bot.indexOf("async function mentorPing("), bot.indexOf("\n// ---------- 키워드 구독"));
 assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.name === "입문"\)\) return;/, "mentor ping must return unless the asker has the 입문 role");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");

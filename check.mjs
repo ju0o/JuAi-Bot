@@ -256,6 +256,10 @@ const botsonlyOverwrite = overwriteSource.match(/botsonly:\s*(\[[\s\S]*?\n    pr
 assert.match(botsonlyOverwrite, /id: everyone, deny: \[[^\]]*P\.SendMessages/, "botsonly channels must deny everyone SendMessages");
 assert.ok(!/id: everyone, deny: \[[^\]]*P\.ViewChannel/.test(botsonlyOverwrite), "botsonly channels must not deny everyone ViewChannel");
 assert.match(overwriteSource, /private:\s*\[\{ id: everyone, deny: \[P\.ViewChannel\]/, "private channels must deny everyone ViewChannel");
+assert.match(setup, /const existingRoles = await guild\.roles\.fetch\(\);[\s\S]*?let role = existingRoles\.find\(\(x\) => x\.name === r\.name\);[\s\S]*?else await role\.edit\(/, "setup must find existing roles by name and update them");
+assert.match(setup, /const all = await guild\.channels\.fetch\(\);[\s\S]*?let chan = all\.find\(\(c\) => c && c\.type === TYPE\[ch\.type\] && c\.name === ch\.name\);[\s\S]*?else \{[\s\S]*?await chan\.edit\(/, "setup must find existing channels by name and update them");
+assert.match(setup, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch\(\{ limit: 1 \}\)\.catch\(\(\) => null\) : null;\s*if \(!msgs \|\| msgs\.size === 0\) await c\.delete\(/, "setup must delete default channels only when empty");
+assert.match(setup, /for \(let n = ONBOARDING\.length; n > 0; n--\) \{[\s\S]*?await putOnboarding\(ONBOARDING, n\);[\s\S]*?catch \(e\) \{ if \(!\/TOO_MANY_ONBOARDING_PROMPTS\/.test\(e\.message\) \|\| n === 1\) throw e; \}/, "setup must retry onboarding with fewer shown questions when Discord caps prompts");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");
 const defaultChannelKeys = setup.match(/default_channel_ids:\s*\[([\s\S]*?)\]\.map/)?.[1].matchAll(/"([^"]+)"/g);

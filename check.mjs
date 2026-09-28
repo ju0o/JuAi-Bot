@@ -78,7 +78,11 @@ assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?return refreshProjects\(\)\.catch\(/, "showcase threads must refresh projects and return");
+assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?await codeReview\(t, starter\)/, "showcase threads must call codeReview");
+assert.match(onThreadSource, /if \(t\.parentId === ids\.feedback\) await codeReview\(t, starter\);/, "feedback threads must call codeReview");
 assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "showcase refresh must return before the forum quota check");
+const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
+assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");

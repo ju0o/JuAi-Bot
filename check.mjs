@@ -323,6 +323,7 @@ const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bo
 assert.match(onDirectSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return reply\(L\.quotaMessage\(q\)\);/, "DM quota refusal must return quotaMessage");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf('ai("opencode"'), "DM quota refusal must return before calling ai");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf("for (const part of L.chunk"), "DM quota refusal must return before sending answer chunks");
+assert.match(onDirectSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?L\.chunk\(answer \+ footer\)/, "DM quota footer must be finite-only");
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
 assert.match(onDirectSource, /if \(!member\) return reply\("JuAi 서버 멤버만 쓸 수 있어요\./, "DM must reject non-members before handling commands");
 assert.ok(onDirectSource.includes("if (!text || /^!?(도움말|help)$/i.test(text)) return reply(DM_HELP);"), "empty or help DMs must return DM_HELP");
@@ -342,6 +343,7 @@ assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT gith
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");
 assert.match(reviewRequestSource, /if \(!repo\) return send\("저장소를 못 찾았어요\.[\s\S]*?\);[\s\S]*?const text = await ai\(/, "a resolveRepo miss must reply before calling ai");
+assert.match(reviewRequestSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?L\.chunk\(`🔍 \*\*코드 리뷰\*\*[^`]*\$\{text\}\$\{footer\}`\)/, "code-review quota footer must be finite-only");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;
 const talkTopic = talkInput.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, TALK_TOPIC_MAX);

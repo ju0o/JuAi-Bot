@@ -224,8 +224,13 @@ assert.match(onSolvedSource, /addFaq\(`thread:\$\{after\.id\}`,/, "solved FAQ en
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
+assert.match(onDirectSource, /if \(!member\) return reply\("JuAi 서버 멤버만 쓸 수 있어요\./, "DM must reject non-members before handling commands");
+assert.ok(onDirectSource.includes("if (!text || /^!?(도움말|help)$/i.test(text)) return reply(DM_HELP);"), "empty or help DMs must return DM_HELP");
 assert.ok(onDirectSource.indexOf(shortAnonGuard) < onDirectSource.indexOf("const q = L.takeQuota"), "short anonymous questions must skip quota before takeQuota");
 assert.match(onDirectSource, /isStaff\(member\)\s*\?\s*"운영진은 AI 질문 횟수 제한이 없어요\."\s*:\s*`오늘 남은 질문 \*\*\$\{q\.left\}\/\$\{q\.total\}\*\* · 매일 오전 9시 충전`/, "DM quota response must branch on staff status");
+assert.ok(onDirectSource.indexOf("if (REVIEW_ASK.test(text)) return reviewRequest(m, reply, member);") < onDirectSource.indexOf("const q = L.takeQuota"), "DM review requests must be handled before taking quota");
+const dmHelpSource = bot.slice(bot.indexOf("const DM_HELP = `"), bot.indexOf("\n\nasync function onDirect"));
+assert.match(dmHelpSource, /하루 질문 횟수 공유/, "DM_HELP must state the shared daily quota");
 const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));
 const anonymousThreadSource = anonymousQuestionSource.slice(anonymousQuestionSource.indexOf("const thread ="), anonymousQuestionSource.indexOf("\n  await log("));
 assert.doesNotMatch(anonymousThreadSource, /m\.author\.id/, "anonymous thread content must omit the author id");

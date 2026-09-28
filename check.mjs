@@ -54,6 +54,10 @@ assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model])
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
 assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");
 assert.doesNotMatch(aiCloseSource, /resolve\(out\)/, "successful AI CLI close must not resolve raw stdout");
+const aiQueueSource = ai.slice(ai.indexOf("let queue = Promise.resolve();"), ai.indexOf("/** Tiny debug hook"));
+assert.match(aiQueueSource, /pending\+\+;[\s\S]*const job = queue\.then\(\(\) => runWithFallback\(engine, prompt, opts\)\)\.finally\(\(\) => \{ pending--; \}\);/, "AI requests must increase pending and decrease it after success or failure");
+assert.ok(aiQueueSource.indexOf("pending++;") < aiQueueSource.indexOf("queue.then"), "AI requests must count as pending before entering the queue");
+assert.ok(aiQueueSource.indexOf("queue.then") < aiQueueSource.indexOf("queue = job.catch(() => {});") && aiQueueSource.indexOf("queue = job.catch(() => {});") < aiQueueSource.indexOf("return job;"), "the next AI request must wait for the previous request even after failure");
 for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
 }

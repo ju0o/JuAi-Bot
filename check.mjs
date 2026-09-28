@@ -131,6 +131,11 @@ assert.match(weeklySource, /data\.top\.slice\(0, 5\)/, "weekly suggestion TOP li
 assert.match(weeklySource, /\(data\.proposals \|\| \[\]\)\.slice\(0, 3\)/, "weekly proposals must be capped at 3");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
 assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
+assert.match(tickSource, /if \(L\.kstDay\(now\) === 5 && h >= 18\) await job\(`highlight:\$\{today\}`, highlight\);/, "weekly highlight must be scheduled from Friday 18:00 KST");
+assert.match(tickSource, /if \(L\.kstDay\(now\) === 3 && h >= 19\) await job\(`nudge:\$\{today\}`, progressNudge\);/, "progress nudge must be scheduled from Wednesday 19:00 KST");
+assert.match(tickSource, /if \(h >= 4\) await job\(`backup:\$\{today\}`, backup\);/, "daily backup must be scheduled from 04:00 KST");
+assert.match(tickSource, /const firstStart = kvGet\(db, `boot:\$\{today\}`\) \?\? \(kvSet\(db, `boot:\$\{today\}`, now\), now\);[\s\S]*?if \(now >= anchor \+ 10 \* 60_000\) await job\(`starter:\$\{today\}`, \(\) => dailyStarter\(today\)\);/, "daily starter must wait ten minutes after the day's first start");
+assert.match(tickSource, /const due = L\.TALK_OFFSETS_MIN\.map\(\(m, n\) => \[n, anchor \+ m \* 60_000\]\)\.filter\(\(\[, at\]\) => now >= at && now - at < 2 \* 3_600_000\)\.at\(-1\);[\s\S]*?if \(due && !kvGet\(db, "talk_session"\)\) await job\(`talk:\$\{today\}:\$\{due\[0\]\}`, startTalk\);/, "bot chatter must skip stale slots instead of catching them up");
 const monthlyBadgeSource = bot.slice(bot.indexOf("async function monthlyBadge(month) {"), bot.indexOf("\nconst snowflakeTime"));
 assert.match(monthlyBadgeSource, /user_id LIKE 'fb:%'[\s\S]*day=\?[\s\S]*count>=\$\{L\.BADGE_MIN\}[\s\S]*LIMIT \$\{L\.BADGE_TOP\}/, "monthly badge must select qualifying fb usage rows with the configured limit");
 assert.match(tickSource, /if \(today\.endsWith\("-01"\) && h >= 10\) \{[\s\S]*?monthlyBadge\(month\)/, "monthly badge must be scheduled on KST day 1 from 10:00");

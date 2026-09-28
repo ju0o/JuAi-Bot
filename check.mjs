@@ -81,6 +81,16 @@ for (const key of SUMMARY_KEYS) {
   assert.ok(!["private", "botsonly"].includes(channelByKey[key].access), `summary channel is inaccessible: ${key}`);
 }
 const roleKeys = new Set(ROLES.map(({ key }) => key));
+const roleNames = new Set(ROLES.map(({ name }) => name));
+const staticRoleLookups = [...bot.matchAll(/\.roles\.cache\.(?:find|some)\(\([^)]*\)\s*=>\s*\w+\.name\s*===\s*"([^"]+)"/g)].map(([, name]) => name);
+assert.ok(staticRoleLookups.every((name) => roleNames.has(name)), "bot role lookup must exist in ROLES");
+const roleNamesByPrefix = (prefix) => ROLES.filter(({ key }) => key.startsWith(`${prefix}:`)).map(({ name }) => name);
+const interests = [...bot.matchAll(/const INTERESTS = \[((?:"[^"]+",?\s*)+)\];/g)][0]?.[1].match(/"([^"]+)"/g).map((name) => name.slice(1, -1));
+const roleGroups = Object.fromEntries([...bot.matchAll(/(int|lvl): \[((?:"[^"]+",?\s*)+)\]/g)].map(([, key, values]) => [key, values.match(/"([^"]+)"/g).map((name) => name.slice(1, -1))]));
+assert.deepEqual(interests, roleNamesByPrefix("int"), "INTERESTS must match int roles");
+assert.deepEqual(roleGroups.int, roleNamesByPrefix("int"), "ROLE_GROUPS.int must match int roles");
+assert.deepEqual(roleGroups.lvl, roleNamesByPrefix("lvl"), "ROLE_GROUPS.lvl must match lvl roles");
+assert.ok(channelByKey.qa.tags.includes("해결됨"), "qa forum must keep the 해결됨 tag");
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");

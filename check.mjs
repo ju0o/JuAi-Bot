@@ -49,10 +49,16 @@ const commandPaths = {
   "!익명": "const anon = /^!익명\\s+([\\s\\S]+)/.exec(text);",
   "리뷰해줘": "if (REVIEW_ASK.test(text)) return reviewRequest(",
   "!봇수다": "const talkAsk = /^!봇수다\\s+(.+)/.exec(text)",
-  "!요약해줘": "if (m.channel.isThread() && /^!?요약(해\\s?줘)?$/.test(text)) return summarizeThread(m);",
+  "!요약해줘": "if (/^!?요약(해\\s?줘)?$/.test(text)) {",
   "@멘션": 'if (mentions("OPENCODE") || mentions("COMMANDCODE")) return answer(',
 };
 for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includes(path), `bot path missing: ${command}`);
+const onMessageSource = bot.slice(bot.indexOf("async function onMessage(m) {"), bot.indexOf("\nconst PERSONA ="));
+const summaryGuard = "if (/^!?요약(해\\s?줘)?$/.test(text)) {";
+assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.'), "outside-thread summary must explain the required scope");
+assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");
+const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
+assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";

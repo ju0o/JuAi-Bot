@@ -122,7 +122,10 @@ async function onMessage(m) {
     const q = L.peekQuota(db, m.author.id);
     return say("OPENCODE", m.channelId, { content: isStaff(m.member) ? "운영진은 AI 질문 횟수 제한이 없어요." : `오늘 남은 AI 질문 **${q.left}/${q.total}**${q.bonus ? ` (피드백 보너스 +${q.bonus} 포함)` : ""} · 매일 오전 9시 충전`, reply: { messageReference: m.id } });
   }
-  if (m.channel.isThread() && /^!?요약(해\s?줘)?$/.test(text)) return summarizeThread(m);
+  if (/^!?요약(해\s?줘)?$/.test(text)) {
+    if (!m.channel.isThread()) return say("OPENCODE", m.channelId, { content: "요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.", reply: { messageReference: m.id } });
+    return summarizeThread(m);
+  }
   if (/^!구독(목록|취소)?(\s|$)/.test(text)) return subscribe(m, text);
   if (REVIEW_ASK.test(text)) return reviewRequest(m, (content) => say("OPENCODE", m.channelId, { content, reply: { messageReference: m.id, failIfNotExists: false } }), m.member);
   const talkAsk = /^!봇수다\s+(.+)/.exec(text) || /봇들?(끼리|아|들아|이랑).{0,30}(얘기|이야기|대화|토론|수다).{0,10}(해\s?줘|해\s?봐|했으면|하면 좋겠)/.test(text) && [null, text];

@@ -27,6 +27,10 @@ assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "REA
 assert.ok(readme.includes(`피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용`), "README omits feedback bonus scope");
 assert.ok(readme.includes("`!익명`은 OpenCode 개인 메시지에서만 작동"), "README omits anonymous-command DM scope");
 assert.ok(readme.includes("OpenCode 개인 메시지도 하루 질문 횟수를 공유"), "README omits shared OpenCode DM quota");
+const memberCommandCaps = readme.match(/^멤버 명령어:.*$/m)?.[0].match(/\(([^()]*)\)$/)?.[1] ?? "";
+for (const cap of [`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`, `최대 ${SUB_MAX}개`, `1인 하루 ${SUB_DAILY}회`]) {
+  assert.ok(memberCommandCaps.includes(cap), `README member-command parenthetical omits ${cap}`);
+}
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";

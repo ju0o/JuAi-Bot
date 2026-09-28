@@ -63,6 +63,8 @@ assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스
 assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
+const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
+assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
@@ -180,6 +182,7 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`하루 ${TALK_OFFSE
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");
+assert.ok(GUIDE(mention).some((message) => message.includes("예전에 해결된 비슷한 질문이 있으면 그 답을 먼저 보여줘요 (횟수 안 씀)")), "guide must say reused similar answers do not spend a question");
 assert.ok(GUIDE(mention).some((message) => message.includes(`입문자 질문이면 같은 분야 실무자 최대 ${MENTOR_MAX}명도 불러요`)), "guide omits mentor cap");
 assert.ok(GUIDE(mention).some((message) => message.includes("하루 질문 횟수 공유")), "guide omits shared DM quota");
 assert.deepEqual(capMentors([]), [], "empty mentor list must stay empty");

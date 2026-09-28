@@ -76,6 +76,11 @@ const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bo
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
+assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?return refreshProjects\(\)\.catch\(/, "showcase threads must refresh projects and return");
+assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "showcase refresh must return before the forum quota check");
+const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
+assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
+assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
 const mentorPingSource = bot.slice(bot.indexOf("async function mentorPing("), bot.indexOf("\n// ---------- 키워드 구독"));
 assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.name === "입문"\)\) return;/, "mentor ping must return unless the asker has the 입문 role");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");

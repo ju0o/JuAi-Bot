@@ -82,6 +82,11 @@ assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.ind
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
+const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));
+assert.match(weeklySource, /data\.top\.slice\(0, 5\)/, "weekly suggestion TOP list must be capped at 5");
+assert.match(weeklySource, /\(data\.proposals \|\| \[\]\)\.slice\(0, 3\)/, "weekly proposals must be capped at 3");
+assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
+assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
 const monthlyBadgeSource = bot.slice(bot.indexOf("async function monthlyBadge(month) {"), bot.indexOf("\nconst snowflakeTime"));
 assert.match(monthlyBadgeSource, /user_id LIKE 'fb:%'[\s\S]*day=\?[\s\S]*count>=\$\{L\.BADGE_MIN\}[\s\S]*LIMIT \$\{L\.BADGE_TOP\}/, "monthly badge must select qualifying fb usage rows with the configured limit");
 assert.match(tickSource, /if \(today\.endsWith\("-01"\) && h >= 10\) \{[\s\S]*?monthlyBadge\(month\)/, "monthly badge must be scheduled on KST day 1 from 10:00");

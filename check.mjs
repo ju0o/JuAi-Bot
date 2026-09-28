@@ -143,6 +143,11 @@ const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bo
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
 assert.ok(onDirectSource.indexOf(shortAnonGuard) < onDirectSource.indexOf("const q = L.takeQuota"), "short anonymous questions must skip quota before takeQuota");
 assert.match(onDirectSource, /isStaff\(member\)\s*\?\s*"운영진은 AI 질문 횟수 제한이 없어요\."\s*:\s*`오늘 남은 질문 \*\*\$\{q\.left\}\/\$\{q\.total\}\*\* · 매일 오전 9시 충전`/, "DM quota response must branch on staff status");
+const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));
+const anonymousThreadSource = anonymousQuestionSource.slice(anonymousQuestionSource.indexOf("const thread ="), anonymousQuestionSource.indexOf("\n  await log("));
+assert.doesNotMatch(anonymousThreadSource, /m\.author\.id/, "anonymous thread content must omit the author id");
+assert.match(anonymousThreadSource, /message: \{ content: `🙈 \*\*익명 질문\*\*\\n\$\{question\.slice\(0, 1800\)\}`, allowedMentions: NO_PING \}/, "anonymous thread posts must disable pings");
+assert.match(anonymousQuestionSource, /await log\(`🙈 익명 질문 게시: \$\{thread\.url\} · 작성자 <@\$\{m\.author\.id\}> \(운영 기록용\)`\)/, "anonymous ops log must retain the author id");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");

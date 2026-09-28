@@ -168,9 +168,13 @@ assert.equal((catchUpSource.match(/if \(n >= 10\) break;/g) ?? []).length, 2, "c
 assert.match(catchUpSource, /t\.messages\.fetch\(\{ limit: 10 \}\)[\s\S]*?\.some\?\.\(\(x\) => x\.author\.bot\)\) continue/, "catch-up must skip threads that already have a bot answer");
 const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
 const dailyPicksSource = bot.slice(bot.indexOf("async function dailyPicks(today) {"), bot.indexOf("\nasync function weekly() {"));
+const collectSource = bot.slice(bot.indexOf("async function collect(fromMs, toMs) {"), bot.indexOf("\nasync function dailySummary(today) {"));
 assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");
 assert.match(tickSource, /if \(h >= 9\) await job\(`picks:\$\{today\}`, \(\) => dailyPicks\(today\)\);/, "daily picks must be scheduled from 09:00 KST");
 assert.match(dailySummarySource, /const day = L\.kstDate\(L\.kstMidnight\(today\) - 1\);[\s\S]*?collect\(L\.kstMidnight\(day\), L\.kstMidnight\(today\)\)/, "daily summary must cover the previous KST day");
+assert.match(collectSource, /const optedOut = async \(uid\) => \{[\s\S]*?return optoutRole && members\.get\(uid\)\?\.roles\.cache\.has\(optoutRole\.id\);/, "collect optedOut must check the AI 언급 제외 role");
+assert.match(collectSource, /if \(x\.author\.bot \|\| x\.createdTimestamp < fromMs \|\| x\.createdTimestamp >= toMs \|\| !x\.content \|\| await optedOut\(x\.author\.id\)\) continue;/, "collect must skip opted-out messages");
+assert.ok(collectSource.indexOf("await optedOut(x.author.id)") < collectSource.indexOf("refs.push({"), "collect must skip opted-out messages before adding summary refs");
 assert.equal(channelByKey.summary.topic, "매일 오전 8시 Claude가 어제 대화를 요약해요.", "summary channel topic must keep the 8 a.m. posting promise");
 assert.equal(channelByKey.picks.topic, "매일 오전 9시 Codex 추천. 스레드에서 OpenCode에게 활용법을 물어보세요.", "picks channel topic must keep the 9 a.m. posting promise");
 assert.match(dailyPicksSource, /const topics = \[0, 1, 2\]\.flatMap\(\(d\) => kvGet\(db, `topics:\$\{L\.kstDate\(L\.kstMidnight\(today\) - 1 - d \* L\.DAY_MS\)\}`\)/, "daily picks must collect recent server topics");

@@ -210,6 +210,12 @@ assert.match(answerQualitySource, /HAVING down>0/, "answer quality downvote quer
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
 assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 5 && h >= 18\) await job\(`highlight:\$\{today\}`, highlight\);/, "weekly highlight must be scheduled from Friday 18:00 KST");
+const highlightSource = bot.slice(bot.indexOf("async function highlight() {"), bot.indexOf("\nfunction answerQuality", bot.indexOf("async function highlight() {")));
+assert.match(highlightSource, /threadsSince\(\[ids\.showcase, ids\.feedback\], Date\.now\(\) - 7 \* L\.DAY_MS\)/, "highlight must rank recent showcase and feedback threads");
+assert.match(highlightSource, /fetchStarterMessage\(\)[\s\S]*?if \(!s \|\| s\.author\.bot\) continue;/, "highlight must skip bot-authored starters");
+assert.match(highlightSource, /score: \(t\.messageCount \?\? 0\) \+ 2 \* s\.reactions\.cache\.reduce\(\(a, r\) => a \+ r\.count, 0\)/, "highlight score must be message count plus twice the reactions");
+assert.match(highlightSource, /items\.sort\(\(a, b\) => b\.score - a\.score\)\.slice\(0, 3\)/, "highlight must keep the top three posts");
+assert.ok(highlightSource.indexOf("if (!top.length) return;") < highlightSource.indexOf('createCard("notice", "이번 주 하이라이트 공지"'), "highlight must create a notice only when a member post remains");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 3 && h >= 19\) await job\(`nudge:\$\{today\}`, progressNudge\);/, "progress nudge must be scheduled from Wednesday 19:00 KST");
 assert.match(tickSource, /if \(h >= 4\) await job\(`backup:\$\{today\}`, backup\);/, "daily backup must be scheduled from 04:00 KST");
 assert.match(tickSource, /const firstStart = kvGet\(db, `boot:\$\{today\}`\) \?\? \(kvSet\(db, `boot:\$\{today\}`, now\), now\);[\s\S]*?if \(now >= anchor \+ 10 \* 60_000\) await job\(`starter:\$\{today\}`, \(\) => dailyStarter\(today\)\);/, "daily starter must wait ten minutes after the day's first start");

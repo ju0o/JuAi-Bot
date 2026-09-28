@@ -146,6 +146,8 @@ assert.match(answerSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff:
 assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\n  const prompt =/, "refused answer quota must return quotaMessage before building the AI prompt");
 assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
+assert.match(labQuestionSource, /m\.startThread\(\{ name: m\.content\.replace\(\/\\s\+\/g, " "\)\.slice\(0, 50\) \|\| "질문", autoArchiveDuration: 1440 \}\)/, "lab questions must open a 50-character, 1440-minute thread");
+assert.ok(labQuestionSource.indexOf("startThread(") < labQuestionSource.indexOf("await faqReply("), "lab questions must open the thread before checking FAQ");
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
 const faqReplySource = bot.slice(bot.indexOf("async function faqReply(question, channelId, who, followUp) {"), bot.indexOf("\n// ---------- DM:", bot.indexOf("async function faqReply(question, channelId, who, followUp) {")));
 assert.match(faqReplySource, /const hit = L\.bestFaq\([\s\S]*?\); if \(!hit\) return false;/, "faq miss must return false");
@@ -155,6 +157,10 @@ assert.match(faqReplySource, /📚 \*\*비슷한 질문이 예전에 해결됐�
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
 assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 \}\)/, "threadChat must fetch recent thread messages");
 assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");
+assert.match(threadChatSource, /const starter = m\.channel\.parentId === ids\.picks \? await m\.channel\.fetchStarterMessage\(\)\.catch\(\(\) => null\) : null;/, "picks thread replies must fetch the starter message");
+assert.ok(threadChatSource.indexOf("[추천 글]") < threadChatSource.indexOf("...msgs.map"), "picks thread replies must prepend the starter before fetched history");
+assert.ok(summarizeThreadSource.includes('형식: "📝 **스레드 요약**" 다음 줄부터 • 로 시작하는 3줄, 마지막에 "남은 질문:" 한 줄'), "thread summaries must request three summary lines and remaining questions");
+assert.match(summarizeThreadSource, /\.join\("\\n"\)\.slice\(-9000\)/, "thread summaries must cap the transcript at the last 9000 characters");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.match(onThreadSource, /if \(t\.parentId !== ids\.suggest\) notifySubs\(/, "suggestion threads must skip subscription notifications");

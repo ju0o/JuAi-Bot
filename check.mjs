@@ -84,6 +84,10 @@ assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.ind
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
+const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
+assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");
+assert.match(dailySummarySource, /const day = L\.kstDate\(L\.kstMidnight\(today\) - 1\);[\s\S]*?collect\(L\.kstMidnight\(day\), L\.kstMidnight\(today\)\)/, "daily summary must cover the previous KST day");
+assert.equal(channelByKey.summary.topic, "매일 오전 8시 Claude가 어제 대화를 요약해요.", "summary channel topic must keep the 8 a.m. posting promise");
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
 const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));

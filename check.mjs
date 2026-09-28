@@ -270,6 +270,9 @@ assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.
 const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));
 assert.match(weeklySource, /data\.top\.slice\(0, 5\)/, "weekly suggestion TOP list must be capped at 5");
 assert.match(weeklySource, /\(data\.proposals \|\| \[\]\)\.slice\(0, 3\)/, "weekly proposals must be capped at 3");
+assert.match(weeklySource, /if \(data\.top\?\.length\) \{[\s\S]*?await createCard\("notice",/, "weekly suggestion TOP list must be sent through a notice card");
+assert.match(weeklySource, /for \(const p of \(data\.proposals \|\| \[\]\)\.slice\(0, 3\)\) \{[\s\S]*?await createCard\(kind,/, "weekly notice and rule proposals must be sent through cards");
+assert.doesNotMatch(weeklySource, /\b(?:say|sayLong)\s*\(/, "weekly must not post directly through say or sayLong");
 const answerQualitySource = bot.slice(bot.indexOf("function answerQuality(since) {"), bot.indexOf("\nasync function opsReport() {"));
 const opsReportSource = bot.slice(bot.indexOf("async function opsReport() {"), bot.indexOf("\nasync function monthlyBadge("));
 assert.match(opsReportSource, /await say\("CLAUDE", ids\.staff,/, "ops report must post to the staff channel");

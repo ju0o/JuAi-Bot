@@ -458,6 +458,10 @@ assert.match(executeSource, /case "delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.
 assert.match(executeSource, /case "timeout": case "spam":\s+\{[\s\S]*guild\.members\.fetch\(p\.user_id\)[\s\S]*card\.kind === "spam" \? 24 \* 60 : p\.minutes[\s\S]*member\.timeout\(minutes \* 60_000/, "timeout cards must use card minutes and spam cards 24 hours");
 assert.match(executeSource, /case "channel_create":\s+\{[\s\S]*guild\.channels\.create\(\{ name: p\.name,[\s\S]*p\.kind === "forum"/, "channel cards must create the named channel");
 assert.match(executeSource, /case "channel_delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.channelId\)[\s\S]*ch\.delete\(\)/, "channel delete cards must delete the named channel");
+assert.match(executeSource, /case "badge":\s+\{[\s\S]*guild\.roles\.cache\.find\(\(r\) => r\.name === "피드백 장인"\)[\s\S]*roles\.remove\(role\)[\s\S]*roles\.add\(role\)[\s\S]*kvSet\(db, "badge_holders", p\.user_ids\)[\s\S]*sayLong\("CLAUDE", ids\.notice, p\.text\)/, "badge cards must update the role holders and post the notice");
+assert.match(executeSource, /case "release":\s+\{[\s\S]*execFileSync\("node", \["--no-warnings", "scripts\/release\.mjs"\][\s\S]*out\.startsWith\("RELEASED"\)/, "release cards must run the release script and report its result");
+assert.match(executeSource, /case "feature": void implement\(card\)\.catch\(\(e\) => fail\(`feature \$\{card\.id\}`, e\)\); return "작업을 시작했어요/, "feature cards must start implementation and report failures");
+assert.match(executeSource, /case "feature_ready":\s+\{[\s\S]*writeFileSync\(path\.join\(ROOT, "data\/deploy\.json"\)[\s\S]*git\(\["merge", "--ff-only", p\.branch\]\)[\s\S]*git\(\["worktree", "remove", "--force", p\.dir\]\)[\s\S]*process\.exit\(0\)/, "ready feature cards must record deployment, merge, remove the worktree, and restart");
 assert.match(executeSource, /throw new Error\(`모르는 카드 종류: \$\{card\.kind\}`\)/, "unknown card kinds must throw the Korean error");
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);

@@ -249,6 +249,11 @@ const collectSource = bot.slice(bot.indexOf("async function collect(fromMs, toMs
 assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");
 assert.match(tickSource, /if \(h >= 9\) await job\(`picks:\$\{today\}`, \(\) => dailyPicks\(today\)\);/, "daily picks must be scheduled from 09:00 KST");
 assert.match(dailySummarySource, /const day = L\.kstDate\(L\.kstMidnight\(today\) - 1\);[\s\S]*?collect\(L\.kstMidnight\(day\), L\.kstMidnight\(today\)\)/, "daily summary must cover the previous KST day");
+assert.match(dailySummarySource, /if \(!lines\.length\) \{[\s\S]*?return say\("CLAUDE", ids\.summary, `📋 \*\*\$\{label\}\*\*은 조용한 하루였어요 🌙`\); \}/, "quiet daily summaries must keep the existing summary-channel sentence");
+assert.ok(dailySummarySource.indexOf("return say(\"CLAUDE\", ids.summary") < dailySummarySource.indexOf("const out = await ai("), "quiet daily summaries must return before calling AI");
+assert.match(dailySummarySource, /const data = L\.extractJson\(out\); if \(!data\?\.channels\) throw new Error\("요약 JSON을 못 읽었어요"\);/, "daily summaries must require parsed channels JSON");
+assert.match(dailySummarySource, /data\.channels\.map\(\(c\) =>[\s\S]*?\(c\.lines \|\| \[\]\)\.slice\(0, 3\)/, "daily summaries must cap each channel at three lines");
+assert.ok(dailySummarySource.indexOf("if (!data?.channels)") < dailySummarySource.indexOf('await sayLong("CLAUDE", ids.summary, text)'), "daily summaries must post only after validating channels JSON");
 assert.match(collectSource, /const optedOut = async \(uid\) => \{[\s\S]*?return optoutRole && members\.get\(uid\)\?\.roles\.cache\.has\(optoutRole\.id\);/, "collect optedOut must check the AI 언급 제외 role");
 assert.match(collectSource, /if \(x\.author\.bot \|\| x\.createdTimestamp < fromMs \|\| x\.createdTimestamp >= toMs \|\| !x\.content \|\| await optedOut\(x\.author\.id\)\) continue;/, "collect must skip opted-out messages");
 assert.ok(collectSource.indexOf("await optedOut(x.author.id)") < collectSource.indexOf("refs.push({"), "collect must skip opted-out messages before adding summary refs");

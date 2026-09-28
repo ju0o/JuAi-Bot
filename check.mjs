@@ -184,6 +184,11 @@ assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.
 const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));
 assert.match(weeklySource, /data\.top\.slice\(0, 5\)/, "weekly suggestion TOP list must be capped at 5");
 assert.match(weeklySource, /\(data\.proposals \|\| \[\]\)\.slice\(0, 3\)/, "weekly proposals must be capped at 3");
+const answerQualitySource = bot.slice(bot.indexOf("function answerQuality(since) {"), bot.indexOf("\nasync function opsReport() {"));
+const opsReportSource = bot.slice(bot.indexOf("async function opsReport() {"), bot.indexOf("\nasync function monthlyBadge("));
+assert.match(opsReportSource, /await say\("CLAUDE", ids\.staff,/, "ops report must post to the staff channel");
+assert.match(opsReportSource, /\.\.\.answerQuality\(since\)/, "ops report must include answer quality");
+assert.match(answerQualitySource, /HAVING down>0/, "answer quality downvote query must keep only answers with downvotes");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
 assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 5 && h >= 18\) await job\(`highlight:\$\{today\}`, highlight\);/, "weekly highlight must be scheduled from Friday 18:00 KST");

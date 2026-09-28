@@ -63,6 +63,8 @@ assert.ok(guildRemainingQuotaBranch.includes("운영진은 AI 질문 횟수 제�
 assert.ok(!guildRemainingQuotaBranch.includes("takeQuota"), "guild !남은횟수 must not call takeQuota");
 assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.'), "outside-thread summary must explain the required scope");
 assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");
+assert.match(onMessageSource, /if \(\(parent === ids\.feedback \|\| parent === ids\.showcase\) && m\.channel\.ownerId !== m\.author\.id && m\.content\.length >= L\.FEEDBACK_MIN\) \{[\s\S]*?L\.grantBonus\(db, m\.author\.id\)[\s\S]*?\n  \}\n  if \(m\.channelId === ids\.lab\) return labQuestion\(m\);/, "feedback bonus must be scoped and granted before labQuestion");
+assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));

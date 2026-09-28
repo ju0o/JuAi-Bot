@@ -361,6 +361,10 @@ assert.match(startTalkSource, /String\(carry && part > 1 \? carry\.topic : req\?
 const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot.indexOf("\n// ---------- 프로젝트 목록", bot.indexOf("async function talkStep() {")));
 assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
 assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");
+const scheduleTalkSource = bot.slice(bot.indexOf("function scheduleTalk() {"), bot.indexOf("\nasync function talkStep()", bot.indexOf("function scheduleTalk() {")));
+assert.match(scheduleTalkSource, /const sess = kvGet\(db, "talk_session"\); if \(!sess\) return;/, "scheduleTalk must return when no talk session exists");
+assert.match(scheduleTalkSource, /if \(Date\.now\(\) - sess\.startedAt > 3 \* 3_600_000\) \{ kvSet\(db, "talk_session", null\); return; \}/, "scheduleTalk must clear stale talk sessions");
+assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ 30_000 \}\); return scheduleTalk\(\); \}/, "talkStep must disable a bot and reschedule when its reply has no text");
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
 assert.match(refreshProjectsSource, /const s = await t\.fetchStarterMessage\(\)\.catch\(\(\) => null\); if \(!s \|\| s\.author\.bot\) continue;/, "project list must skip bot-authored starters");

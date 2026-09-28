@@ -96,6 +96,14 @@ assert.deepEqual(roleGroups.int, roleNamesByPrefix("int"), "ROLE_GROUPS.int must
 assert.deepEqual(roleGroups.lvl, roleNamesByPrefix("lvl"), "ROLE_GROUPS.lvl must match lvl roles");
 assert.ok(channelByKey.qa.tags.includes("해결됨"), "qa forum must keep the 해결됨 tag");
 assert.ok(channelByKey.chat, "setup.mjs sends role-less onboarding options to #chat");
+const overwriteSource = setup.slice(setup.indexOf("const overwrites"), setup.indexOf("\n  const TYPE", setup.indexOf("const overwrites")));
+assert.match(overwriteSource, /open:\s*\[\]/, "open channels must have no overwrites");
+const readonlyOverwrite = overwriteSource.match(/readonly:\s*(\[[\s\S]*?\n    botsonly:)/)?.[1] ?? "";
+assert.match(readonlyOverwrite, /id: everyone, deny: \[[^\]]*P\.SendMessages/, "readonly channels must deny everyone SendMessages");
+const botsonlyOverwrite = overwriteSource.match(/botsonly:\s*(\[[\s\S]*?\n    private:)/)?.[1] ?? "";
+assert.match(botsonlyOverwrite, /id: everyone, deny: \[[^\]]*P\.SendMessages/, "botsonly channels must deny everyone SendMessages");
+assert.ok(!/id: everyone, deny: \[[^\]]*P\.ViewChannel/.test(botsonlyOverwrite), "botsonly channels must not deny everyone ViewChannel");
+assert.match(overwriteSource, /private:\s*\[\{ id: everyone, deny: \[P\.ViewChannel\]/, "private channels must deny everyone ViewChannel");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");
 const defaultChannelKeys = setup.match(/default_channel_ids:\s*\[([\s\S]*?)\]\.map/)?.[1].matchAll(/"([^"]+)"/g);

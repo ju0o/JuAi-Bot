@@ -36,6 +36,23 @@ const memberCommandCaps = readme.match(/^멤버 명령어:.*$/m)?.[0].match(/\((
 for (const cap of [`${SUB_KEYWORD_MIN}~${SUB_KEYWORD_MAX}글자`, `최대 ${SUB_MAX}개`, `1인 하루 ${SUB_DAILY}회`]) {
   assert.ok(memberCommandCaps.includes(cap), `README member-command parenthetical omits ${cap}`);
 }
+const memberCommandLine = readme.match(/^멤버 명령어:.*$/m)?.[0] ?? "";
+const memberCommandHeads = [...memberCommandLine.split(" · `!익명`은", 1)[0].matchAll(/`([^`]+)`/g)].map(([, command]) => command.split(/\s+/)[0]);
+const expectedMemberCommandHeads = ["!도움말", "!남은횟수", "!구독", "!구독목록", "!구독취소", "!익명", "리뷰해줘", "!봇수다", "!요약해줘", "@멘션"];
+assert.deepEqual(memberCommandHeads, expectedMemberCommandHeads, "README member-command heads drifted");
+const commandPaths = {
+  "!도움말": 'if (text === "!도움말") return say("COMMANDCODE", m.channelId, { content: HELP_TEXT',
+  "!남은횟수": "if (/^!?남은\\s?횟수$/.test(text))",
+  "!구독": "if (/^!구독(목록|취소)?(\\s|$)/.test(text)) return subscribe(m, text);",
+  "!구독목록": 'if (cmd === "!구독목록") return reply(mine()',
+  "!구독취소": 'if (cmd === "!구독취소") { const n = db.prepare("DELETE FROM subs',
+  "!익명": "const anon = /^!익명\\s+([\\s\\S]+)/.exec(text);",
+  "리뷰해줘": "if (REVIEW_ASK.test(text)) return reviewRequest(",
+  "!봇수다": "const talkAsk = /^!봇수다\\s+(.+)/.exec(text)",
+  "!요약해줘": "if (m.channel.isThread() && /^!?요약(해\\s?줘)?$/.test(text)) return summarizeThread(m);",
+  "@멘션": 'if (mentions("OPENCODE") || mentions("COMMANDCODE")) return answer(',
+};
+for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includes(path), `bot path missing: ${command}`);
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
@@ -171,6 +188,7 @@ assert.ok(badgeGuide.includes(`최소 ${BADGE_MIN}개 이상`) && badgeGuide.inc
 
 const help = HELP_TEXT(mention);
 assert.ok(help.length <= 2000);
+for (const command of expectedMemberCommandHeads.slice(1)) assert.ok(help.includes(command.replace(/^!/, "")), `HELP_TEXT omits ${command}`);
 for (const command of ["!익명", "!봇수다", "리뷰해줘"]) assert.ok(help.includes(command));
 assert.ok(help.includes("!남은횟수"));
 assert.ok(help.includes("하루 질문 횟수 공유"), "help omits shared DM quota");

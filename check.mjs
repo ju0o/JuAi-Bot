@@ -152,6 +152,10 @@ assert.equal(isSpam("x".repeat(SPAM_MIN_LEN), repeated("x".repeat(SPAM_MIN_LEN),
 assert.equal(isSpam("12345678901", repeated("12345678901", repeatChannels), spamNow - DAY_MS + 1, spamNow), true);
 assert.equal(isSpam("1234567890", repeated("1234567890", repeatChannels), spamNow - DAY_MS + 1, spamNow), false);
 assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY_MS + 1, spamNow), true);
+assert.equal(isSpam("@here", [], spamNow - DAY_MS + 1, spamNow), true);
+assert.equal(isSpam("https://a", [], spamNow - DAY_MS + 1, spamNow), false);
+assert.ok(!isSpam("@here", [], undefined, spamNow));
+assert.equal(isSpam("@here", [], spamNow - DAY_MS, spamNow), false);
 assert.equal(isSpam("@everyone", [], spamNow - DAY_MS + 1, spamNow), true);
 assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY_MS, spamNow), false);
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SPAM_WINDOW_MS / 60_000}분 안에 같은 글을 ${SPAM_REPEAT_CHANNELS}개 채널`)), "guide omits spam repeat boundary");

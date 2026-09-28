@@ -526,11 +526,19 @@ const adminSource = bot.slice(bot.indexOf("async function adminCommand"), bot.in
 const directBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "answer")'), adminSource.indexOf("  const cards = {") );
 assert.match(directBranch, /if \(plan\.action === "answer"\)[\s\S]*return sayLong\(/, "answer must stay a direct admin action");
 assert.match(directBranch, /if \(plan\.action === "set_topic"\)[\s\S]*return reply\(/, "set_topic must stay a direct admin action");
+const setTopicBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "set_topic")'), adminSource.indexOf('if (plan.action === "delete_messages")'));
+assert.match(setTopicBranch, /if \(!ch\) return reply\(`#\$\{p\.channel\} 채널을 못 찾았어요\.`\);/, "set_topic must use the existing channel-not-found reply");
+assert.ok(setTopicBranch.indexOf("if (!ch) return reply(") < setTopicBranch.indexOf("await ch.setTopic("), "set_topic must reject a missing channel before changing it");
 const approvalBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "delete_messages")'), adminSource.indexOf("  await cards[plan.action]();"));
+assert.match(approvalBranch, /const ch = resolveChannel\(p\.channel\); if \(!ch\?\.isTextBased\(\)\) return reply\(`#\$\{p\.channel\} 채널을 못 찾았어요\.`\);/, "delete_messages must use the existing channel-not-found reply");
+assert.ok(approvalBranch.indexOf("if (!ch?.isTextBased()) return reply(") < approvalBranch.indexOf("ch.messages.fetch("), "delete_messages must reject a missing channel before fetching messages");
+assert.match(approvalBranch, /if \(!chosen\.length\) return reply\("조건에 맞는 메시지를 못 찾았어요\."\);/, "delete_messages must report when nothing matches");
+assert.ok(approvalBranch.indexOf("if (!chosen.length) return reply(") < approvalBranch.indexOf('return createCard("delete"'), "delete_messages must report no matches before creating a card");
 for (const action of ADMIN_ACTIONS.filter((action) => !DIRECT_ACTIONS.has(action))) {
   const route = action === "delete_messages" ? /if \(plan\.action === "delete_messages"\)[\s\S]*return createCard\("delete"/ : new RegExp(`${action}:.*createCard\\(`);
   assert.match(approvalBranch, route, `${action} must route through an approval card`);
 }
+assert.ok(adminSource.indexOf("await cards[plan.action]();") < adminSource.indexOf('if (m.channelId !== ids.staff) await reply(`확인 카드를 <#${ids.staff}>에 올렸어요.`);'), "cards created outside the staff channel must report where they were posted");
 const executeSource = bot.slice(bot.indexOf("async function execute(card) {"), bot.indexOf("\nasync function implement(", bot.indexOf("async function execute(card) {")));
 assert.match(executeSource, /case "notice":\s+await sayLong\("CLAUDE", ids\.notice, p\.text\)/, "notice cards must post to the notice channel");
 assert.match(executeSource, /case "rule":\s+\{[\s\S]*kvGet\(db, "rules"\)[\s\S]*kvSet\(db, "rules", rules\)[\s\S]*ids\.rules[\s\S]*msg\.edit\(content\)/, "rule cards must rewrite the rules message");

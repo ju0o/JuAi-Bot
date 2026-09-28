@@ -85,6 +85,15 @@ assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m
 const threadReply = 'if (parent && (parent === ids.lab || parent === ids.picks)) return threadChat(m);';
 const genericMentionAnswer = 'if (mentions("OPENCODE") || mentions("COMMANDCODE")) return answer(m, m.channelId, mentions("OPENCODE") ? "OPENCODE" : "COMMANDCODE", [], m.id);';
 assert.ok(onMessageSource.indexOf(threadReply) < onMessageSource.indexOf(genericMentionAnswer), "lab and picks thread replies must use threadChat before generic mention answers");
+assert.match(onMessageSource, /if \(founder && \(m\.channelId === ids\.staff \|\| mentions\("CLAUDE"\)\)\) return adminCommand\(m, m\.content\);/, "founder Claude mentions must call adminCommand");
+assert.match(onMessageSource, /if \(mentions\("CLAUDE"\)\) return say\("CLAUDE"[\s\S]*?OpenCode가 답해요![\s\S]*?\n  const text =/, "member Claude mentions must redirect to the lab without answer");
+const memberClaudeMention = onMessageSource.slice(onMessageSource.indexOf('if (mentions("CLAUDE")) return say('), onMessageSource.indexOf("\n  const text =", onMessageSource.indexOf('if (mentions("CLAUDE")) return say(')));
+assert.doesNotMatch(memberClaudeMention, /answer\(/, "member Claude mentions must not call answer");
+assert.match(onMessageSource, /if \(mentions\("CODEX"\)\) return say\("CODEX"[\s\S]*?OpenCode가 활용법을 알려줘요![\s\S]*?\n  if \(mentions\("OPENCODE"\)/, "member Codex mentions must redirect to picks without answer");
+const memberCodexMention = onMessageSource.slice(onMessageSource.indexOf('if (mentions("CODEX")) return say('), onMessageSource.indexOf('if (mentions("OPENCODE")', onMessageSource.indexOf('if (mentions("CODEX")) return say(')));
+assert.doesNotMatch(memberCodexMention, /answer\(/, "member Codex mentions must not call answer");
+assert.match(onMessageSource, /if \(mentions\("CODEX"\) && founder\) return answer\(m, m\.channelId, "CODEX", \[\], m\.id\);/, "founder Codex mentions must call answer");
+assert.match(onMessageSource, /if \(mentions\("OPENCODE"\) \|\| mentions\("COMMANDCODE"\)\) return answer\(m, m\.channelId, mentions\("OPENCODE"\) \? "OPENCODE" : "COMMANDCODE", \[\], m\.id\);/, "OpenCode and CommandCode mentions must call answer");
 assert.match(onMessageSource, /if \(\(parent === ids\.feedback \|\| parent === ids\.showcase\) && m\.channel\.ownerId !== m\.author\.id && m\.content\.length >= L\.FEEDBACK_MIN\) \{[\s\S]*?L\.grantBonus\(db, m\.author\.id\)[\s\S]*?\n  \}\n  if \(m\.channelId === ids\.lab\) return labQuestion\(m\);/, "feedback bonus must be scoped and granted before labQuestion");
 assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(`fb:\$\{m\.author\.id\}`, L\.kstDate\(\)\.slice\(0, 7\), Date\.now\(\)\);[\s\S]*?L\.grantBonus\(db, m\.author\.id\)/, "feedback bonus must record monthly fb usage before granting the bonus");
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");

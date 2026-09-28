@@ -90,6 +90,10 @@ assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
+const answerSource = bot.slice(bot.indexOf("async function answer(m, channelId, who, history, replyTo) {"), bot.indexOf("\n/** Every AI answer", bot.indexOf("async function answer(m, channelId, who, history, replyTo) {")));
+assert.match(answerSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(m\.member\) \}\);/, "answer must pass the member staff flag to takeQuota");
+assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\n  const prompt =/, "refused answer quota must return quotaMessage before building the AI prompt");
+assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));

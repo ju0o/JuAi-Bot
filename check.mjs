@@ -258,6 +258,15 @@ const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot
 assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
 assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");
 
+const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
+assert.match(refreshProjectsSource, /const s = await t\.fetchStarterMessage\(\)\.catch\(\(\) => null\); if \(!s \|\| s\.author\.bot\) continue;/, "project list must skip bot-authored starters");
+assert.match(refreshProjectsSource, /rows\.sort\(\(a, b\) => b\.last - a\.last\);/, "project list must sort by latest activity");
+assert.ok(refreshProjectsSource.includes("아직 올라온 프로젝트가 없어요"), "project list must use the empty-state sentence");
+const projectEdit = refreshProjectsSource.indexOf("await m.edit({ content: texts[n]");
+const projectDelete = refreshProjectsSource.indexOf("await m.delete().catch(() => {});");
+assert.match(refreshProjectsSource, /if \(prev\.length === texts\.length && prev\.every\(Boolean\)\) \{[\s\S]*?for \(const \[n, m\] of prev\.entries\(\)\) await m\.edit\(/, "project list must edit existing messages when chunk counts match");
+assert.ok(projectEdit >= 0 && projectEdit < projectDelete, "project list must edit matching messages before deleting old ones");
+
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);
 assert.ok(CATEGORIES.every(({ name }) => typeof name === "string" && name.trim()), "category names must be non-empty");

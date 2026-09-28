@@ -11,6 +11,15 @@ import { CATEGORIES, CHANNELS, channelByKey, GUIDE, HELP_TEXT, ONBOARDING, ROLES
 const readme = fs.readFileSync("README.md", "utf8");
 const setup = fs.readFileSync("setup.mjs", "utf8");
 const bot = fs.readFileSync("bot.mjs", "utf8");
+const ai = fs.readFileSync("ai.mjs", "utf8");
+assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
+for (const engine of ["codex", "opencode", "commandcode"]) {
+  assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
+}
+const childEnv = ai.match(/^const CHILD_ENV = .*$/m)?.[0] ?? "";
+assert.ok(childEnv && !/DISCORD|TOKEN|SECRET|KEY/i.test(childEnv), "child env must not allow Discord token keys");
+assert.match(ai, /const COMMANDCODE_MODEL = process\.env\.JUAI_COMMANDCODE_MODEL \|\| "poolside\/laguna-s-2\.1-free";/, "CommandCode must default to Laguna");
+assert.match(ai, /if \(engine === "commandcode"[\s\S]{0,900}engine = "opencode";/, "CommandCode must fall back to OpenCode");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
 assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");

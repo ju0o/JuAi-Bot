@@ -79,6 +79,14 @@ assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joined
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?await m\.member\?\.timeout\(L\.SPAM_TIMEOUT_MS,/, "spam must time out detected members for SPAM_TIMEOUT_MS");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?await createCard\("spam",/, "spam must create a spam card after detection");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?recent\.delete\(m\.author\.id\);\s*return true;/, "spam must return true after handling a match");
+const spamDelete = "for (const x of list.filter((x) => x.c === m.content)) await (await hub.channels.fetch(x.ch)).messages.delete(x.id).catch(() => {});";
+const spamTimeout = "await m.member?.timeout(L.SPAM_TIMEOUT_MS, \"JuAi 스팸 감지\").catch(() => {});";
+const spamCard = 'await createCard("spam", `스팸 의심: ${name(m)}`';
+assert.ok(spamSource.includes(spamDelete), "spam must delete every matching message");
+assert.ok(spamSource.includes(spamTimeout), "spam must time out the member for SPAM_TIMEOUT_MS");
+assert.ok(spamSource.includes(spamCard), "spam must create the spam card");
+assert.ok(spamSource.indexOf(spamDelete) < spamSource.indexOf(spamTimeout) && spamSource.indexOf(spamTimeout) < spamSource.indexOf(spamCard), "spam handling must delete before timeout and card creation");
+assert.ok(spamSource.indexOf(spamCard) < spamSource.indexOf("recent.delete(m.author.id);\n  return true;"), "spam must return true after creating the card");
 assert.ok(onMessageSource.indexOf("if (await spam(m)) return;") < onMessageSource.indexOf("const founder = founders.has(m.author.id);"), "spam must return before member commands");
 const summaryGuard = "if (/^!?요약(해\\s?줘)?$/.test(text)) {";
 const guildRemainingQuotaBranch = onMessageSource.slice(onMessageSource.indexOf(commandPaths["!남은횟수"]), onMessageSource.indexOf(summaryGuard));

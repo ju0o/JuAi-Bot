@@ -26,6 +26,9 @@ assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "REA
 assert.ok(readme.includes(`피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용`), "README omits feedback bonus scope");
 assert.ok(readme.includes("`!익명`은 OpenCode 개인 메시지에서만 작동"), "README omits anonymous-command DM scope");
 assert.ok(readme.includes("OpenCode 개인 메시지도 하루 질문 횟수를 공유"), "README omits shared OpenCode DM quota");
+const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
+const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
+assert.ok(onDirectSource.indexOf(shortAnonGuard) < onDirectSource.indexOf("const q = L.takeQuota"), "short anonymous questions must skip quota before takeQuota");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;
 const talkTopic = talkInput.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, TALK_TOPIC_MAX);

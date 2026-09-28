@@ -219,6 +219,7 @@ async function onDirect(m) {
   if (/^!?남은\s?횟수$/.test(text)) { const q = L.peekQuota(db, m.author.id); return reply(`오늘 남은 질문 **${q.left}/${q.total}** · 매일 오전 9시 충전`); }
   if (REVIEW_ASK.test(text)) return reviewRequest(m, reply, member);
   const anon = /^!익명\s+([\s\S]+)/.exec(text);
+  if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);
   const q = L.takeQuota(db, m.author.id, { staff: isStaff(member) });
   if (!q.ok) return reply(L.quotaMessage(q));
   if (anon) { stat("익명 질문"); return anonymousQuestion(m, anon[1].trim(), q, reply); }

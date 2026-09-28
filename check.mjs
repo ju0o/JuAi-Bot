@@ -1,5 +1,6 @@
 // Self-check for the pure logic: node check.mjs
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import os from "node:os";
 import { DatabaseSync } from "node:sqlite";
@@ -589,5 +590,36 @@ const subscriptionNotifications = (userId, authorId, sent) => {
 for (let sent = 0; sent < SUB_DAILY; sent++) assert.equal(subscriptionNotifications("subscriber", "other", sent), true);
 assert.equal(subscriptionNotifications("subscriber", "other", SUB_DAILY), false, "subscription notifications must stop at the daily limit");
 assert.equal(kvGet(subDb, "subsent:subscriber:2026-09-27"), SUB_DAILY);
+
+const guardDir = fs.mkdtempSync(`${os.tmpdir()}/juai-guard-`);
+try {
+  fs.copyFileSync("guard.mjs", `${guardDir}/guard.mjs`);
+  const git = (args) => execFileSync("git", args, { cwd: guardDir, encoding: "utf8" }).trim();
+  git(["init", "-q"]);
+  git(["config", "user.email", "check@example.com"]);
+  git(["config", "user.name", "check"]);
+  fs.writeFileSync(`${guardDir}/version.txt`, "good\n");
+  git(["add", "version.txt"]); git(["commit", "-qm", "good"]);
+  const previous = git(["rev-parse", "HEAD"]);
+  fs.writeFileSync(`${guardDir}/version.txt`, "bad\n");
+  git(["add", "version.txt"]); git(["commit", "-qm", "bad"]);
+  fs.mkdirSync(`${guardDir}/data`);
+  fs.writeFileSync(`${guardDir}/data/deploy.json`, JSON.stringify({ prev: previous, tries: 0, card: "check" }));
+  for (let tries = 1; tries <= 3; tries++) {
+    execFileSync(process.execPath, ["guard.mjs"], { cwd: guardDir });
+    assert.equal(JSON.parse(fs.readFileSync(`${guardDir}/data/deploy.json`, "utf8")).tries, tries);
+  }
+  execFileSync(process.execPath, ["guard.mjs"], { cwd: guardDir });
+  assert.equal(git(["rev-parse", "HEAD"]), previous, "guard must restore the previous commit");
+  assert.equal(fs.readFileSync(`${guardDir}/version.txt`, "utf8"), "good\n");
+  assert.equal(fs.existsSync(`${guardDir}/data/deploy.json`), false);
+  const rollback = JSON.parse(fs.readFileSync(`${guardDir}/data/rollback.json`, "utf8"));
+  assert.equal(rollback.prev, previous);
+  assert.equal(rollback.tries, 4);
+  assert.equal(rollback.card, "check");
+  assert.equal(typeof rollback.at, "number");
+} finally {
+  fs.rmSync(guardDir, { recursive: true, force: true });
+}
 
 console.log("check ok");

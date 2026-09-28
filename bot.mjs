@@ -216,7 +216,7 @@ async function onDirect(m) {
   const member = await guild.members.fetch(m.author.id).catch(() => null);
   if (!member) return reply("JuAi 서버 멤버만 쓸 수 있어요. 👉 https://discord.gg/2zMkuxWzBr");
   if (!text || /^!?(도움말|help)$/i.test(text)) return reply(DM_HELP);
-  if (/^!?남은\s?횟수$/.test(text)) { const q = L.peekQuota(db, m.author.id); return reply(`오늘 남은 질문 **${q.left}/${q.total}** · 매일 오전 9시 충전`); }
+  if (/^!?남은\s?횟수$/.test(text)) { const q = L.peekQuota(db, m.author.id); return reply(isStaff(member) ? "운영진은 AI 질문 횟수 제한이 없어요." : `오늘 남은 질문 **${q.left}/${q.total}** · 매일 오전 9시 충전`); }
   if (REVIEW_ASK.test(text)) return reviewRequest(m, reply, member);
   const anon = /^!익명\s+([\s\S]+)/.exec(text);
   if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);

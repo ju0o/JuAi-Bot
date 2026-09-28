@@ -58,6 +58,14 @@ const commandPaths = {
 for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includes(path), `bot path missing: ${command}`);
 const onMessageSource = bot.slice(bot.indexOf("async function onMessage(m) {"), bot.indexOf("\nconst PERSONA ="));
 const spamSource = bot.slice(bot.indexOf("async function spam(m) {"), bot.indexOf("\n// ----------", bot.indexOf("async function spam(m) {")));
+const welcomeSource = bot.slice(bot.indexOf("async function welcome(m) {"), bot.indexOf("\nasync function loungeWelcome", bot.indexOf("async function welcome(m) {")));
+assert.ok(onMessageSource.indexOf("if (m.type === MessageType.UserJoin) return welcome(m);") < onMessageSource.indexOf("if (m.author.bot || m.system) return;"), "member joins must welcome before other message handling");
+assert.match(welcomeSource, /new ActionRowBuilder\(\)\.addComponents\([\s\S]*setCustomId\("profile"\)/, "member joins must create a profile button");
+assert.match(welcomeSource, /say\("COMMANDCODE"[\s\S]*components: \[row\]/, "member joins must send the profile button through CommandCode");
+const profileModalSource = bot.slice(bot.indexOf("function profileModal(prev) {"), bot.indexOf("\nasync function saveProfile", bot.indexOf("function profileModal(prev) {")));
+assert.match(profileModalSource, /input\("sns", "SNS 닉네임/, "profile form must ask for an SNS name");
+assert.match(profileModalSource, /input\("making", "지금 만들고 있는 것/, "profile form must ask what the member is making");
+assert.match(profileModalSource, /input\("github", "GitHub \/ 포트폴리오 링크 \(선택\)", TextInputStyle\.Short, false,/, "profile form must make the GitHub link optional");
 assert.ok(spamSource.indexOf("if (isStaff(m.member)) return false;") < spamSource.indexOf("L.isSpam("), "staff must skip spam detection");
 const summaryGuard = "if (/^!?요약(해\\s?줘)?$/.test(text)) {";
 const guildRemainingQuotaBranch = onMessageSource.slice(onMessageSource.indexOf(commandPaths["!남은횟수"]), onMessageSource.indexOf(summaryGuard));

@@ -118,6 +118,11 @@ assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content
 assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
+const faqReplySource = bot.slice(bot.indexOf("async function faqReply(question, channelId, who, followUp) {"), bot.indexOf("\n// ---------- DM:", bot.indexOf("async function faqReply(question, channelId, who, followUp) {")));
+assert.match(faqReplySource, /const hit = L\.bestFaq\([\s\S]*?\); if \(!hit\) return false;/, "faq miss must return false");
+assert.ok(faqReplySource.indexOf("if (!hit) return false;") < faqReplySource.indexOf("await say("), "faq miss must return before posting");
+assert.doesNotMatch(faqReplySource, /takeQuota/, "FAQ reuse must not take quota");
+assert.match(faqReplySource, /📚 \*\*비슷한 질문이 예전에 해결됐어요\*\*/, "FAQ hit must post the existing similar-question notice");
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
 assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 \}\)/, "threadChat must fetch recent thread messages");
 assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");

@@ -67,6 +67,8 @@ for (const engine of ["codex", "opencode", "commandcode"]) {
 }
 const childEnv = ai.match(/^const CHILD_ENV = .*$/m)?.[0] ?? "";
 assert.ok(childEnv && !/DISCORD|TOKEN|SECRET|KEY/i.test(childEnv), "child env must not allow Discord token keys");
+assert.match(ai, /spawn\(bin, args, \{ cwd, env: CHILD_ENV, stdio: \["ignore", "pipe", "pipe"\] \}\)/, "AI CLI must spawn with the restricted child environment");
+assert.doesNotMatch(ai, /spawn\(bin, args, \{[^}]*env: process\.env/, "AI CLI must not inherit the full process environment");
 assert.match(ai, /const COMMANDCODE_MODEL = process\.env\.JUAI_COMMANDCODE_MODEL \|\| "poolside\/laguna-s-2\.1-free";/, "CommandCode must default to Laguna");
 const fallbackSource = ai.slice(ai.indexOf("async function runWithFallback"), ai.indexOf("\nexport function ai("));
 assert.match(ai, /const COOLDOWN_MS = 30 \* 60_000;/, "failed free models must cool down for 30 minutes");

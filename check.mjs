@@ -74,6 +74,10 @@ const profileModalSource = bot.slice(bot.indexOf("function profileModal(prev) {"
 assert.match(profileModalSource, /input\("sns", "SNS 닉네임/, "profile form must ask for an SNS name");
 assert.match(profileModalSource, /input\("making", "지금 만들고 있는 것/, "profile form must ask what the member is making");
 assert.match(profileModalSource, /input\("github", "GitHub \/ 포트폴리오 링크 \(선택\)", TextInputStyle\.Short, false,/, "profile form must make the GitHub link optional");
+const saveProfileSource = bot.slice(bot.indexOf("async function saveProfile(i) {"), bot.indexOf("\n/** First profile", bot.indexOf("async function saveProfile(i) {")));
+assert.match(saveProfileSource, /SELECT message_id FROM profiles WHERE user_id=\?/ , "profile saves must read the existing intro message id");
+assert.match(saveProfileSource, /prev\?\.message_id \? await intro\.messages\.fetch\(prev\.message_id\)[\s\S]*?msg = msg \? await msg\.edit\(\{ embeds: \[embed\] \}\) : await intro\.send\(/, "profile saves must edit the existing intro or send a new one");
+assert.match(saveProfileSource, /if \(!prev\) \{ stat\("프로필 작성"\); await suggestUsage\(i, msg, making\)/, "profile usage suggestions must run only on the first save");
 assert.ok(spamSource.indexOf("if (isStaff(m.member)) return false;") < spamSource.indexOf("L.isSpam("), "staff must skip spam detection");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?for \(const x of list\.filter\(\(x\) => x\.c === m\.content\)\)[\s\S]*?messages\.delete\(x\.id\)/, "spam must delete messages matching the detected content");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?await m\.member\?\.timeout\(L\.SPAM_TIMEOUT_MS,/, "spam must time out detected members for SPAM_TIMEOUT_MS");

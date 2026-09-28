@@ -82,6 +82,9 @@ assert.ok(guildRemainingQuotaBranch.includes("운영진은 AI 질문 횟수 제�
 assert.ok(!guildRemainingQuotaBranch.includes("takeQuota"), "guild !남은횟수 must not call takeQuota");
 assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.'), "outside-thread summary must explain the required scope");
 assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");
+const threadReply = 'if (parent && (parent === ids.lab || parent === ids.picks)) return threadChat(m);';
+const genericMentionAnswer = 'if (mentions("OPENCODE") || mentions("COMMANDCODE")) return answer(m, m.channelId, mentions("OPENCODE") ? "OPENCODE" : "COMMANDCODE", [], m.id);';
+assert.ok(onMessageSource.indexOf(threadReply) < onMessageSource.indexOf(genericMentionAnswer), "lab and picks thread replies must use threadChat before generic mention answers");
 assert.match(onMessageSource, /if \(\(parent === ids\.feedback \|\| parent === ids\.showcase\) && m\.channel\.ownerId !== m\.author\.id && m\.content\.length >= L\.FEEDBACK_MIN\) \{[\s\S]*?L\.grantBonus\(db, m\.author\.id\)[\s\S]*?\n  \}\n  if \(m\.channelId === ids\.lab\) return labQuestion\(m\);/, "feedback bonus must be scoped and granted before labQuestion");
 assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(`fb:\$\{m\.author\.id\}`, L\.kstDate\(\)\.slice\(0, 7\), Date\.now\(\)\);[\s\S]*?L\.grantBonus\(db, m\.author\.id\)/, "feedback bonus must record monthly fb usage before granting the bonus");
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
@@ -89,6 +92,9 @@ const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThr
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
+const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
+assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 \}\)/, "threadChat must fetch recent thread messages");
+assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");

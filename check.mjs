@@ -15,6 +15,9 @@ const bot = fs.readFileSync("bot.mjs", "utf8");
 const ai = fs.readFileSync("ai.mjs", "utf8");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
+const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink(", bot.indexOf("async function onInteraction(i) {")));
+assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("const card = getCard") && interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("setCard("), "non-owner card presses must be rejected before card changes");
+assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
@@ -92,6 +95,8 @@ assert.ok(onThreadSource.indexOf("return refreshProjects(") < onThreadSource.ind
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
+assert.match(tickSource, /SELECT id FROM cards WHERE status='HOLD' AND remind_at<=\?[\s\S]*setCard\(c\.id, "REVISED"\)/, "due HOLD cards must be marked revised");
+assert.match(tickSource, /createCard\(card\.kind, `다시 물어봐요: \$\{card\.payload\.title\}`, card\.payload\.body, card\.payload\)/, "due HOLD cards must become new cards");
 const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
 const dailyPicksSource = bot.slice(bot.indexOf("async function dailyPicks(today) {"), bot.indexOf("\nasync function weekly() {"));
 assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");

@@ -93,6 +93,12 @@ const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bo
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
+const forumQuota = 'L.takeQuota(db, "bot:forum", { staff: true })';
+const forumFirstReply = 'if (text) { const first = await sayLong(who, t.id, text);';
+assert.ok(onThreadSource.indexOf(forumQuota) < onThreadSource.indexOf("const who = t.parentId === ids.qa ? \"OPENCODE\" : \"COMMANDCODE\";"), "forum first-reply bot must be chosen after the shared quota");
+assert.ok(onThreadSource.includes('const who = t.parentId === ids.qa ? "OPENCODE" : "COMMANDCODE";'), "forum QA must use OpenCode and feedback must use CommandCode for the first reply");
+assert.ok(onThreadSource.includes('피드백 요청 글이야. 좋은 점 1개, 개선 제안 2개를 구체적으로 쓰고, 다른 멤버가 피드백하기 쉽게 작성자에게 되물을 질문 1개를 붙여줘.'), "feedback first reply must keep the good-point and improvement-suggestion prompt");
+assert.ok(onThreadSource.indexOf(forumQuota) < onThreadSource.indexOf(forumFirstReply), "forum first reply must follow the shared quota");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?return refreshProjects\(\)\.catch\(/, "showcase threads must refresh projects and return");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.showcase\) \{[\s\S]*?await codeReview\(t, starter\)/, "showcase threads must call codeReview");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.feedback\) await codeReview\(t, starter\);/, "feedback threads must call codeReview");

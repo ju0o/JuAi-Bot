@@ -34,6 +34,7 @@ const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map(
 assert.ok(defaultModels.length > 0 && defaultModels.every((model) => model.includes("free")), "OpenCode default models must all be free");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}model \|\| "haiku"/, "member Claude must default to Haiku");
 const commandSource = ai.slice(ai.indexOf("function command("), ai.indexOf("\nfunction run("));
+assert.match(commandSource, /throw new Error\(`unknown engine \$\{engine\}`\)/, "unknown AI engines must be rejected with a clear error");
 assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model]) => model === "sonnet" && commandSource.slice(0, commandSource.indexOf(model)).includes('engine === "claude-dev"')), "Sonnet must only be used by claude-dev");
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
 assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");

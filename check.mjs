@@ -79,6 +79,12 @@ const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;
 const talkTopic = talkInput.replace(/<@!?\d+>/g, "").replace(/^!봇수다\s*/, "").trim().slice(0, TALK_TOPIC_MAX);
 assert.equal(talkTopic.length, TALK_TOPIC_MAX, "!봇수다 must truncate topics to the shared maximum");
 assert.equal(talkTopic, "가".repeat(TALK_TOPIC_MAX), "!봇수다 must preserve the first 100 characters");
+const requestTalkSource = bot.slice(bot.indexOf("async function requestTalk(m, raw) {"), bot.indexOf("\nconst PROPOSERS ="));
+const talkInsert = 'db.prepare("INSERT INTO talk_requests(user_id,topic,at) VALUES(?,?,?)")';
+assert.match(requestTalkSource, /if \(topic\.length < L\.TALK_TOPIC_MIN\) return reply\(/, "short talk topics must return before insertion");
+assert.match(requestTalkSource, /if \(db\.prepare\("SELECT count\(\*\) n FROM talk_requests WHERE user_id=\? AND used=0"\)\.get\(m\.author\.id\)\.n >= L\.TALK_PENDING_MAX\) return reply\(/, "full talk queues must return before insertion");
+assert.ok(requestTalkSource.indexOf("topic.length < L.TALK_TOPIC_MIN") < requestTalkSource.indexOf(talkInsert), "short talk guard must precede insertion");
+assert.ok(requestTalkSource.indexOf("n >= L.TALK_PENDING_MAX") < requestTalkSource.indexOf(talkInsert), "pending talk guard must precede insertion");
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);

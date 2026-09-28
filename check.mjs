@@ -171,10 +171,12 @@ assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
+assert.match(summarizeThreadSource, /text \+ \(Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\)/, "thread-summary quota footer must be finite-only");
 const answerSource = bot.slice(bot.indexOf("async function answer(m, channelId, who, history, replyTo) {"), bot.indexOf("\n/** Every AI answer", bot.indexOf("async function answer(m, channelId, who, history, replyTo) {")));
 assert.match(answerSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(m\.member\) \}\);/, "answer must pass the member staff flag to takeQuota");
 assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\n  const prompt =/, "refused answer quota must return quotaMessage before building the AI prompt");
 assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
+assert.match(answerSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?sayLong\([^;]*text \+ footer/, "answer quota footer must be finite-only");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
 assert.match(labQuestionSource, /m\.startThread\(\{ name: m\.content\.replace\(\/\\s\+\/g, " "\)\.slice\(0, 50\) \|\| "질문", autoArchiveDuration: 1440 \}\)/, "lab questions must open a 50-character, 1440-minute thread");
 assert.ok(labQuestionSource.indexOf("startThread(") < labQuestionSource.indexOf("await faqReply("), "lab questions must open the thread before checking FAQ");
@@ -344,6 +346,7 @@ const anonymousThreadSource = anonymousQuestionSource.slice(anonymousQuestionSou
 assert.doesNotMatch(anonymousThreadSource, /m\.author\.id/, "anonymous thread content must omit the author id");
 assert.match(anonymousThreadSource, /message: \{ content: `🙈 \*\*익명 질문\*\*\\n\$\{question\.slice\(0, 1800\)\}`, allowedMentions: NO_PING \}/, "anonymous thread posts must disable pings");
 assert.match(anonymousQuestionSource, /await log\(`🙈 익명 질문 게시: \$\{thread\.url\} · 작성자 <@\$\{m\.author\.id\}> \(운영 기록용\)`\)/, "anonymous ops log must retain the author id");
+assert.match(anonymousQuestionSource, /\$\{Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\}/, "anonymous-question quota footer must be finite-only");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");

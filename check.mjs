@@ -17,6 +17,9 @@ const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.index
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
+const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
+assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");
+assert.doesNotMatch(aiCloseSource, /resolve\(out\)/, "successful AI CLI close must not resolve raw stdout");
 for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
 }

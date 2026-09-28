@@ -102,6 +102,11 @@ assert.match(codeReviewSource, /const repo = await githubContext\(starter\.conte
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
 assert.match(tickSource, /SELECT id FROM cards WHERE status='HOLD' AND remind_at<=\?[\s\S]*setCard\(c\.id, "REVISED"\)/, "due HOLD cards must be marked revised");
 assert.match(tickSource, /createCard\(card\.kind, `다시 물어봐요: \$\{card\.payload\.title\}`, card\.payload\.body, card\.payload\)/, "due HOLD cards must become new cards");
+const jobSource = bot.slice(bot.indexOf("async function job(key, fn) {"), bot.indexOf("\n// ASUS is powered off overnight", bot.indexOf("async function job(key, fn) {")));
+assert.match(jobSource, /if \(kvGet\(db, `done:\$\{key\}`\) \|\| running\.has\(key\)\) return;/, "jobs must skip completed or already-running keys");
+assert.match(jobSource, /running\.add\(key\);[\s\S]*try \{ await fn\(\); kvSet\(db, `done:\$\{key\}`, true\); \}/, "successful jobs must record completion");
+assert.match(jobSource, /const tries = \(kvGet\(db, `tries:\$\{key\}`\) \|\| 0\) \+ 1; kvSet\(db, `tries:\$\{key\}`, tries\);/, "failed jobs must increment and persist their retry count");
+assert.match(jobSource, /if \(tries >= 3\) \{[\s\S]*kvSet\(db, `done:\$\{key\}`, "failed"\);[\s\S]*alertFounder\(/, "jobs must alert and skip after three failures");
 const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
 const dailyPicksSource = bot.slice(bot.indexOf("async function dailyPicks(today) {"), bot.indexOf("\nasync function weekly() {"));
 assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");

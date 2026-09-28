@@ -110,11 +110,12 @@ assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 
 assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
+assert.match(onThreadSource, /if \(t\.parentId !== ids\.suggest\) notifySubs\(/, "suggestion threads must skip subscription notifications");
 const suggestThreadSource = onThreadSource.slice(onThreadSource.indexOf("if (t.parentId === ids.suggest) {"), onThreadSource.indexOf("if (t.parentId === ids.coproject)"));
 assert.match(suggestThreadSource, /await ai\("claude",[\s\S]*최대 2개/, "suggestion threads must ask Claude for at most two tags");
 assert.match(suggestThreadSource, /if \(tagIds\.length && !t\.appliedTags\.length\) await t\.setAppliedTags\(tagIds\)/, "suggestion tags must only be set when the thread has none");
 assert.ok(suggestThreadSource.includes("return;"), "suggestion threads must return after tag handling");
-assert.ok(!suggestThreadSource.includes("notifySubs("), "suggestion threads must skip subscription notifications");
+assert.ok(suggestThreadSource.indexOf("return;") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "suggestion threads must return before the shared forum quota");
 assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum QA FAQ return must precede the forum quota check");
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
 const forumQuota = 'L.takeQuota(db, "bot:forum", { staff: true })';

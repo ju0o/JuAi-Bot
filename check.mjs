@@ -17,7 +17,17 @@ const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.index
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
 const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink(", bot.indexOf("async function onInteraction(i) {")));
 assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("const card = getCard") && interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("setCard("), "non-owner card presses must be rejected before card changes");
+const thinkButtonSource = interactionSource.slice(interactionSource.indexOf('if (verb === "think")'), interactionSource.indexOf('if (verb === "hold")'));
+assert.match(thinkButtonSource, /return i\.showModal\(new ModalBuilder\(\)\.setCustomId\(`think:\$\{card\.id\}`\)/, "the rethink button must open the comment modal");
+assert.ok(!thinkButtonSource.includes("setCard("), "the rethink button must not change the card before the comment is submitted");
+assert.match(interactionSource, /if \(tag === "think"\) return rethink\(i, card, i\.fields\.getTextInputValue\("comment"\)\);/, "the comment modal must submit through rethink");
 assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");
+const rethinkSource = bot.slice(bot.indexOf("async function rethink(i, card, comment) {"), bot.indexOf("\nfunction git(", bot.indexOf("async function rethink(i, card, comment) {")));
+assert.equal(bot.match(/const TEXT_KINDS = new Set\(\[([^\]]+)\]\)/)?.[1].replace(/\s/g, ""), '"notice","rule","feature"', "rethink must create replacements only for notice, rule, and feature cards");
+assert.ok(rethinkSource.indexOf('setCard(card.id, "REVISED")') < rethinkSource.indexOf("await createCard("), "rethink must mark the original card REVISED before creating its replacement");
+assert.match(rethinkSource, /if \(!TEXT_KINDS\.has\(card\.kind\)\) return adminCommand\(/, "rethink must route other card kinds back through adminCommand");
+assert.match(rethinkSource, /const payload = card\.kind === "rule" \? \{ rules: revised\.split\("\\n"\)/, "rethought rule cards must create a replacement with rules");
+assert.match(rethinkSource, /: card\.kind === "feature" \? \{ description: revised \} : \{ text: revised \};/, "rethought feature and notice cards must create replacements with their text payloads");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
 const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map((model) => model.slice(1, -1)) ?? [];

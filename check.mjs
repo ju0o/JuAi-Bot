@@ -205,6 +205,15 @@ for (const action of DIRECT_ACTIONS) assert.ok(ADMIN_ACTIONS.includes(action));
 for (const action of ["delete_messages", "timeout", "create_channel", "delete_channel", "implement_feature"]) {
   assert.ok(!DIRECT_ACTIONS.has(action));
 }
+const adminSource = bot.slice(bot.indexOf("async function adminCommand"), bot.indexOf("\n// ---------- approval cards"));
+const directBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "answer")'), adminSource.indexOf("  const cards = {") );
+assert.match(directBranch, /if \(plan\.action === "answer"\)[\s\S]*return sayLong\(/, "answer must stay a direct admin action");
+assert.match(directBranch, /if \(plan\.action === "set_topic"\)[\s\S]*return reply\(/, "set_topic must stay a direct admin action");
+const approvalBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "delete_messages")'), adminSource.indexOf("  await cards[plan.action]();"));
+for (const action of ADMIN_ACTIONS.filter((action) => !DIRECT_ACTIONS.has(action))) {
+  const route = action === "delete_messages" ? /if \(plan\.action === "delete_messages"\)[\s\S]*return createCard\("delete"/ : new RegExp(`${action}:.*createCard\\(`);
+  assert.match(approvalBranch, route, `${action} must route through an approval card`);
+}
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 assert.deepEqual(

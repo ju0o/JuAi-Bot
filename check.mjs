@@ -61,6 +61,7 @@ assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude
 const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map((model) => model.slice(1, -1)) ?? [];
 assert.ok(defaultModels.length > 0 && defaultModels.every((model) => model.includes("free")), "OpenCode default models must all be free");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}model \|\| "haiku"/, "member Claude must default to Haiku");
+assert.match(bot, /const log = \(text\) => ids\.botlog \? say\("CLAUDE", ids\.botlog, L\.redact\(text\)\.slice\(0, 1900\)\)/, "bot log must redact and cap text before posting");
 const commandSource = ai.slice(ai.indexOf("function command("), ai.indexOf("\nfunction run("));
 assert.match(commandSource, /throw new Error\(`unknown engine \$\{engine\}`\)/, "unknown AI engines must be rejected with a clear error");
 assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model]) => model === "sonnet" && commandSource.slice(0, commandSource.indexOf(model)).includes('engine === "claude-dev"')), "Sonnet must only be used by claude-dev");

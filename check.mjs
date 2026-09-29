@@ -721,6 +721,11 @@ assert.match(executeSource, /case "release":\s+\{[\s\S]*execFileSync\("node", \[
 assert.match(executeSource, /case "feature": void implement\(card\)\.catch\(\(e\) => fail\(`feature \$\{card\.id\}`, e\)\); return "작업을 시작했어요/, "feature cards must start implementation and report failures");
 assert.match(executeSource, /case "feature_ready":\s+\{[\s\S]*writeFileSync\(path\.join\(ROOT, "data\/deploy\.json"\)[\s\S]*git\(\["merge", "--ff-only", p\.branch\]\)[\s\S]*git\(\["worktree", "remove", "--force", p\.dir\]\)[\s\S]*process\.exit\(0\)/, "ready feature cards must record deployment, merge, remove the worktree, and restart");
 assert.match(executeSource, /throw new Error\(`모르는 카드 종류: \$\{card\.kind\}`\)/, "unknown card kinds must throw the Korean error");
+const implementSource = bot.slice(bot.indexOf("async function implement("), bot.indexOf("\n// ---------- daily / weekly jobs"));
+const commitSource = implementSource.slice(implementSource.indexOf('try { git(["commit"'), implementSource.indexOf("\n  const stat"));
+assert.match(commitSource, /catch \{ return createCard\("feature", "기능 구현 결과 없음", `코드가 바뀌지 않았어요\.\\n\$\{summary\}`, card\.payload\); \}/, "a failed feature commit must return the existing empty-result card");
+assert.doesNotMatch(commitSource, /feature_ready/, "a failed feature commit must not create an apply card");
+assert.ok(implementSource.indexOf('return createCard("feature", "기능 구현 결과 없음"') < implementSource.indexOf('await createCard("feature_ready"'), "only a committed feature may reach the apply card");
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 assert.deepEqual(

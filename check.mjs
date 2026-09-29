@@ -93,6 +93,11 @@ assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model])
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
 assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");
 assert.doesNotMatch(aiCloseSource, /resolve\(out\)/, "successful AI CLI close must not resolve raw stdout");
+const aiRunSource = ai.slice(ai.indexOf("function run("), ai.indexOf("\n// ponytail:"));
+assert.match(aiRunSource, /const timer = setTimeout\(\(\) => child\.kill\("SIGKILL"\), timeoutMs\);/, "AI CLI timeout must kill the child with SIGKILL");
+assert.ok(aiRunSource.indexOf("setTimeout") < aiRunSource.indexOf('child.on("close"'), "AI CLI timeout must be armed before waiting for close");
+assert.match(aiRunSource, /if \(engine === "opencode"\) text = text\.split\("\\n"\)\.filter\(\(l\) => !\/\^> \\S\+ · \/\.test\(l\)\)\.join\("\\n"\);/, "OpenCode stdout must drop prompt-echo lines");
+assert.ok(aiRunSource.indexOf('engine === "opencode"') < aiRunSource.indexOf("text = text.trim();") && aiRunSource.indexOf("text = text.trim();") < aiRunSource.indexOf("resolve(redact(text))"), "OpenCode prompt echoes must be removed before trim and redact");
 const aiQueueSource = ai.slice(ai.indexOf("let queue = Promise.resolve();"), ai.indexOf("/** Tiny debug hook"));
 assert.match(aiQueueSource, /pending\+\+;[\s\S]*const job = queue\.then\(\(\) => runWithFallback\(engine, prompt, opts\)\)\.finally\(\(\) => \{ pending--; \}\);/, "AI requests must increase pending and decrease it after success or failure");
 assert.ok(aiQueueSource.indexOf("pending++;") < aiQueueSource.indexOf("queue.then"), "AI requests must count as pending before entering the queue");

@@ -494,6 +494,10 @@ assert.ok(startTalkSource.includes(talkRequestClaim), "startTalk must claim the 
 assert.ok(startTalkSource.indexOf(talkRequestClaim) < startTalkSource.indexOf("const fallback ="), "talk requests must be claimed before fallback topics are chosen");
 assert.match(startTalkSource, /멤버 이름은 쓰지 마/, "talk opener prompt must forbid member names");
 assert.match(startTalkSource, /String\(carry && part > 1 \? carry\.topic : req\?\.topic \|\| d\.topic \|\| "자유 주제"\)\.slice\(0, L\.TALK_TOPIC_MAX\)/, "talk topics must use the shared maximum");
+const emptyTalkOpenerGuard = 'const d = L.extractJson(out); if (!d?.text) throw new Error("봇 수다 첫마디를 못 만들었어요");';
+assert.ok(startTalkSource.includes(emptyTalkOpenerGuard), "empty talk openers must throw the existing error");
+assert.ok(startTalkSource.indexOf(emptyTalkOpenerGuard) < startTalkSource.indexOf('await say("CLAUDE", ids.playground'), "empty talk openers must fail before posting the playground header");
+assert.ok(startTalkSource.indexOf(emptyTalkOpenerGuard) < startTalkSource.indexOf('kvSet(db, "talk_session", {'), "empty talk openers must fail before storing a talk session");
 const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot.indexOf("\n// ---------- 프로젝트 목록", bot.indexOf("async function talkStep() {")));
 assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
 assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");

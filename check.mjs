@@ -788,6 +788,10 @@ assert.match(executeSource, /case "timeout": case "spam":\s+\{[\s\S]*guild\.memb
 assert.match(executeSource, /case "channel_create":\s+\{[\s\S]*guild\.channels\.create\(\{ name: p\.name,[\s\S]*p\.kind === "forum"/, "channel cards must create the named channel");
 assert.match(executeSource, /case "channel_delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.channelId\)[\s\S]*ch\.delete\(\)/, "channel delete cards must delete the named channel");
 assert.match(executeSource, /case "badge":\s+\{[\s\S]*guild\.roles\.cache\.find\(\(r\) => r\.name === "피드백 장인"\)[\s\S]*roles\.remove\(role\)[\s\S]*roles\.add\(role\)[\s\S]*kvSet\(db, "badge_holders", p\.user_ids\)[\s\S]*sayLong\("CLAUDE", ids\.notice, p\.text\)/, "badge cards must update the role holders and post the notice");
+const badgeSource = executeSource.slice(executeSource.indexOf('case "badge":'), executeSource.indexOf('case "release":'));
+const missingBadgeRoleGuard = 'if (!role) throw new Error("피드백 장인 역할이 없어요 (node setup.mjs)");';
+assert.ok(badgeSource.includes(missingBadgeRoleGuard), "badge cards must keep the existing missing-role error");
+assert.ok(badgeSource.indexOf(missingBadgeRoleGuard) < badgeSource.indexOf("roles.remove(role)") && badgeSource.indexOf(missingBadgeRoleGuard) < badgeSource.indexOf("roles.add(role)"), "badge cards must throw before changing role holders");
 assert.match(executeSource, /case "release":\s+\{[\s\S]*execFileSync\("node", \["--no-warnings", "scripts\/release\.mjs"\][\s\S]*out\.startsWith\("RELEASED"\)/, "release cards must run the release script and report its result");
 assert.match(executeSource, /case "feature": void implement\(card\)\.catch\(\(e\) => fail\(`feature \$\{card\.id\}`, e\)\); return "작업을 시작했어요/, "feature cards must start implementation and report failures");
 assert.match(executeSource, /case "feature_ready":\s+\{[\s\S]*writeFileSync\(path\.join\(ROOT, "data\/deploy\.json"\)[\s\S]*git\(\["merge", "--ff-only", p\.branch\]\)[\s\S]*git\(\["worktree", "remove", "--force", p\.dir\]\)[\s\S]*process\.exit\(0\)/, "ready feature cards must record deployment, merge, remove the worktree, and restart");

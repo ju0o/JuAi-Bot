@@ -83,6 +83,8 @@ assert.match(rethinkSource, /const payload = card\.kind === "rule" \? \{ rules: 
 assert.match(rethinkSource, /: card\.kind === "feature" \? \{ description: revised \} : \{ text: revised \};/, "rethought feature and notice cards must create replacements with their text payloads");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
+const claudeDevAllowedTools = ai.match(/if \(engine === "claude-dev"\)[\s\S]*?"--allowedTools", "([^"]+)"/)?.[1];
+assert.equal(claudeDevAllowedTools, "Read,Edit,Write,Glob,Grep,Bash(node check.mjs)", "claude-dev allowedTools must stay limited to the approved tools");
 const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map((model) => model.slice(1, -1)) ?? [];
 assert.ok(defaultModels.length > 0 && defaultModels.every((model) => model.includes("free")), "OpenCode default models must all be free");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}model \|\| "haiku"/, "member Claude must default to Haiku");

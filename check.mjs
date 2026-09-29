@@ -517,6 +517,14 @@ assert.match(setup, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch
 assert.match(setup, /for \(let n = ONBOARDING\.length; n > 0; n--\) \{[\s\S]*?await putOnboarding\(ONBOARDING, n\);[\s\S]*?catch \(e\) \{ if \(!\/TOO_MANY_ONBOARDING_PROMPTS\/.test\(e\.message\) \|\| n === 1\) throw e; \}/, "setup must retry onboarding with fewer shown questions when Discord caps prompts");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");
+const guideUpdateSource = setup.slice(setup.indexOf("// #사용법"), setup.indexOf("let invite", setup.indexOf("// #사용법")));
+const guideSendBranch = guideUpdateSource.indexOf("else {");
+assert.ok(guideUpdateSource.includes("m.edit(texts[n])") && guideUpdateSource.indexOf("m.edit(texts[n])") < guideSendBranch, "setup must edit stored 사용법 messages");
+assert.ok(guideUpdateSource.includes("guideCh.send(") && guideUpdateSource.indexOf("guideCh.send(") > guideSendBranch, "setup must send 사용법 replacements only when stored messages are missing");
+const sourceGuideUpdateSource = setup.slice(setup.indexOf("// Source-code intro"), setup.indexOf("// Founder command sheet"));
+assert.match(sourceGuideUpdateSource, /if \(srcPrev\) await srcPrev\.edit\(srcText\);\s*else \{[\s\S]*?await srcCh\.send\(\{ content: srcText/, "setup must edit the stored 봇-소스코드 message and send only when it is missing");
+const staffGuideUpdateSource = setup.slice(setup.indexOf("// Founder command sheet"), setup.indexOf("let invite", setup.indexOf("// Founder command sheet")));
+assert.match(staffGuideUpdateSource, /if \(staffPrev\) await staffPrev\.edit\(staffText\);\s*else \{[\s\S]*?await staffCh\.send\(\{ content: staffText/, "setup must edit the stored 운영진 message and send only when it is missing");
 const defaultChannelKeys = setup.match(/default_channel_ids:\s*\[([\s\S]*?)\]\.map/)?.[1].matchAll(/"([^"]+)"/g);
 assert.ok(defaultChannelKeys, "setup.mjs must define onboarding default channels");
 for (const [, key] of defaultChannelKeys) {

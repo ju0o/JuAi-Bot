@@ -361,7 +361,13 @@ assert.ok(notifySubsSource.indexOf("if (uid === authorId || sent >= L.SUB_DAILY 
 const rememberAnswerSource = bot.slice(bot.indexOf("function rememberAnswer("), bot.indexOf("\nfunction addFaq("));
 assert.match(rememberAnswerSource, /for \(const e of \["👍", "👎"\]\) msg\.react\(e\)\.catch\(\(\) => \{\}\);/, "answers must get both thumbs-up and thumbs-down reactions");
 const onVoteSource = bot.slice(bot.indexOf("async function onVote("), bot.indexOf("\nasync function onSolved("));
+const voteGuard = 'if (user.bot || !["👍", "👎"].includes(reaction.emoji.name)) return;';
+assert.ok(onVoteSource.includes(voteGuard), "onVote must return for bot users and non-vote emoji");
+assert.ok(onVoteSource.indexOf(voteGuard) < onVoteSource.indexOf('SELECT * FROM answers'), "onVote guards must run before reading answers");
 assert.equal([...onVoteSource.matchAll(/addFaq\(/g)].length, 1, "onVote must have one guarded FAQ insertion");
+assert.match(onVoteSource, /const vote = reaction\.emoji\.name === "👍" \? 1 : -1;/, "thumbs-down must map to vote -1");
+assert.ok(onVoteSource.indexOf('const vote = reaction.emoji.name') < onVoteSource.indexOf('INSERT OR REPLACE INTO votes'), "vote value must be computed before storage");
+assert.ok(onVoteSource.indexOf('INSERT OR REPLACE INTO votes') < onVoteSource.indexOf("if (vote === 1 && user.id === row.asker) addFaq("), "thumbs-down must be stored before the FAQ-only branch");
 assert.match(onVoteSource, /if \(vote === 1 && user\.id === row\.asker\) addFaq\(/, "only the original asker's thumbs-up may add a FAQ");
 assert.match(bot, /hub\.on\("threadUpdate", \(before, after\) => void onSolved\(before, after\)\.catch\(\(e\) => fail\("solved", e\)\)\);/, "thread updates must call onSolved");
 const onSolvedSource = bot.slice(bot.indexOf("async function onSolved("), bot.indexOf("\n\/\*\* Already solved?"));

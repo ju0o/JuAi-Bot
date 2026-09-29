@@ -251,6 +251,14 @@ const reviewPromptSource = bot.slice(bot.indexOf("const reviewPrompt ="), bot.in
 assert.match(reviewPromptSource, /코드 본문은 못 봤다는 걸 전제로/, "review prompt must say the code body was not read");
 assert.match(reviewPromptSource, /잘한 점 2개[\s\S]*개선하면 좋을 점 3개/, "review prompt must ask for two strengths and three improvements");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
+const bootstrapSource = bot.slice(bot.indexOf("async function bootstrap() {"), bot.indexOf("\nconst JOB_NAME"));
+assert.match(bootstrapSource, /const data = L\.extractJson\(out\); if \(!data\?\.rules\) throw new Error\("첫 규칙 초안을 못 읽었어요"\);/, "bootstrap must throw when the draft has no rules");
+assert.ok(bootstrapSource.indexOf("throw new Error(\"첫 규칙 초안을 못 읽었어요\")") < bootstrapSource.indexOf("await createCard("), "bootstrap must reject a rule-less draft before creating cards");
+assert.match(bootstrapSource, /\$\{L\.LIMITS\.daily\}회/, "bootstrap prompt must include the daily AI limit");
+assert.match(bootstrapSource, /await createCard\("rule", "첫 규칙"[\s\S]*?await createCard\("notice", "환영 공지"/, "bootstrap must create the first rules and welcome notice as cards");
+assert.doesNotMatch(bootstrapSource, /\b(?:say|sayLong)\s*\(/, "bootstrap must not post directly outside approval cards");
+assert.match(tickSource, /\n  await job\("bootstrap", bootstrap\);/, "daily tick must schedule bootstrap");
+assert.ok(!/if \([^\n]*\) await job\("bootstrap", bootstrap\)/.test(tickSource), "bootstrap schedule must not have an hour gate");
 assert.match(tickSource, /SELECT id FROM cards WHERE status='HOLD' AND remind_at<=\?[\s\S]*setCard\(c\.id, "REVISED"\)/, "due HOLD cards must be marked revised");
 assert.match(tickSource, /createCard\(card\.kind, `다시 물어봐요: \$\{card\.payload\.title\}`, card\.payload\.body, card\.payload\)/, "due HOLD cards must become new cards");
 const jobSource = bot.slice(bot.indexOf("async function job(key, fn) {"), bot.indexOf("\n// ASUS is powered off overnight", bot.indexOf("async function job(key, fn) {")));

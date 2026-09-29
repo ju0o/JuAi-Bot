@@ -42,6 +42,10 @@ assert.equal((await configuredFindGuild(offlineGuildClient(namedGuilds))).id, "1
 await assert.rejects(() => findGuild(offlineGuildClient([{ id: "3", name: "Other" }])), /JuAi 서버를 못 찾았어요/, "setup must explain when no guild matches");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
+const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));
+assert.match(alertFounderSource, /if \(Date\.now\(\) - \(kvGet\(db, k\) \|\| 0\) < 3 \* 3_600_000\) return;/, "repeated Founder alerts must return within three hours");
+assert.ok(alertFounderSource.indexOf("return;") < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");
+assert.match(bot, /AI\.onAllFreeModelsDown\(\(e\) => alertFounder\("ai-free", `무료 AI 모델이 전부 응답하지 않아요\./, "all-free-model failure must register the existing Korean Founder alert");
 const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink(", bot.indexOf("async function onInteraction(i) {")));
 assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("const card = getCard") && interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("setCard("), "non-owner card presses must be rejected before card changes");
 const thinkButtonSource = interactionSource.slice(interactionSource.indexOf('if (verb === "think")'), interactionSource.indexOf('if (verb === "hold")'));

@@ -18,6 +18,11 @@ assert.match(service, /ExecStartPre=\/usr\/bin\/node guard\.mjs[\s\S]*ExecStart=
 assert.match(service, /^Restart=always$/m, "service must always restart");
 const botId = Function(`${setup.match(/export const botId = \(token\) => [^;]+;/)?.[0].replace("export ", "")}; return botId;`)();
 const connectSource = bot.slice(bot.indexOf("async function connect() {"), bot.indexOf("\nconst as =", bot.indexOf("async function connect() {")));
+assert.ok(connectSource.indexOf("await waitForNetwork();") < connectSource.indexOf("for (const name of"), "connect must wait for the network before logging in bots");
+assert.match(connectSource, /if \(!hub\) throw new Error\("로그인된 봇이 없어요"\);/, "connect must throw when no bot is logged in");
+assert.ok(connectSource.includes('hub.on("messageCreate", (m) => void onMessage(m).catch((e) => fail("message", e)));'), "hub must register the message handler");
+assert.ok(connectSource.includes('hub.on("threadCreate", (t, isNew) => { if (isNew) onThread(t).catch((e) => fail("thread", e)); });'), "hub must register the new-thread handler");
+assert.ok(connectSource.includes('hub.on("messageReactionAdd", (r, u) => void onVote(r, u).catch((e) => fail("vote", e)));'), "hub must register the reaction handler");
 assert.match(connectSource, /intents: isHub \? \[[^\]]*\] : name === "OPENCODE" \? \[G\.Guilds, G\.DirectMessages\] : \[G\.Guilds\]/, "OpenCode must receive DirectMessages when it is not the hub");
 assert.match(connectSource, /\.\.\.\(isHub \? \{ partials: \[[^\]]*\] \} : name === "OPENCODE" \? \{ partials: \[Partials\.Channel\] \} : \{\}\)/, "OpenCode must receive a Channel partial when it is not the hub");
 assert.ok(connectSource.includes('if (name === "OPENCODE") client.on("messageCreate", (m) => void onDirect(m).catch((e) => fail("dm", e)));'), "OpenCode must always register its messageCreate handler to onDirect");

@@ -638,6 +638,8 @@ assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\
 const scheduleTalkSource = bot.slice(bot.indexOf("function scheduleTalk() {"), bot.indexOf("\nasync function talkStep()", bot.indexOf("function scheduleTalk() {")));
 assert.match(scheduleTalkSource, /const sess = kvGet\(db, "talk_session"\); if \(!sess\) return;/, "scheduleTalk must return when no talk session exists");
 assert.match(scheduleTalkSource, /if \(Date\.now\(\) - sess\.startedAt > 3 \* 3_600_000\) \{ kvSet\(db, "talk_session", null\); return; \}/, "scheduleTalk must clear stale talk sessions");
+const talkFailureRecovery = 'talkStep().catch((e) => { fail("bot-talk", e); const s2 = kvGet(db, "talk_session"); if (s2) { kvSet(db, "talk_session", { ...s2, nextAt: Date.now() + 120_000 }); scheduleTalk(); } })';
+assert.ok(scheduleTalkSource.includes(talkFailureRecovery), "talk-step failures must keep the session, retry in 120 seconds, and reschedule");
 assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ 30_000 \}\); return scheduleTalk\(\); \}/, "talkStep must disable a bot and reschedule when its reply has no text");
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));

@@ -829,6 +829,9 @@ assert.match(directBranch, /if \(plan\.action === "set_topic"\)[\s\S]*return rep
 const setTopicBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "set_topic")'), adminSource.indexOf('if (plan.action === "delete_messages")'));
 assert.match(setTopicBranch, /if \(!ch\) return reply\(`#\$\{p\.channel\} 채널을 못 찾았어요\.`\);/, "set_topic must use the existing channel-not-found reply");
 assert.ok(setTopicBranch.indexOf("if (!ch) return reply(") < setTopicBranch.indexOf("await ch.setTopic("), "set_topic must reject a missing channel before changing it");
+const deleteChannelBranch = adminSource.slice(adminSource.indexOf('delete_channel: () =>'), adminSource.indexOf('implement_feature: () =>'));
+assert.match(deleteChannelBranch, /const ch = resolveChannel\(p\.channel\); return ch \? createCard\("channel_delete",[\s\S]*: reply\(`#\$\{p\.channel\} 채널을 못 찾았어요\.\`\);/, "delete_channel must use the existing channel-not-found reply without creating a card");
+assert.ok(deleteChannelBranch.indexOf("return ch ? createCard(") < deleteChannelBranch.indexOf(": reply("), "delete_channel must create a card only when a channel resolves");
 const approvalBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "delete_messages")'), adminSource.indexOf("  await cards[plan.action]();"));
 assert.match(approvalBranch, /const ch = resolveChannel\(p\.channel\); if \(!ch\?\.isTextBased\(\)\) return reply\(`#\$\{p\.channel\} 채널을 못 찾았어요\.`\);/, "delete_messages must use the existing channel-not-found reply");
 assert.ok(approvalBranch.indexOf("if (!ch?.isTextBased()) return reply(") < approvalBranch.indexOf("ch.messages.fetch("), "delete_messages must reject a missing channel before fetching messages");

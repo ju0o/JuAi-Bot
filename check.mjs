@@ -691,6 +691,11 @@ assert.match(overwriteSource, /private:\s*\[\{ id: everyone, deny: \[P\.ViewChan
 assert.match(setup, /const existingRoles = await guild\.roles\.fetch\(\);[\s\S]*?let role = existingRoles\.find\(\(x\) => x\.name === r\.name\);[\s\S]*?else await role\.edit\(/, "setup must find existing roles by name and update them");
 assert.match(setup, /const all = await guild\.channels\.fetch\(\);[\s\S]*?let chan = all\.find\(\(c\) => c && c\.type === TYPE\[ch\.type\] && c\.name === ch\.name\);[\s\S]*?else \{[\s\S]*?await chan\.edit\(/, "setup must find existing channels by name and update them");
 assert.match(setup, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch\(\{ limit: 1 \}\)\.catch\(\(\) => null\) : null;\s*if \(!msgs \|\| msgs\.size === 0\) await c\.delete\(/, "setup must delete default channels only when empty");
+const communitySetup = setup.slice(setup.indexOf("if (!community)"), setup.indexOf("await applyChannels(true)"));
+assert.match(communitySetup, /guild\.edit\(\{ verificationLevel: GuildVerificationLevel\.Low, explicitContentFilter: GuildExplicitContentFilter\.AllMembers \}\)/, "setup must use low verification and filter content for all members");
+assert.match(communitySetup, /guild\.edit\(\{ features: \[\.\.\.guild\.features, "COMMUNITY"\], rulesChannel: ids\.rules, publicUpdatesChannel: ids\.staff \}\)/, "setup must enable Community with rules and staff channels");
+assert.match(setup, /guild\.edit\(\{ defaultMessageNotifications: GuildDefaultMessageNotifications\.OnlyMentions \}\)/, "setup must default notifications to mentions only");
+assert.match(setup, /guild\.edit\(\{ systemChannel: ids\.intro,/, "setup must set the system channel to intro");
 assert.match(setup, /for \(let n = ONBOARDING\.length; n > 0; n--\) \{[\s\S]*?await putOnboarding\(ONBOARDING, n\);[\s\S]*?catch \(e\) \{ if \(!\/TOO_MANY_ONBOARDING_PROMPTS\/.test\(e\.message\) \|\| n === 1\) throw e; \}/, "setup must retry onboarding with fewer shown questions when Discord caps prompts");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");

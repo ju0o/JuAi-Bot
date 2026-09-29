@@ -845,6 +845,8 @@ assert.ok(adminSource.indexOf("await cards[plan.action]();") < adminSource.index
 const executeSource = bot.slice(bot.indexOf("async function execute(card) {"), bot.indexOf("\nasync function implement(", bot.indexOf("async function execute(card) {")));
 assert.match(executeSource, /case "notice":\s+await sayLong\("CLAUDE", ids\.notice, p\.text\)/, "notice cards must post to the notice channel");
 assert.match(executeSource, /case "rule":\s+\{[\s\S]*kvGet\(db, "rules"\)[\s\S]*kvSet\(db, "rules", rules\)[\s\S]*ids\.rules[\s\S]*msg\.edit\(content\)/, "rule cards must rewrite the rules message");
+const ruleExecuteSource = executeSource.slice(executeSource.indexOf('case "rule":'), executeSource.indexOf('case "delete":'));
+assert.match(ruleExecuteSource, /if \(msg\) await msg\.edit\(content\); else kvSet\(db, "rules_message", \(await ch\.send\(\{ content, allowedMentions: NO_PING \}\)\)\.id\);/, "rule cards without a stored message must post rules without mentions and store its id");
 assert.match(executeSource, /case "delete":\s+\{[\s\S]*hub\.channels\.fetch\(p\.channelId\)[\s\S]*ch\.bulkDelete\(p\.messageIds, true\)/, "delete cards must bulk-delete the listed messages");
 assert.match(executeSource, /case "timeout": case "spam":\s+\{[\s\S]*guild\.members\.fetch\(p\.user_id\)[\s\S]*card\.kind === "spam" \? 24 \* 60 : p\.minutes[\s\S]*member\.timeout\(minutes \* 60_000/, "timeout cards must use card minutes and spam cards 24 hours");
 assert.match(executeSource, /case "channel_create":\s+\{[\s\S]*guild\.channels\.create\(\{ name: p\.name,[\s\S]*p\.kind === "forum"/, "channel cards must create the named channel");

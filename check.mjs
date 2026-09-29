@@ -53,8 +53,11 @@ assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].ma
 assert.match(approvalCardSource, /if \(status\) embed\.setFooter\(\{ text: status \}\);/, "decided approval cards must show their status in the footer");
 assert.match(approvalCardSource, /components: status \? \[\] : \[buttons\]/, "decided approval cards must drop their action buttons");
 const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));
-assert.match(alertFounderSource, /if \(Date\.now\(\) - \(kvGet\(db, k\) \|\| 0\) < 3 \* 3_600_000\) return;/, "repeated Founder alerts must return within three hours");
-assert.ok(alertFounderSource.indexOf("return;") < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");
+const alertCooldownGuard = "if (Date.now() - (kvGet(db, k) || 0) < 3 * 3_600_000) return;";
+assert.ok(alertFounderSource.includes(alertCooldownGuard), "repeated Founder alerts must return within three hours");
+assert.ok(alertFounderSource.indexOf(alertCooldownGuard) < alertFounderSource.indexOf("kvSet(db, k, Date.now())"), "repeated Founder alerts must return before saving");
+assert.ok(alertFounderSource.indexOf(alertCooldownGuard) < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");
+assert.match(alertFounderSource, /content: `🚨 \*\*JuAi 알림\*\*[\s\S]*같은 알림은 3시간에 한 번만 보내요\./, "Founder DMs must say the same alert is sent only once every three hours");
 const failSource = bot.slice(bot.indexOf("function fail"), bot.indexOf("\n/** Founder runs", bot.indexOf("function fail")));
 assert.match(failSource, /while \(recentErrors\.length && now - recentErrors\[0\] > 30 \* 60_000\) recentErrors\.shift\(\);/, "fail must drop errors older than 30 minutes");
 assert.match(failSource, /if \(recentErrors\.length >= 8\) alertFounder\("errors", `최근 30분 동안 오류가 \$\{recentErrors\.length\}번 났어요\./, "fail must alert Founder only after eight recent errors");

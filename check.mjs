@@ -130,6 +130,9 @@ assert.match(welcomeSource, /say\("COMMANDCODE"[\s\S]*components: \[row\]/, "mem
 assert.match(welcomeSource, /setTimeout\(\(\) => void loungeWelcome\(m\.author\.id\)\.catch\([\s\S]*60_000\)/, "member joins must schedule the lounge welcome after 60 seconds");
 const loungeWelcomeSource = bot.slice(bot.indexOf("async function loungeWelcome(uid) {"), bot.indexOf("\nconst ROLE_GROUPS", bot.indexOf("async function loungeWelcome(uid) {")));
 assert.match(loungeWelcomeSource, /const member = await guild\.members\.fetch\(uid\)\.catch\(\(\) => null\); if \(!member\) return;/, "lounge welcome must return when the member is missing");
+assert.match(loungeWelcomeSource, /await say\("COMMANDCODE", ids\.chat, \{[\s\S]*allowedMentions: \{ users: \[uid\] \} \}/, "lounge welcome must post through CommandCode in chat and mention the joining member");
+assert.match(loungeWelcomeSource, /const pick = \(prefix\) => ROLE_GROUPS\[prefix\]\.filter\(\(n\) => member\.roles\.cache\.some\(\(r\) => r\.name === n\)\);[\s\S]*const interests = pick\("int"\), level = pick\("lvl"\)\[0\];/, "lounge welcome must derive interest and level only from the member's onboarding roles");
+assert.match(loungeWelcomeSource, /const about = \[interests\.length \?[^:]+: "", level \? `\(\$\{level\}\)` : ""\]/, "lounge welcome must add only the member's interest and level text");
 const ensureProfileButtonSource = bot.slice(bot.indexOf("async function ensureProfileButton() {"), bot.indexOf("\nfunction profileModal", bot.indexOf("async function ensureProfileButton() {")));
 assert.match(ensureProfileButtonSource, /if \(prevId && await ch\.messages\.fetch\(prevId\)\.catch\(\(\) => null\)\) return;/, "profile button setup must return when the stored button still exists");
 assert.ok(ensureProfileButtonSource.indexOf("await ch.send(") < ensureProfileButtonSource.indexOf("await msg.pin()"), "profile button setup must pin the new message");

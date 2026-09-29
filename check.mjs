@@ -332,6 +332,8 @@ assert.match(dailyPicksSource, /await sayLong\("OPENCODE", thread\.id, usage\)/,
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
 const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));
+assert.match(weeklySource, /fetchArchived\(\{ limit: 50 \}\)/, "weekly report must read archived suggestion threads");
+assert.match(weeklySource, /\.filter\(\(t\) => t\.createdTimestamp >= since\)/, "weekly report must keep suggestion threads created at or after since");
 assert.match(weeklySource, /data\.top\.slice\(0, 5\)/, "weekly suggestion TOP list must be capped at 5");
 assert.match(weeklySource, /\(data\.proposals \|\| \[\]\)\.slice\(0, 3\)/, "weekly proposals must be capped at 3");
 assert.match(weeklySource, /if \(data\.top\?\.length\) \{[\s\S]*?await createCard\("notice",/, "weekly suggestion TOP list must be sent through a notice card");
@@ -469,6 +471,9 @@ assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSe
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
 assert.match(refreshProjectsSource, /threadsSince\(\[ids\.showcase\], Date\.now\(\) - 180 \* L\.DAY_MS\)/, "project list must read showcase threads from the last 180 days");
+const threadsSinceSource = bot.slice(bot.indexOf("async function threadsSince(parentIds, since) {"), bot.indexOf("\nasync function highlight", bot.indexOf("async function threadsSince(parentIds, since) {")));
+assert.match(threadsSinceSource, /for \(const id of parentIds\) archived\.push\(\.\.\.\(await \(await hub\.channels\.fetch\(id\)\)\.threads\.fetchArchived\(\{ limit: 50 \}\)/, "threadsSince must read archived threads for every requested parent");
+assert.match(threadsSinceSource, /\.filter\(\(t\) => parentIds\.includes\(t\.parentId\) && t\.createdTimestamp >= since\)/, "threadsSince must keep only requested parents created at or after since");
 assert.match(bot, /const daysAgo = \(ms\) => \{ const d = Math\.floor\(\(Date\.now\(\) - ms\) \/ L\.DAY_MS\); return d <= 0 \? "오늘" : `\$\{d\}일 전`; \};/, "daysAgo must say 오늘 for today and N일 전 otherwise");
 assert.match(refreshProjectsSource, /const s = await t\.fetchStarterMessage\(\)\.catch\(\(\) => null\); if \(!s \|\| s\.author\.bot\) continue;/, "project list must skip bot-authored starters");
 assert.match(refreshProjectsSource, /s\.content\.split\("\\n"\)\[0\]\.slice\(0, 90\) \|\| "설명 없음"/, "project list must use 설명 없음 for a blank starter first line");

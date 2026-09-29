@@ -468,6 +468,7 @@ const subscriptionCancelGuard = 'if (cmd === "!구독취소") { const n = db.pre
 const subscriptionKeywordValidation = "if (!L.isValidSubKeyword(kw)) return reply(";
 const subscriptionCapGuard = "if (mine().length >= L.SUB_MAX && !mine().includes(kw)) return reply(";
 const subscriptionInsert = 'db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)")';
+const subscriptionConfirmation = 'return reply(`🔔 \\`${kw}\\` 구독했어요!';
 assert.ok(subscribeSource.includes('if (cmd === "!구독목록") return reply(mine().length ?') && subscribeSource.includes('"아직 구독한 단어가 없어요. `!구독 MCP`처럼 써보세요!"'), "empty subscription lists must explain how to subscribe");
 assert.ok(subscribeSource.includes('if (cmd === "!구독취소") {') && subscribeSource.includes("는 구독 중이 아니에요."), "cancelling an unsubscribed keyword must explain that it was not subscribed");
 assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription list must return before keyword validation");
@@ -476,6 +477,8 @@ assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.index
 assert.ok(subscribeSource.indexOf(subscriptionCancelGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cancel must return before insertion");
 assert.match(subscribeSource, /if \(mine\(\)\.length >= L\.SUB_MAX && !mine\(\)\.includes\(kw\)\) return reply\(`구독은 \$\{L\.SUB_MAX\}개까지예요\./, "subscription max must return the cap reply for a new keyword");
 assert.ok(subscribeSource.indexOf(subscriptionCapGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cap reply must precede keyword insertion");
+assert.ok(subscribeSource.includes(subscriptionConfirmation), "subscription must keep the existing keyword confirmation");
+assert.ok(subscribeSource.indexOf(subscriptionInsert) < subscribeSource.indexOf(subscriptionConfirmation), "subscription confirmation must follow insertion");
 const notifySubsSource = bot.slice(bot.indexOf("async function notifySubs("), bot.indexOf("\n// ---------- 봇 놀이터", bot.indexOf("async function notifySubs(")));
 const subscriptionWrite = "kvSet(db, key, sent + 1)";
 assert.match(notifySubsSource, /if \(uid === authorId \|\| sent >= L\.SUB_DAILY \|\| byUser\.has\(uid\)\) continue;/, "subscription notifications must skip the author and daily cap");

@@ -399,6 +399,8 @@ assert.doesNotMatch(anonymousThreadSource, /m\.author\.id/, "anonymous thread co
 assert.match(anonymousThreadSource, /message: \{ content: `🙈 \*\*익명 질문\*\*\\n\$\{question\.slice\(0, 1800\)\}`, allowedMentions: NO_PING \}/, "anonymous thread posts must disable pings");
 assert.match(anonymousQuestionSource, /await log\(`🙈 익명 질문 게시: \$\{thread\.url\} · 작성자 <@\$\{m\.author\.id\}> \(운영 기록용\)`\)/, "anonymous ops log must retain the author id");
 assert.match(anonymousQuestionSource, /\$\{Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\}/, "anonymous-question quota footer must be finite-only");
+assert.match(anonymousQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;/, "anonymous questions must return after reusing a FAQ answer");
+assert.ok(anonymousQuestionSource.indexOf("if (await faqReply(") < anonymousQuestionSource.indexOf('ai("opencode"'), "anonymous FAQ reuse must return before calling ai");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");

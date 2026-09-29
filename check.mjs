@@ -198,6 +198,10 @@ assert.ok(threadChatSource.indexOf("[추천 글]") < threadChatSource.indexOf(".
 assert.ok(summarizeThreadSource.includes('형식: "📝 **스레드 요약**" 다음 줄부터 • 로 시작하는 3줄, 마지막에 "남은 질문:" 한 줄'), "thread summaries must request three summary lines and remaining questions");
 assert.match(summarizeThreadSource, /\.join\("\\n"\)\.slice\(-9000\)/, "thread summaries must cap the transcript at the last 9000 characters");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
+const starterGuard = "const starter = await t.fetchStarterMessage().catch(() => null); if (!starter || starter.author.bot) return;";
+assert.ok(onThreadSource.includes(starterGuard), "forum threads must return when the starter is missing or bot-authored");
+assert.ok(onThreadSource.indexOf(starterGuard) < onThreadSource.indexOf("notifySubs("), "forum starter guard must precede subscription notifications");
+assert.ok(onThreadSource.indexOf(starterGuard) < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum starter guard must precede the shared forum quota");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
 assert.match(onThreadSource, /if \(t\.parentId !== ids\.suggest\) notifySubs\(/, "suggestion threads must skip subscription notifications");
 const suggestThreadSource = onThreadSource.slice(onThreadSource.indexOf("if (t.parentId === ids.suggest) {"), onThreadSource.indexOf("if (t.parentId === ids.coproject)"));

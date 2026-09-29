@@ -156,6 +156,17 @@ assert.match(readme, /^\| Codex \|[^\n]*Codex CLI \|$/m, "README must name Codex
 assert.match(readme, /^\| OpenCode \|[^\n]*OpenCode 무료 모델 \(자동 교체\) \|$/m, "README must name OpenCode automatic free-model rotation");
 assert.match(readme, /^\| CommandCode \|[^\n]*실패 시 OpenCode 무료 모델[^\n]*\|$/m, "README must name the OpenCode fallback");
 assert.match(readme, /^\| CommandCode \|[^\n]*Laguna S 2\.1[^\n]*\|$/m, "README must name CommandCode as Laguna S 2.1");
+const readmeJobs = {
+  Claude: ["공지", "규칙", "요약", "건의", "스팸", "서버 주인 명령"],
+  Codex: ["매일", "오픈소스 추천"],
+  OpenCode: ["질문 답변", "스레드 대화", "코드 리뷰", "활용 예시"],
+  CommandCode: ["환영 인사", "프로필 폼", "피드백", "공동 프로젝트 알림"],
+};
+for (const [botName, duties] of Object.entries(readmeJobs)) {
+  const row = readme.match(new RegExp(`^\\| ${botName} \\|([^\\n]*)\\|$`, "m"))?.[1] ?? "";
+  assert.ok(row, `README must list ${botName}'s job cell`);
+  for (const duty of duties) assert.ok(row.includes(duty), `README ${botName} job cell must include ${duty}`);
+}
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const nodeFloor = String(pkg.engines?.node ?? "").match(/>=(\d+\.\d+(?:\.\d+)?)/)?.[1];
 assert.ok(nodeFloor && pkg.engines.node === `>=${nodeFloor}`, "package.json engines.node must be a minimum Node version");

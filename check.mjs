@@ -82,6 +82,7 @@ assert.match(rethinkSource, /if \(!TEXT_KINDS\.has\(card\.kind\)\) return adminC
 assert.match(rethinkSource, /const payload = card\.kind === "rule" \? \{ rules: revised\.split\("\\n"\)/, "rethought rule cards must create a replacement with rules");
 assert.match(rethinkSource, /: card\.kind === "feature" \? \{ description: revised \} : \{ text: revised \};/, "rethought feature and notice cards must create replacements with their text payloads");
 assert.ok(readme.includes("서버 주인은 승인 카드에서 **승인 · 보류 · 더 생각**만 누릅니다."), "README must say approval cards have only 승인, 보류, 더 생각");
+assert.match(readme, new RegExp("^- `#질문-답변`에 입문자가 질문하면 분야가 맞는 실무자 최대 " + MENTOR_MAX + "명을 불러와 한마디를 부탁합니다\\.$", "m"), "README mentor bullet must cite MENTOR_MAX");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
 const claudeDevAllowedTools = ai.match(/if \(engine === "claude-dev"\)[\s\S]*?"--allowedTools", "([^"]+)"/)?.[1];
 assert.equal(claudeDevAllowedTools, "Read,Edit,Write,Glob,Grep,Bash(node check.mjs)", "claude-dev allowedTools must stay limited to the approved tools");

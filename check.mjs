@@ -455,7 +455,10 @@ assert.match(scheduleTalkSource, /if \(Date\.now\(\) - sess\.startedAt > 3 \* 3_
 assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ 30_000 \}\); return scheduleTalk\(\); \}/, "talkStep must disable a bot and reschedule when its reply has no text");
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
+assert.match(refreshProjectsSource, /threadsSince\(\[ids\.showcase\], Date\.now\(\) - 180 \* L\.DAY_MS\)/, "project list must read showcase threads from the last 180 days");
+assert.match(bot, /const daysAgo = \(ms\) => \{ const d = Math\.floor\(\(Date\.now\(\) - ms\) \/ L\.DAY_MS\); return d <= 0 \? "오늘" : `\$\{d\}일 전`; \};/, "daysAgo must say 오늘 for today and N일 전 otherwise");
 assert.match(refreshProjectsSource, /const s = await t\.fetchStarterMessage\(\)\.catch\(\(\) => null\); if \(!s \|\| s\.author\.bot\) continue;/, "project list must skip bot-authored starters");
+assert.match(refreshProjectsSource, /s\.content\.split\("\\n"\)\[0\]\.slice\(0, 90\) \|\| "설명 없음"/, "project list must use 설명 없음 for a blank starter first line");
 assert.match(refreshProjectsSource, /rows\.sort\(\(a, b\) => b\.last - a\.last\);/, "project list must sort by latest activity");
 assert.ok(refreshProjectsSource.includes("아직 올라온 프로젝트가 없어요"), "project list must use the empty-state sentence");
 const projectEdit = refreshProjectsSource.indexOf("await m.edit({ content: texts[n]");

@@ -34,6 +34,13 @@ assert.ok(connectSource.includes('hub.on("messageReactionAdd", (r, u) => void on
 assert.match(connectSource, /intents: isHub \? \[[^\]]*\] : name === "OPENCODE" \? \[G\.Guilds, G\.DirectMessages\] : \[G\.Guilds\]/, "OpenCode must receive DirectMessages when it is not the hub");
 assert.match(connectSource, /\.\.\.\(isHub \? \{ partials: \[[^\]]*\] \} : name === "OPENCODE" \? \{ partials: \[Partials\.Channel\] \} : \{\}\)/, "OpenCode must receive a Channel partial when it is not the hub");
 assert.ok(connectSource.includes('if (name === "OPENCODE") client.on("messageCreate", (m) => void onDirect(m).catch((e) => fail("dm", e)));'), "OpenCode must always register its messageCreate handler to onDirect");
+const founderSetup = 'founders = new Set([guild.ownerId, ...(env.FOUNDER_IDS || "").split(",").filter(Boolean)]);';
+assert.ok(connectSource.includes(founderSetup), "connect must include the guild owner and configured Founders");
+assert.ok(connectSource.indexOf(founderSetup) < connectSource.indexOf("await guild.roles.fetch();"), "Founders must be set before role lookup");
+const interactionHandler = 'client.on("interactionCreate", (i) => void onInteraction(i).catch((e) => fail("interaction", e)));';
+assert.ok(connectSource.includes(interactionHandler), "every logged-in bot must register the interaction handler");
+assert.ok(connectSource.indexOf("clients[name] = client") < connectSource.indexOf(interactionHandler), "the interaction handler must be registered after login succeeds");
+assert.ok(connectSource.indexOf(interactionHandler) < connectSource.indexOf('if (name === "OPENCODE") client.on("messageCreate"'), "the interaction handler must be registered inside the login loop");
 assert.equal(botId("MTIzNDU2Nzg5.MTIz.token"), "123456789", "setup must extract a bot id from the token prefix");
 assert.equal(botId(""), undefined, "setup must leave a missing bot token without an id");
 const findGuild = Function("env", `${setup.match(/export async function findGuild\(client\) \{[\s\S]*?\n\}/)?.[0].replace("export ", "")}; return findGuild;`)({});

@@ -481,8 +481,12 @@ assert.ok(subscribeSource.includes(subscriptionConfirmation), "subscription must
 assert.ok(subscribeSource.indexOf(subscriptionInsert) < subscribeSource.indexOf(subscriptionConfirmation), "subscription confirmation must follow insertion");
 const notifySubsSource = bot.slice(bot.indexOf("async function notifySubs("), bot.indexOf("\n// ---------- 봇 놀이터", bot.indexOf("async function notifySubs(")));
 const subscriptionWrite = "kvSet(db, key, sent + 1)";
+const subscriptionEmptyGuard = "if (!byUser.size) return;";
+const subscriptionSend = 'await say("COMMANDCODE", threadId,';
 assert.match(notifySubsSource, /if \(uid === authorId \|\| sent >= L\.SUB_DAILY \|\| byUser\.has\(uid\)\) continue;/, "subscription notifications must skip the author and daily cap");
 assert.ok(notifySubsSource.indexOf("if (uid === authorId || sent >= L.SUB_DAILY || byUser.has(uid)) continue;") < notifySubsSource.indexOf(subscriptionWrite), "subscription notification skips must precede subsent writes");
+assert.ok(notifySubsSource.includes(subscriptionEmptyGuard), "subscription notifications must return when no user remains");
+assert.ok(notifySubsSource.indexOf(subscriptionEmptyGuard) < notifySubsSource.indexOf(subscriptionSend), "empty subscription matches must return before sending");
 const rememberAnswerSource = bot.slice(bot.indexOf("function rememberAnswer("), bot.indexOf("\nfunction addFaq("));
 const answerInsert = 'db.prepare("INSERT OR REPLACE INTO answers(msg_id,asker,question,answer,url,model,at) VALUES(?,?,?,?,?,?,?)")';
 const answerReactions = 'for (const e of ["👍", "👎"]) msg.react(e).catch(() => {});';

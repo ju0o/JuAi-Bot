@@ -156,6 +156,16 @@ assert.match(readme, /^\| Codex \|[^\n]*Codex CLI \|$/m, "README must name Codex
 assert.match(readme, /^\| OpenCode \|[^\n]*OpenCode 무료 모델 \(자동 교체\) \|$/m, "README must name OpenCode automatic free-model rotation");
 assert.match(readme, /^\| CommandCode \|[^\n]*실패 시 OpenCode 무료 모델[^\n]*\|$/m, "README must name the OpenCode fallback");
 assert.match(readme, /^\| CommandCode \|[^\n]*Laguna S 2\.1[^\n]*\|$/m, "README must name CommandCode as Laguna S 2.1");
+const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const nodeFloor = String(pkg.engines?.node ?? "").match(/>=(\d+\.\d+(?:\.\d+)?)/)?.[1];
+assert.ok(nodeFloor && pkg.engines.node === `>=${nodeFloor}`, "package.json engines.node must be a minimum Node version");
+const prereqLine = readme.match(/^필요한 것:.*$/m)?.[0] ?? "";
+assert.match(prereqLine, new RegExp(`Node ${nodeFloor.replaceAll(".", "\\.")}\\+`), "README prerequisites line must cite Node 22.13+ matching package.json engines");
+assert.match(prereqLine, /`claude` \/ `codex` \/ `opencode` \/ `commandcode` CLI/, "README prerequisites line must name the claude, codex, opencode, and commandcode CLIs");
+assert.match(prereqLine, /`bwrap`/, "README prerequisites line must name bwrap");
+const sandboxBullet = readme.match(/^- 멤버 글이 들어가는 AI는 격리 실행:.*$/m)?.[0] ?? "";
+assert.match(sandboxBullet, /OpenCode·Codex·CommandCode/, "README sandbox bullet must name CommandCode with OpenCode and Codex");
+assert.match(sandboxBullet, /자식 프로세스에는 봇 토큰이 없습니다\./, "README sandbox bullet must say the child process has no bot token");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");
 assert.ok(readme.includes(`${FEEDBACK_MIN}자 이상 피드백 보너스`), "README omits feedback bonus minimum");

@@ -80,6 +80,9 @@ assert.ok(aiQueueSource.indexOf("queue.then") < aiQueueSource.indexOf("queue = j
 for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
 }
+const codexCommandSource = ai.slice(ai.indexOf('if (engine === "codex")'), ai.indexOf('if (engine === "opencode")'));
+assert.match(codexCommandSource, /"-s", "read-only"/, "Codex must run read-only");
+assert.match(codexCommandSource, /"--ephemeral"/, "Codex must run ephemerally");
 const childEnv = ai.match(/^const CHILD_ENV = .*$/m)?.[0] ?? "";
 assert.ok(childEnv && !/DISCORD|TOKEN|SECRET|KEY/i.test(childEnv), "child env must not allow Discord token keys");
 assert.match(ai, /spawn\(bin, args, \{ cwd, env: CHILD_ENV, stdio: \["ignore", "pipe", "pipe"\] \}\)/, "AI CLI must spawn with the restricted child environment");
@@ -90,6 +93,7 @@ assert.match(ai, /const COOLDOWN_MS = 30 \* 60_000;/, "failed free models must c
 assert.match(fallbackSource, /catch \(e\) \{ benched\.set\(COMMANDCODE_MODEL, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed CommandCode must be benched for the cooldown");
 assert.match(fallbackSource, /catch \(e\) \{ lastError = e; benched\.set\(model, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed OpenCode models must be benched for the cooldown");
 assert.match(fallbackSource, /OPENCODE_MODELS\.filter\(\(m\) => \(benched\.get\(m\) \|\| 0\) < now\)/, "OpenCode must skip models still inside the bench");
+assert.match(fallbackSource, /for \(const model of order\.length \? order : OPENCODE_MODELS\)/, "OpenCode must try every model when the bench filter is empty");
 assert.ok(fallbackSource.indexOf("alertHook(lastError);") < fallbackSource.indexOf("throw lastError;"), "all-free-model failure must alert before rethrowing");
 assert.match(fallbackSource, /if \(engine === "commandcode"[\s\S]{0,900}engine = "opencode";/, "CommandCode must fall back to OpenCode");
 assert.match(readme, /^\| Claude \|[^\n]*Claude Code CLI \(Haiku\) \|$/m, "README must name Claude as Haiku");

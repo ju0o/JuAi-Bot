@@ -566,7 +566,12 @@ const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");
+assert.match(reviewRequestSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return send\(L\.quotaMessage\(q\)\);/, "review quota refusal must return quotaMessage");
+assert.ok(reviewRequestSource.indexOf("if (!q.ok) return send(L.quotaMessage(q));") < reviewRequestSource.indexOf("const repo = await resolveRepo(source);"), "review quota refusal must return before resolving the repository");
+assert.ok(reviewRequestSource.indexOf("if (!q.ok) return send(L.quotaMessage(q));") < reviewRequestSource.indexOf('const text = await ai("opencode"'), "review quota refusal must return before calling ai");
 assert.match(reviewRequestSource, /if \(!repo\) return send\("저장소를 못 찾았어요\.[\s\S]*?\);[\s\S]*?const text = await ai\(/, "a resolveRepo miss must reply before calling ai");
+assert.match(reviewRequestSource, /if \(!text\) return send\("지금은 리뷰를 못 만들었어요\. 잠시 뒤에 다시 부탁해 주세요\."\);/, "failed review generation must use the existing Korean sentence");
+assert.ok(reviewRequestSource.indexOf('if (!text) return send("지금은 리뷰를 못 만들었어요. 잠시 뒤에 다시 부탁해 주세요.");') < reviewRequestSource.indexOf("const parts = L.chunk("), "failed review generation must return before sending review chunks");
 assert.match(reviewRequestSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?L\.chunk\(`🔍 \*\*코드 리뷰\*\*[^`]*\$\{text\}\$\{footer\}`\)/, "code-review quota footer must be finite-only");
 assert.ok(bot.includes('replace(/^!봇수다\\s*/, "").trim().slice(0, L.TALK_TOPIC_MAX)'), "!봇수다 input must use the shared topic maximum");
 const talkInput = `!봇수다 ${"가".repeat(TALK_TOPIC_MAX + 1)}`;

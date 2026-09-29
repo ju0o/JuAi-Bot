@@ -354,6 +354,12 @@ assert.match(dailyPicksSource, /지난 추천에 대한 멤버 반응 \(좋아�
 assert.match(dailyPicksSource, /const usage = await ai\("opencode",[\s\S]*활용 예시[\s\S]*흐름도/, "each pick must ask OpenCode for usage examples and a text flow diagram");
 assert.match(dailyPicksSource, /startThread\(\{ name: `💬 \$\{r\.name\} 활용법`[\s\S]*const usage = await ai\("opencode"/, "usage example must be generated in the new recommendation thread");
 assert.match(dailyPicksSource, /await sayLong\("OPENCODE", thread\.id, usage\)/, "OpenCode usage reply must be posted in the recommendation thread");
+const dailyStarterSource = bot.slice(bot.indexOf("async function dailyStarter(today) {"), bot.indexOf("\n\n// Founder 9/25", bot.indexOf("async function dailyStarter(today) {")));
+assert.match(dailyStarterSource, /const question = String\(d\.question \|\| ""\)\.trim\(\)[\s\S]*answers = \(d\.answers \|\| \[\]\)/, "daily starter must normalize the question and answers");
+assert.match(dailyStarterSource, /if \(!question \|\| answers\.length < 2\) throw new Error\("오늘의 질문 투표를 못 만들었어요"\);/, "daily starter must reject an empty question or fewer than two answers");
+assert.ok(dailyStarterSource.indexOf('throw new Error("오늘의 질문 투표를 못 만들었어요")') < dailyStarterSource.indexOf('await say("COMMANDCODE", ids.chat'), "daily starter must reject incomplete polls before posting");
+assert.match(dailyStarterSource, /await say\("COMMANDCODE", ids\.chat,[\s\S]*poll: \{ question: \{ text: question \}, answers: answers\.map\(\(text\) => \(\{ text \}\)\), duration: 24, allowMultiselect: false \}/, "daily starter must post a 24-hour single-choice poll through CommandCode in chat");
+assert.match(dailyStarterSource, /kvSet\(db, "starter_history", \[\.\.\.\(kvGet\(db, "starter_history"\) \|\| \[\]\), question\]\.slice\(-30\)\)/, "daily starter must keep only the last 30 questions");
 assert.match(tickSource, /\n  await job\(`projects:\$\{today\}`, refreshProjects\);/, "projects must be scheduled by the daily tick");
 assert.ok(!/if \([^\n]*\) await job\(`projects:\$\{today\}`, refreshProjects\)/.test(tickSource), "projects schedule must not have an hour gate");
 const weeklySource = bot.slice(bot.indexOf("async function weekly() {"), bot.indexOf("\n// ponytail: 7 daily copies"));

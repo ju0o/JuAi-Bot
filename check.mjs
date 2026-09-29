@@ -760,6 +760,10 @@ for (const action of ["delete_messages", "timeout", "create_channel", "delete_ch
   assert.ok(!DIRECT_ACTIONS.has(action));
 }
 const adminSource = bot.slice(bot.indexOf("async function adminCommand"), bot.indexOf("\n// ---------- approval cards"));
+const unclearPlanReply = 'if (!plan) return say("CLAUDE", m.channelId, { content: "무슨 일을 할지 정확히 못 알아들었어요. 조금 더 구체적으로 말해줄래요?", reply: { messageReference: m.id } });';
+assert.ok(adminSource.includes(unclearPlanReply), "invalid admin plans must use the existing unclear-command reply");
+assert.ok(adminSource.indexOf(unclearPlanReply) < adminSource.indexOf("sayLong("), "unclear admin plans must reply before direct answers");
+assert.ok(adminSource.indexOf(unclearPlanReply) < adminSource.indexOf("createCard("), "unclear admin plans must reply before approval cards");
 const directBranch = adminSource.slice(adminSource.indexOf('if (plan.action === "answer")'), adminSource.indexOf("  const cards = {") );
 assert.match(directBranch, /if \(plan\.action === "answer"\)[\s\S]*return sayLong\(/, "answer must stay a direct admin action");
 assert.match(directBranch, /if \(plan\.action === "set_topic"\)[\s\S]*return reply\(/, "set_topic must stay a direct admin action");

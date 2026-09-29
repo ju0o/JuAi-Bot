@@ -47,6 +47,9 @@ assert.match(approvalCardSource, /components: status \? \[\] : \[buttons\]/, "de
 const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));
 assert.match(alertFounderSource, /if \(Date\.now\(\) - \(kvGet\(db, k\) \|\| 0\) < 3 \* 3_600_000\) return;/, "repeated Founder alerts must return within three hours");
 assert.ok(alertFounderSource.indexOf("return;") < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");
+const failSource = bot.slice(bot.indexOf("function fail"), bot.indexOf("\n/** Founder runs", bot.indexOf("function fail")));
+assert.match(failSource, /while \(recentErrors\.length && now - recentErrors\[0\] > 30 \* 60_000\) recentErrors\.shift\(\);/, "fail must drop errors older than 30 minutes");
+assert.match(failSource, /if \(recentErrors\.length >= 8\) alertFounder\("errors", `최근 30분 동안 오류가 \$\{recentErrors\.length\}번 났어요\./, "fail must alert Founder only after eight recent errors");
 assert.match(bot, /AI\.onAllFreeModelsDown\(\(e\) => alertFounder\("ai-free", `무료 AI 모델이 전부 응답하지 않아요\./, "all-free-model failure must register the existing Korean Founder alert");
 const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink(", bot.indexOf("async function onInteraction(i) {")));
 assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("const card = getCard") && interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("setCard("), "non-owner card presses must be rejected before card changes");

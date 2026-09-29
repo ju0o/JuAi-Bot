@@ -148,6 +148,10 @@ for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includ
 const onMessageSource = bot.slice(bot.indexOf("async function onMessage(m) {"), bot.indexOf("\nconst PERSONA ="));
 const spamSource = bot.slice(bot.indexOf("async function spam(m) {"), bot.indexOf("\n// ----------", bot.indexOf("async function spam(m) {")));
 const welcomeSource = bot.slice(bot.indexOf("async function welcome(m) {"), bot.indexOf("\nasync function loungeWelcome", bot.indexOf("async function welcome(m) {")));
+const messageGuildGuard = "if (!m.guild || m.guild.id !== guild.id) return;";
+assert.ok(onMessageSource.includes(messageGuildGuard), "messages without this guild must return immediately");
+assert.ok(onMessageSource.indexOf(messageGuildGuard) < onMessageSource.indexOf("if (m.type === MessageType.UserJoin) return welcome(m);"), "guild scope must be checked before welcome messages");
+assert.ok(onMessageSource.indexOf(messageGuildGuard) < onMessageSource.indexOf("if (m.author.bot || m.system) return;"), "guild scope must be checked before member commands");
 assert.ok(onMessageSource.indexOf("if (m.type === MessageType.UserJoin) return welcome(m);") < onMessageSource.indexOf("if (m.author.bot || m.system) return;"), "member joins must welcome before other message handling");
 assert.match(welcomeSource, /new ActionRowBuilder\(\)\.addComponents\([\s\S]*setCustomId\("profile"\)/, "member joins must create a profile button");
 assert.match(welcomeSource, /say\("COMMANDCODE"[\s\S]*components: \[row\]/, "member joins must send the profile button through CommandCode");
@@ -256,6 +260,10 @@ assert.ok(threadChatSource.indexOf("[추천 글]") < threadChatSource.indexOf(".
 assert.ok(summarizeThreadSource.includes('형식: "📝 **스레드 요약**" 다음 줄부터 • 로 시작하는 3줄, 마지막에 "남은 질문:" 한 줄'), "thread summaries must request three summary lines and remaining questions");
 assert.match(summarizeThreadSource, /\.join\("\\n"\)\.slice\(-9000\)/, "thread summaries must cap the transcript at the last 9000 characters");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
+const threadGuildGuard = "if (t.guildId !== guild.id || ![ids.qa, ids.feedback, ids.suggest, ids.coproject, ids.showcase].includes(t.parentId)) return;";
+assert.ok(onThreadSource.includes(threadGuildGuard), "threads outside this guild must return immediately");
+assert.ok(onThreadSource.indexOf(threadGuildGuard) < onThreadSource.indexOf("notifySubs("), "thread guild scope must be checked before subscription notifications");
+assert.ok(onThreadSource.indexOf(threadGuildGuard) < onThreadSource.indexOf("sayLong("), "thread guild scope must be checked before forum replies");
 assert.match(onThreadSource, /const post = `[^`]*L\.quote\(starter\.content,[\s\S]*?const text = await withTyping\(who, t\.id, \(\) => ai\(ENGINE\[who\], `\$\{PERSONA\[who\]\}\\n\$\{RULES\}[\s\S]*\$\{post\}/, "forum first replies must put RULES before quoted member text");
 assert.match(onThreadSource, /\$\{askerContext\(starter\.author\.id, member\)\}/, "forum first replies must include asker context");
 const starterGuard = "const starter = await t.fetchStarterMessage().catch(() => null); if (!starter || starter.author.bot) return;";

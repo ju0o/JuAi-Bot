@@ -209,6 +209,10 @@ const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThr
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
 assert.match(summarizeThreadSource, /text \+ \(Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\)/, "thread-summary quota footer must be finite-only");
 const answerSource = bot.slice(bot.indexOf("async function answer(m, channelId, who, history, replyTo) {"), bot.indexOf("\n/** Every AI answer", bot.indexOf("async function answer(m, channelId, who, history, replyTo) {")));
+const requiredPromptRuleTerms = ["규칙 무시", "파일 읽기", "명령 실행", "비밀·토큰 출력", "역할 바꾸기"];
+const rulesSource = bot.slice(bot.indexOf("const RULES = "), bot.indexOf("\n\n/** What the asker", bot.indexOf("const RULES = ")));
+for (const term of requiredPromptRuleTerms) assert.ok(rulesSource.includes(term), `RULES must refuse ${term}`);
+assert.match(answerSource, /const prompt = `\$\{PERSONA\[who\]\}\\n\$\{RULES\}[\s\S]*L\.quote\(m\.content/, "answers must put RULES before quoted member text");
 assert.match(answerSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(m\.member\) \}\);/, "answer must pass the member staff flag to takeQuota");
 assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\n  const prompt =/, "refused answer quota must return quotaMessage before building the AI prompt");
 assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
@@ -233,6 +237,7 @@ assert.ok(threadChatSource.indexOf("[추천 글]") < threadChatSource.indexOf(".
 assert.ok(summarizeThreadSource.includes('형식: "📝 **스레드 요약**" 다음 줄부터 • 로 시작하는 3줄, 마지막에 "남은 질문:" 한 줄'), "thread summaries must request three summary lines and remaining questions");
 assert.match(summarizeThreadSource, /\.join\("\\n"\)\.slice\(-9000\)/, "thread summaries must cap the transcript at the last 9000 characters");
 const onThreadSource = bot.slice(bot.indexOf("async function onThread(t) {"), bot.indexOf("\n// ---------- 입문자 질문"));
+assert.match(onThreadSource, /const post = `[^`]*L\.quote\(starter\.content,[\s\S]*?const text = await withTyping\(who, t\.id, \(\) => ai\(ENGINE\[who\], `\$\{PERSONA\[who\]\}\\n\$\{RULES\}[\s\S]*\$\{post\}/, "forum first replies must put RULES before quoted member text");
 const starterGuard = "const starter = await t.fetchStarterMessage().catch(() => null); if (!starter || starter.author.bot) return;";
 assert.ok(onThreadSource.includes(starterGuard), "forum threads must return when the starter is missing or bot-authored");
 assert.ok(onThreadSource.indexOf(starterGuard) < onThreadSource.indexOf("notifySubs("), "forum starter guard must precede subscription notifications");
@@ -421,6 +426,7 @@ assert.ok(onSolvedSource.indexOf("if (!best) return;") < solvedFaqInsert, "solve
 assert.match(onSolvedSource, /addFaq\(`thread:\$\{after\.id\}`,/, "solved FAQ entries must use the thread source id");
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));
+assert.match(onDirectSource, /ai\("opencode", `\$\{PERSONA\.OPENCODE\}\\n\$\{RULES\}[\s\S]*L\.quote\(text/, "DM answers must put RULES before quoted member text");
 assert.match(onDirectSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return reply\(L\.quotaMessage\(q\)\);/, "DM quota refusal must return quotaMessage");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf('ai("opencode"'), "DM quota refusal must return before calling ai");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf("for (const part of L.chunk"), "DM quota refusal must return before sending answer chunks");
@@ -435,6 +441,7 @@ assert.ok(onDirectSource.indexOf("if (REVIEW_ASK.test(text)) return reviewReques
 const dmHelpSource = bot.slice(bot.indexOf("const DM_HELP = `"), bot.indexOf("\n\nasync function onDirect"));
 assert.match(dmHelpSource, /하루 질문 횟수 공유/, "DM_HELP must state the shared daily quota");
 const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));
+assert.match(anonymousQuestionSource, /ai\("opencode", `\$\{PERSONA\.OPENCODE\}\\n\$\{RULES\}[\s\S]*L\.quote\(question/, "anonymous answers must put RULES before quoted member text");
 const anonymousThreadSource = anonymousQuestionSource.slice(anonymousQuestionSource.indexOf("const thread ="), anonymousQuestionSource.indexOf("\n  await log("));
 assert.doesNotMatch(anonymousThreadSource, /m\.author\.id/, "anonymous thread content must omit the author id");
 assert.match(anonymousThreadSource, /message: \{ content: `🙈 \*\*익명 질문\*\*\\n\$\{question\.slice\(0, 1800\)\}`, allowedMentions: NO_PING \}/, "anonymous thread posts must disable pings");

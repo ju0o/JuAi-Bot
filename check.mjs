@@ -41,6 +41,12 @@ assert.match(thinkButtonSource, /return i\.showModal\(new ModalBuilder\(\)\.setC
 assert.ok(!thinkButtonSource.includes("setCard("), "the rethink button must not change the card before the comment is submitted");
 assert.match(interactionSource, /if \(tag === "think"\) return rethink\(i, card, i\.fields\.getTextInputValue\("comment"\)\);/, "the comment modal must submit through rethink");
 assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");
+const cardGuard = 'if (!card || card.status !== "OPEN") return i.reply({ content: "이미 처리된 카드예요.", flags: MessageFlags.Ephemeral });';
+assert.ok(interactionSource.includes(cardGuard), "missing or non-OPEN cards must reply that they were already handled");
+assert.ok(interactionSource.indexOf(cardGuard) < interactionSource.indexOf("setCard("), "missing or non-OPEN cards must be rejected before any card update");
+const approvalInteraction = interactionSource.slice(interactionSource.indexOf('await i.deferUpdate(); setCard(card.id, "RUNNING");'));
+assert.match(approvalInteraction, /await i\.deferUpdate\(\); setCard\(card\.id, "RUNNING"\);[\s\S]*const result = await execute\(card\);[\s\S]*setCard\(card\.id, "DONE"\);/, "approval must set RUNNING before execute and DONE after it resolves");
+assert.match(approvalInteraction, /catch \(e\) \{\s*setCard\(card\.id, "OPEN"\);[\s\S]*content: `실패했어요:/, "failed approval execution must restore OPEN and reply with a failure");
 const rethinkSource = bot.slice(bot.indexOf("async function rethink(i, card, comment) {"), bot.indexOf("\nfunction git(", bot.indexOf("async function rethink(i, card, comment) {")));
 assert.equal(bot.match(/const TEXT_KINDS = new Set\(\[([^\]]+)\]\)/)?.[1].replace(/\s/g, ""), '"notice","rule","feature"', "rethink must create replacements only for notice, rule, and feature cards");
 assert.ok(rethinkSource.indexOf('setCard(card.id, "REVISED")') < rethinkSource.indexOf("await createCard("), "rethink must mark the original card REVISED before creating its replacement");

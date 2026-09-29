@@ -213,6 +213,11 @@ assert.ok(onThreadSource.indexOf("return mentorPing(") < onThreadSource.indexOf(
 assert.ok(onThreadSource.includes('L.takeQuota(db, "bot:forum", { staff: true })'), "forum quota must use the shared bot:forum staff bucket");
 const forumQuota = 'L.takeQuota(db, "bot:forum", { staff: true })';
 const forumFirstReply = 'if (text) { const first = await sayLong(who, t.id, text);';
+const forumQuotaGuard = 'if (!L.takeQuota(db, "bot:forum", { staff: true }).ok) return;';
+const forumReplySource = onThreadSource.slice(onThreadSource.indexOf(forumQuotaGuard));
+assert.ok(forumReplySource.includes(forumQuotaGuard), "forum quota failure must return immediately");
+assert.ok(forumReplySource.indexOf(forumQuotaGuard) < forumReplySource.indexOf("const who ="), "forum quota failure must return before choosing the reply bot");
+assert.ok(forumReplySource.indexOf(forumQuotaGuard) < forumReplySource.indexOf("ai("), "forum quota failure must return before calling ai");
 assert.ok(onThreadSource.indexOf(forumQuota) < onThreadSource.indexOf("const who = t.parentId === ids.qa ? \"OPENCODE\" : \"COMMANDCODE\";"), "forum first-reply bot must be chosen after the shared quota");
 assert.ok(onThreadSource.includes('const who = t.parentId === ids.qa ? "OPENCODE" : "COMMANDCODE";'), "forum QA must use OpenCode and feedback must use CommandCode for the first reply");
 assert.ok(onThreadSource.includes('피드백 요청 글이야. 좋은 점 1개, 개선 제안 2개를 구체적으로 쓰고, 다른 멤버가 피드백하기 쉽게 작성자에게 되물을 질문 1개를 붙여줘.'), "feedback first reply must keep the good-point and improvement-suggestion prompt");

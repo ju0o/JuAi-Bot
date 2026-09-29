@@ -42,6 +42,8 @@ assert.equal((await configuredFindGuild(offlineGuildClient(namedGuilds))).id, "1
 await assert.rejects(() => findGuild(offlineGuildClient([{ id: "3", name: "Other" }])), /JuAi 서버를 못 찾았어요/, "setup must explain when no guild matches");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
+assert.match(approvalCardSource, /if \(status\) embed\.setFooter\(\{ text: status \}\);/, "decided approval cards must show their status in the footer");
+assert.match(approvalCardSource, /components: status \? \[\] : \[buttons\]/, "decided approval cards must drop their action buttons");
 const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));
 assert.match(alertFounderSource, /if \(Date\.now\(\) - \(kvGet\(db, k\) \|\| 0\) < 3 \* 3_600_000\) return;/, "repeated Founder alerts must return within three hours");
 assert.ok(alertFounderSource.indexOf("return;") < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");

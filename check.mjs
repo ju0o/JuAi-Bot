@@ -105,9 +105,15 @@ assert.ok(aiQueueSource.indexOf("queue.then") < aiQueueSource.indexOf("queue = j
 for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
 }
+const bwrapSource = ai.slice(ai.indexOf("const bwrap ="), ai.indexOf("\nfunction command"));
+assert.match(bwrapSource, /"--die-with-parent"/, "bwrap must die with its parent");
+assert.match(bwrapSource, /"--unshare-pid"/, "bwrap must isolate the process id namespace");
 const codexCommandSource = ai.slice(ai.indexOf('if (engine === "codex")'), ai.indexOf('if (engine === "opencode")'));
 assert.match(codexCommandSource, /"-s", "read-only"/, "Codex must run read-only");
 assert.match(codexCommandSource, /"--ephemeral"/, "Codex must run ephemerally");
+const commandCodeSource = ai.slice(ai.indexOf('if (engine === "commandcode")'), ai.indexOf('throw new Error'));
+assert.match(commandCodeSource, /"--max-turns", "3"/, "CommandCode must limit itself to three turns");
+assert.match(commandCodeSource, /"--no-session"/, "CommandCode must not use a session");
 const childEnv = ai.match(/^const CHILD_ENV = .*$/m)?.[0] ?? "";
 assert.ok(childEnv && !/DISCORD|TOKEN|SECRET|KEY/i.test(childEnv), "child env must not allow Discord token keys");
 assert.match(ai, /spawn\(bin, args, \{ cwd, env: CHILD_ENV, stdio: \["ignore", "pipe", "pipe"\] \}\)/, "AI CLI must spawn with the restricted child environment");

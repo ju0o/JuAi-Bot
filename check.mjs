@@ -234,8 +234,12 @@ assert.match(profileModalSource, /input\("github",[\s\S]*TextInputStyle\.Short, 
 assert.ok(interactionSource.indexOf('if (i.isButton() && i.customId === "profile")') < interactionSource.indexOf("const [tag, rawId, verb]"), "profile button must open the modal before card handling");
 assert.match(interactionSource, /if \(i\.isButton\(\) && i\.customId === "profile"\) \{[\s\S]*return i\.showModal\(profileModal\(/, "profile button must show the profile modal");
 const saveProfileSource = bot.slice(bot.indexOf("async function saveProfile(i) {"), bot.indexOf("\n/** First profile", bot.indexOf("async function saveProfile(i) {")));
+assert.match(saveProfileSource, /await i\.deferReply\(\{ flags: MessageFlags\.Ephemeral \}\);/, "profile saves must defer an ephemeral reply");
+assert.match(saveProfileSource, /\.addFields\(\{ name: "SNS", value: sns \}, \{ name: "만드는 것", value: making \|\| "-" \}, \.\.\.\(github \? \[\{ name: "링크", value: github \}\] : \[\]\)\)/, "profile embeds must omit the link field when GitHub is empty");
 assert.match(saveProfileSource, /SELECT message_id FROM profiles WHERE user_id=\?/ , "profile saves must read the existing intro message id");
 assert.match(saveProfileSource, /prev\?\.message_id \? await intro\.messages\.fetch\(prev\.message_id\)[\s\S]*?msg = msg \? await msg\.edit\(\{ embeds: \[embed\] \}\) : await intro\.send\(/, "profile saves must edit the existing intro or send a new one");
+assert.match(saveProfileSource, /await i\.editReply\(`소개를 올렸어요! \$\{msg\.url\}\\n고치고 싶으면 \[프로필 작성\] 버튼을 다시 누르세요\.\`\);/, "profile saves must edit the deferred reply with the existing success sentence");
+assert.ok(saveProfileSource.indexOf("await i.deferReply({ flags: MessageFlags.Ephemeral });") < saveProfileSource.indexOf("await i.editReply("), "profile saves must defer before editing the reply");
 assert.match(saveProfileSource, /if \(!prev\) \{ stat\("프로필 작성"\); await suggestUsage\(i, msg, making\)/, "profile usage suggestions must run only on the first save");
 const suggestUsageSource = bot.slice(bot.indexOf("async function suggestUsage(i, profileMsg, making) {"), bot.indexOf("\n// ---------- spam", bot.indexOf("async function suggestUsage(i, profileMsg, making) {")));
 assert.ok(suggestUsageSource.indexOf('if (!L.takeQuota(db, "bot:forum", { staff: true }).ok) return;') < suggestUsageSource.indexOf("await ai("), "usage suggestions must return before AI when the shared forum quota fails");

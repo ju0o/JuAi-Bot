@@ -130,6 +130,9 @@ assert.match(fallbackSource, /for \(const model of order\.length \? order : OPEN
 assert.ok(fallbackSource.indexOf("alertHook(lastError);") < fallbackSource.indexOf("throw lastError;"), "all-free-model failure must alert before rethrowing");
 assert.match(fallbackSource, /if \(engine === "commandcode"[\s\S]{0,900}engine = "opencode";/, "CommandCode must fall back to OpenCode");
 assert.match(readme, /^\| Claude \|[^\n]*Claude Code CLI \(Haiku\) \|$/m, "README must name Claude as Haiku");
+assert.match(readme, /^\| Codex \|[^\n]*Codex CLI \|$/m, "README must name Codex CLI");
+assert.match(readme, /^\| OpenCode \|[^\n]*OpenCode 무료 모델 \(자동 교체\) \|$/m, "README must name OpenCode automatic free-model rotation");
+assert.match(readme, /^\| CommandCode \|[^\n]*실패 시 OpenCode 무료 모델[^\n]*\|$/m, "README must name the OpenCode fallback");
 assert.match(readme, /^\| CommandCode \|[^\n]*Laguna S 2\.1[^\n]*\|$/m, "README must name CommandCode as Laguna S 2.1");
 assert.ok(readme.includes(`익명 질문은 ${ANON_MIN}자 이상`), "README omits anonymous-question minimum");
 assert.ok(readme.includes(`봇수다 주제는 ${TALK_TOPIC_MIN}자 이상·최대 ${TALK_TOPIC_MAX}자·1인 대기 ${TALK_PENDING_MAX}개까지`), "README omits bot-talk limits");

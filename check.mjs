@@ -300,6 +300,11 @@ assert.match(catchUpSource, /t\.messages\.fetch\(\{ limit: 10 \}\)[\s\S]*?\.some
 const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
 const dailyPicksSource = bot.slice(bot.indexOf("async function dailyPicks(today) {"), bot.indexOf("\nasync function weekly() {"));
 const collectSource = bot.slice(bot.indexOf("async function collect(fromMs, toMs) {"), bot.indexOf("\nasync function dailySummary(today) {"));
+const pickedRepos = 'const picked = new Set(db.prepare("SELECT repo FROM picks").all().map((r) => r.repo));';
+const candidateFilter = 'const cands = (await res.json()).items.filter((r) => !picked.has(r.full_name)).slice(0, 20);';
+assert.ok(dailyPicksSource.includes(pickedRepos), "daily picks must load repositories already stored in picks");
+assert.ok(dailyPicksSource.includes(candidateFilter), "daily picks must exclude stored repositories from Codex candidates");
+assert.ok(dailyPicksSource.indexOf(pickedRepos) < dailyPicksSource.indexOf(candidateFilter), "stored repositories must be excluded before building Codex candidates");
 assert.match(tickSource, /if \(h >= 8\) await job\(`summary:\$\{today\}`, \(\) => dailySummary\(today\)\);/, "daily summary must be scheduled from 08:00 KST");
 assert.match(tickSource, /if \(h >= 9\) await job\(`picks:\$\{today\}`, \(\) => dailyPicks\(today\)\);/, "daily picks must be scheduled from 09:00 KST");
 assert.match(dailySummarySource, /const day = L\.kstDate\(L\.kstMidnight\(today\) - 1\);[\s\S]*?collect\(L\.kstMidnight\(day\), L\.kstMidnight\(today\)\)/, "daily summary must cover the previous KST day");

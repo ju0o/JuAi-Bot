@@ -201,11 +201,13 @@ const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {
 assert.match(labQuestionSource, /m\.startThread\(\{ name: m\.content\.replace\(\/\\s\+\/g, " "\)\.slice\(0, 50\) \|\| "질문", autoArchiveDuration: 1440 \}\)/, "lab questions must open a 50-character, 1440-minute thread");
 assert.ok(labQuestionSource.indexOf("startThread(") < labQuestionSource.indexOf("await faqReply("), "lab questions must open the thread before checking FAQ");
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
+assert.ok(labQuestionSource.includes("-# 이걸로 해결이 안 되면 이 스레드에 한 번 더 써 주세요. AI가 이어서 답해요. (이번엔 질문 횟수를 안 썼어요)"), "lab FAQ reuse must pass the no-question-spent follow-up");
 const faqReplySource = bot.slice(bot.indexOf("async function faqReply(question, channelId, who, followUp) {"), bot.indexOf("\n// ---------- DM:", bot.indexOf("async function faqReply(question, channelId, who, followUp) {")));
 assert.match(faqReplySource, /const hit = L\.bestFaq\([\s\S]*?\); if \(!hit\) return false;/, "faq miss must return false");
 assert.ok(faqReplySource.indexOf("if (!hit) return false;") < faqReplySource.indexOf("await say("), "faq miss must return before posting");
 assert.doesNotMatch(faqReplySource, /takeQuota/, "FAQ reuse must not take quota");
 assert.match(faqReplySource, /📚 \*\*비슷한 질문이 예전에 해결됐어요\*\*/, "FAQ hit must post the existing similar-question notice");
+assert.ok(faqReplySource.includes("\\n\\n${followUp}`"), "FAQ hits must post their caller-provided follow-up");
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
 assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 \}\)/, "threadChat must fetch recent thread messages");
 assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");
@@ -219,6 +221,7 @@ assert.ok(onThreadSource.includes(starterGuard), "forum threads must return when
 assert.ok(onThreadSource.indexOf(starterGuard) < onThreadSource.indexOf("notifySubs("), "forum starter guard must precede subscription notifications");
 assert.ok(onThreadSource.indexOf(starterGuard) < onThreadSource.indexOf('L.takeQuota(db, "bot:forum", { staff: true })'), "forum starter guard must precede the shared forum quota");
 assert.match(onThreadSource, /if \(t\.parentId === ids\.qa && await faqReply\([\s\S]*?\)\) return mentorPing\(/, "forum QA FAQ answers must return before the forum fallback");
+assert.ok(onThreadSource.includes("-# 해결이 안 되면 @OpenCode를 불러서 이어서 물어보세요."), "forum QA FAQ reuse must pass its follow-up");
 assert.match(onThreadSource, /if \(t\.parentId !== ids\.suggest\) notifySubs\(/, "suggestion threads must skip subscription notifications");
 const suggestThreadSource = onThreadSource.slice(onThreadSource.indexOf("if (t.parentId === ids.suggest) {"), onThreadSource.indexOf("if (t.parentId === ids.coproject)"));
 assert.match(suggestThreadSource, /await ai\("claude",[\s\S]*최대 2개/, "suggestion threads must ask Claude for at most two tags");
@@ -410,6 +413,7 @@ assert.match(anonymousQuestionSource, /await log\(`🙈 익명 질문 게시: \$
 assert.match(anonymousQuestionSource, /\$\{Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\}/, "anonymous-question quota footer must be finite-only");
 assert.match(anonymousQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;/, "anonymous questions must return after reusing a FAQ answer");
 assert.ok(anonymousQuestionSource.indexOf("if (await faqReply(") < anonymousQuestionSource.indexOf('ai("opencode"'), "anonymous FAQ reuse must return before calling ai");
+assert.ok(anonymousQuestionSource.includes("-# 해결이 안 되면 이 글에 댓글로 더 물어보세요."), "anonymous FAQ reuse must pass its follow-up");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");

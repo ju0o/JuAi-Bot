@@ -187,6 +187,7 @@ assert.match(answerSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff:
 assert.match(answerSource, /if \(!q\.ok\) return say\(who, channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\n  const prompt =/, "refused answer quota must return quotaMessage before building the AI prompt");
 assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf("ai("), "refused answer quota must return before calling ai");
 assert.match(answerSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?sayLong\([^;]*text \+ footer/, "answer quota footer must be finite-only");
+assert.match(answerSource, /ai\(ENGINE\[who\], prompt\)\)\.catch\(\(e\) => \{ fail\(`answer\/\$\{who\}`, e\); return "지금은 답을 못 만들었어요\. 잠시 뒤에 다시 물어봐 주세요\."; \}\)/, "answer must send the Korean fallback when ai fails");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
 assert.match(labQuestionSource, /m\.startThread\(\{ name: m\.content\.replace\(\/\\s\+\/g, " "\)\.slice\(0, 50\) \|\| "질문", autoArchiveDuration: 1440 \}\)/, "lab questions must open a 50-character, 1440-minute thread");
 assert.ok(labQuestionSource.indexOf("startThread(") < labQuestionSource.indexOf("await faqReply("), "lab questions must open the thread before checking FAQ");
@@ -377,6 +378,7 @@ assert.match(onDirectSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staf
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf('ai("opencode"'), "DM quota refusal must return before calling ai");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf("for (const part of L.chunk"), "DM quota refusal must return before sending answer chunks");
 assert.match(onDirectSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?L\.chunk\(answer \+ footer\)/, "DM quota footer must be finite-only");
+assert.match(onDirectSource, /ai\("opencode",[\s\S]*?\.catch\(\(e\) => \{ fail\("dm\/answer", e\); return "지금은 답을 못 만들었어요\. 잠시 뒤에 다시 보내주세요\."; \}\)/, "DM answers must send the Korean fallback when ai fails");
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
 assert.match(onDirectSource, /if \(!member\) return reply\("JuAi 서버 멤버만 쓸 수 있어요\./, "DM must reject non-members before handling commands");
 assert.ok(onDirectSource.includes("if (!text || /^!?(도움말|help)$/i.test(text)) return reply(DM_HELP);"), "empty or help DMs must return DM_HELP");

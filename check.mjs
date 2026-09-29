@@ -324,6 +324,9 @@ assert.match(jobSource, /if \(tries >= 3\) \{[\s\S]*kvSet\(db, `done:\$\{key\}`,
 const catchUpSource = bot.slice(bot.indexOf("async function catchUp() {"), bot.indexOf("\nasync function tick() {", bot.indexOf("async function catchUp() {")));
 assert.match(catchUpSource, /const since = kvGet\(db, "last_seen"\); if \(!since\) return;/, "catch-up must stop without a last-seen timestamp");
 assert.equal((catchUpSource.match(/if \(n >= 10\) break;/g) ?? []).length, 2, "catch-up must cap both message and thread passes at ten");
+const labCatchUpSource = catchUpSource.slice(catchUpSource.indexOf("for (const m"), catchUpSource.indexOf("const threads"));
+assert.match(labCatchUpSource, /if \(m\.createdTimestamp > since && !m\.author\.bot && !m\.system && !m\.hasThread\) \{[\s\S]*?await labQuestion\(m\);/, "catch-up must send only new, member-authored, non-system lab messages without threads to labQuestion");
+assert.equal((labCatchUpSource.match(/labQuestion\(m\)/g) ?? []).length, 1, "catch-up must call labQuestion only from the guarded lab-message branch");
 assert.match(catchUpSource, /t\.messages\.fetch\(\{ limit: 10 \}\)[\s\S]*?\.some\?\.\(\(x\) => x\.author\.bot\)\) continue/, "catch-up must skip threads that already have a bot answer");
 const dailySummarySource = bot.slice(bot.indexOf("async function dailySummary(today) {"), bot.indexOf("\nasync function dailyPicks(today) {"));
 const dailyPicksSource = bot.slice(bot.indexOf("async function dailyPicks(today) {"), bot.indexOf("\nasync function weekly() {"));

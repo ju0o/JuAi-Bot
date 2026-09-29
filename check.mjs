@@ -341,6 +341,11 @@ assert.match(coprojectSource, /const fields = \(want\.fields \|\| \[\]\)\.filter
 assert.match(coprojectSource, /const ping = guild\.roles\.cache\.find\(\(r\) => r\.name === "공동프로젝트 알림"\);[\s\S]*allowedMentions: \{ roles: ping \? \[ping\.id\] : \[\] \}/, "coproject matching must ping only the 공동프로젝트 알림 role");
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");
+const codeReviewQuotaGuard = 'if (!L.takeQuota(db, "bot:forum", { staff: true }).ok) return;';
+assert.ok(codeReviewSource.includes(codeReviewQuotaGuard), "code review must return when the shared forum quota fails");
+assert.ok(codeReviewSource.indexOf(codeReviewQuotaGuard) < codeReviewSource.indexOf("withTyping"), "code review quota failure must return before typing");
+assert.ok(codeReviewSource.indexOf(codeReviewQuotaGuard) < codeReviewSource.indexOf("ai("), "code review quota failure must return before calling ai");
+assert.match(codeReviewSource, /if \(text\) await sayLong\("OPENCODE", t\.id,/, "code review must post only when review text is present");
 const githubContextSource = bot.slice(bot.indexOf("async function githubContext(text) {"), bot.indexOf("\nasync function repoContext", bot.indexOf("async function githubContext(text) {")));
 assert.match(githubContextSource, /matchAll\(GH\)\]\.slice\(0, 3\)/, "githubContext must try at most three links");
 const repoContextSource = bot.slice(bot.indexOf("async function repoContext(hit) {"), bot.indexOf("\nconst reviewPrompt", bot.indexOf("async function repoContext(hit) {")));

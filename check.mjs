@@ -315,6 +315,7 @@ const summaryGuard = "if (/^!?요약(해\\s?줘)?$/.test(text)) {";
 const guildRemainingQuotaBranch = onMessageSource.slice(onMessageSource.indexOf(commandPaths["!남은횟수"]), onMessageSource.indexOf(summaryGuard));
 assert.ok(guildRemainingQuotaBranch.includes("L.peekQuota(db, m.author.id)"), "guild !남은횟수 must use peekQuota");
 assert.ok(guildRemainingQuotaBranch.includes("운영진은 AI 질문 횟수 제한이 없어요."), "guild !남은횟수 must tell staff there is no daily limit");
+assert.match(guildRemainingQuotaBranch, /\(피드백 보너스 \+\$\{q\.bonus\} 포함\)/, "guild !남은횟수 member reply must keep the feedback bonus clause");
 assert.ok(!guildRemainingQuotaBranch.includes("takeQuota"), "guild !남은횟수 must not call takeQuota");
 assert.ok(onMessageSource.includes('요약은 스레드 안에서만 돼요. 스레드에 !요약해줘라고 남겨 주세요.'), "outside-thread summary must explain the required scope");
 assert.ok(onMessageSource.indexOf(summaryGuard) < onMessageSource.indexOf('if (m.channelId === ids.lab) return labQuestion(m);'), "summary guard must run before labQuestion");

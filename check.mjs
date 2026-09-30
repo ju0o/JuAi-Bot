@@ -821,6 +821,11 @@ assert.ok(!/id: everyone, deny: \[[^\]]*P\.ViewChannel/.test(botsonlyOverwrite),
 assert.match(overwriteSource, /private:\s*\[\{ id: everyone, deny: \[P\.ViewChannel\]/, "private channels must deny everyone ViewChannel");
 assert.match(setup, /const existingRoles = await guild\.roles\.fetch\(\);[\s\S]*?let role = existingRoles\.find\(\(x\) => x\.name === r\.name\);[\s\S]*?else await role\.edit\(/, "setup must find existing roles by name and update them");
 assert.match(setup, /const all = await guild\.channels\.fetch\(\);[\s\S]*?let chan = all\.find\(\(c\) => c && c\.type === TYPE\[ch\.type\] && c\.name === ch\.name\);[\s\S]*?else \{[\s\S]*?await chan\.edit\(/, "setup must find existing channels by name and update them");
+const defaultJunkNames = setup.match(/const DEFAULT_JUNK = new Set\(\[([^\]]+)\]\);/)?.[1].match(/"([^"]+)"/g)?.map((name) => name.slice(1, -1));
+assert.deepEqual(defaultJunkNames, ["일반", "general", "채팅 채널", "음성 채널", "Text Channels", "Voice Channels"], "setup default-junk names must stay bounded");
+const cleanupSource = setup.slice(setup.indexOf("// Remove Discord's default channels"), setup.indexOf("kvSet(openDb(), \"channels\""));
+assert.match(cleanupSource, /if \(!c \|\| !DEFAULT_JUNK\.has\(c\.name\)\) continue;/, "setup must only consider channels whose names are default junk");
+assert.match(cleanupSource, /c\.type === ChannelType\.GuildCategory\) \{ if \(!guild\.channels\.cache\.some\(\(x\) => x\.parentId === c\.id && !DEFAULT_JUNK\.has\(x\.name\)\)\)/, "setup must keep junk categories with a non-junk child");
 assert.match(setup, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch\(\{ limit: 1 \}\)\.catch\(\(\) => null\) : null;\s*if \(!msgs \|\| msgs\.size === 0\) await c\.delete\(/, "setup must delete default channels only when empty");
 const communitySetup = setup.slice(setup.indexOf("if (!community)"), setup.indexOf("await applyChannels(true)"));
 assert.match(communitySetup, /guild\.edit\(\{ verificationLevel: GuildVerificationLevel\.Low, explicitContentFilter: GuildExplicitContentFilter\.AllMembers \}\)/, "setup must use low verification and filter content for all members");

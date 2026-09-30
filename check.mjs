@@ -80,6 +80,9 @@ const interactionHandler = 'client.on("interactionCreate", (i) => void onInterac
 assert.ok(connectSource.includes(interactionHandler), "every logged-in bot must register the interaction handler");
 assert.ok(connectSource.indexOf("clients[name] = client") < connectSource.indexOf(interactionHandler), "the interaction handler must be registered after login succeeds");
 assert.ok(connectSource.indexOf(interactionHandler) < connectSource.indexOf('if (name === "OPENCODE") client.on("messageCreate"'), "the interaction handler must be registered inside the login loop");
+const sayLongSource = bot.slice(bot.indexOf("async function sayLong(who, channelId, text, replyTo) {"), bot.indexOf("\nconst log =", bot.indexOf("async function sayLong(who, channelId, text, replyTo) {")));
+assert.match(sayLongSource, /i === 0 && replyTo \? \{ reply: \{ messageReference: replyTo, failIfNotExists: false \} \} : \{\}/, "sayLong must attach reply metadata only to the first chunk when replyTo is set");
+assert.ok(sayLongSource.indexOf("first ??= msg") < sayLongSource.indexOf("return first"), "sayLong must return the first sent message");
 assert.equal(botId("MTIzNDU2Nzg5.MTIz.token"), "123456789", "setup must extract a bot id from the token prefix");
 assert.equal(botId(""), undefined, "setup must leave a missing bot token without an id");
 const findGuild = Function("env", `${setup.match(/export async function findGuild\(client\) \{[\s\S]*?\n\}/)?.[0].replace("export ", "")}; return findGuild;`)({});

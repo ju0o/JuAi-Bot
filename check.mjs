@@ -953,6 +953,11 @@ assert.ok(!/id: everyone, deny: \[[^\]]*P\.ViewChannel/.test(botsonlyOverwrite),
 assert.match(overwriteSource, /private:\s*\[\{ id: everyone, deny: \[P\.ViewChannel\]/, "private channels must deny everyone ViewChannel");
 assert.match(setup, /const existingRoles = await guild\.roles\.fetch\(\);[\s\S]*?let role = existingRoles\.find\(\(x\) => x\.name === r\.name\);[\s\S]*?else await role\.edit\(/, "setup must find existing roles by name and update them");
 assert.match(setup, /const all = await guild\.channels\.fetch\(\);[\s\S]*?let chan = all\.find\(\(c\) => c && c\.type === TYPE\[ch\.type\] && c\.name === ch\.name\);[\s\S]*?else \{[\s\S]*?await chan\.edit\(/, "setup must find existing channels by name and update them");
+const forumTagUpdateStart = setup.indexOf("const tags = ch.tags");
+const forumTagUpdateSource = setup.slice(forumTagUpdateStart, setup.indexOf("await chan.edit", forumTagUpdateStart) + 100);
+assert.match(forumTagUpdateSource, /chan\.availableTags\?\.find\(\(t\) => t\.name === name\) \?\? \{ name \}/, "forum tag re-runs must reuse a tag by name and create a name-only tag only when missing");
+assert.ok(forumTagUpdateSource.indexOf("availableTags?.find") < forumTagUpdateSource.indexOf("?? { name }"), "forum tag lookup must happen before the missing-tag fallback");
+assert.match(forumTagUpdateSource, /\.\.\.\(tags \? \{ availableTags: tags \} : \{\}\)/, "reused or new forum tags must be passed back to the existing channel update");
 const defaultJunkNames = setup.match(/const DEFAULT_JUNK = new Set\(\[([^\]]+)\]\);/)?.[1].match(/"([^"]+)"/g)?.map((name) => name.slice(1, -1));
 assert.deepEqual(defaultJunkNames, ["일반", "general", "채팅 채널", "음성 채널", "Text Channels", "Voice Channels"], "setup default-junk names must stay bounded");
 const cleanupSource = setup.slice(setup.indexOf("// Remove Discord's default channels"), setup.indexOf("kvSet(openDb(), \"channels\""));

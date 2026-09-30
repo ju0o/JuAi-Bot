@@ -694,6 +694,8 @@ assert.match(anonymousQuestionSource, /\$\{Number\.isFinite\(q\.left\) \? `\\n-#
 assert.match(anonymousQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;/, "anonymous questions must return after reusing a FAQ answer");
 assert.ok(anonymousQuestionSource.indexOf("if (await faqReply(") < anonymousQuestionSource.indexOf('ai("opencode"'), "anonymous FAQ reuse must return before calling ai");
 assert.ok(anonymousQuestionSource.includes("-# 해결이 안 되면 이 글에 댓글로 더 물어보세요."), "anonymous FAQ reuse must pass its follow-up");
+assert.match(anonymousQuestionSource, /\.catch\(\(e\) => \{ fail\("anon\/answer", e\); return null; \}\)/, "failed anonymous AI calls must return null");
+assert.match(anonymousQuestionSource, /if \(answer\) \{[\s\S]*?sayLong\("OPENCODE", thread\.id, answer\)[\s\S]*?rememberAnswer\(first, m\.author\.id, question, answer\);\s*\}/, "anonymous answers must post and remember only when answer exists");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");

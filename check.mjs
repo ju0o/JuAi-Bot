@@ -81,7 +81,9 @@ for (const handler of [
   'hub.on("threadUpdate"',
 ]) assert.ok(connectSource.indexOf(missingChannelWarning) < connectSource.indexOf(handler), `${handler} must be registered after the missing-channel warning`);
 assert.match(connectSource, /intents: isHub \? \[[^\]]*\] : name === "OPENCODE" \? \[G\.Guilds, G\.DirectMessages\] : \[G\.Guilds\]/, "OpenCode must receive DirectMessages when it is not the hub");
+assert.match(connectSource, /intents: isHub \? \[[^\]]*G\.GuildMessageReactions[^\]]*\]/, "hub must request GuildMessageReactions");
 assert.match(connectSource, /\.\.\.\(isHub \? \{ partials: \[[^\]]*\] \} : name === "OPENCODE" \? \{ partials: \[Partials\.Channel\] \} : \{\}\)/, "OpenCode must receive a Channel partial when it is not the hub");
+assert.match(connectSource, /partials: \[Partials\.Message, Partials\.Reaction, Partials\.User\]/, "hub must enable Message, Reaction, and User partials");
 assert.ok(connectSource.includes('if (name === "OPENCODE") client.on("messageCreate", (m) => void onDirect(m).catch((e) => fail("dm", e)));'), "OpenCode must always register its messageCreate handler to onDirect");
 const founderSetup = 'founders = new Set([guild.ownerId, ...(env.FOUNDER_IDS || "").split(",").filter(Boolean)]);';
 assert.ok(connectSource.includes(founderSetup), "connect must include the guild owner and configured Founders");

@@ -1452,6 +1452,12 @@ assert.equal(addSubscription("subscriber", "word-new"), false, "subscription max
 assert.equal(addSubscription("subscriber", "word-0"), true, "subscription max must allow an existing keyword");
 assert.equal(subDb.prepare("SELECT count(*) AS count FROM subs WHERE user_id=?").get("subscriber").count, SUB_MAX);
 
+assert.match(notifySubsSource, /if \(uid === authorId \|\| sent >= L\.SUB_DAILY \|\| byUser\.has\(uid\)\) continue;/, "subscription notifications must skip the author and users at the daily cap");
+assert.ok(notifySubsSource.indexOf("if (!byUser.size) return;") < notifySubsSource.indexOf('await say("COMMANDCODE", threadId'), "subscription notifications must not post when no users remain");
+assert.ok(notifySubsSource.includes('await say("COMMANDCODE", threadId'), "subscription notifications must post through CommandCode");
+assert.ok(notifySubsSource.includes("구독하신 단어가 나온 글이에요!"), "subscription notifications must keep the existing sentence");
+assert.ok(notifySubsSource.includes("allowedMentions: { users: [...byUser.keys()] }"), "subscription notifications must mention only users remaining after skips");
+
 const subscriptionNotifications = (userId, authorId, sent) => {
   if (userId === authorId || sent >= SUB_DAILY) return false;
   subDb.prepare("INSERT INTO kv(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(`subsent:${userId}:2026-09-27`, String(sent + 1));

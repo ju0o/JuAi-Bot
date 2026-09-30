@@ -781,6 +781,9 @@ assert.match(startTalkSource, /carry\.part < TALK_MAX_PARTS[\s\S]*carry\.topic[\
 assert.match(startTalkSource, /const part = carry && carry\.part < TALK_MAX_PARTS \? carry\.part \+ 1 : 1;/, "continued talks must advance to the next part");
 assert.match(startTalkSource, /if \(part === 1\) kvSet\(db, "talk_topics",/, "continued talks must not append a topic to talk_topics");
 assert.ok(startTalkSource.indexOf('kvSet(db, "talk_carry", null);') < startTalkSource.indexOf(talkRequestClaim), "startTalk must clear maxed-out carry before selecting a new topic");
+assert.match(startTalkSource, /const \{ lines \} = req \? \{ lines: \[\] \} : await collect\(since, Date\.now\(\)\);/, "startTalk must collect recent member lines only when no pending request is claimed");
+assert.match(startTalkSource, /lines\.length \? `최근 멤버들 대화[\s\S]*\$\{lines\.slice\(-60\)\.join\("\\n"\)/, "startTalk must use recent member lines when they are available");
+assert.match(startTalkSource, /const fallback = \[[\s\S]*TALK_TOPICS\].filter\(\(t\) => !used\.includes\(t\)\)\.slice\(0, 8\);/, "startTalk fallback must offer at most 8 unused talk topics");
 assert.match(startTalkSource, /멤버 이름은 쓰지 마/, "talk opener prompt must forbid member names");
 assert.match(startTalkSource, /String\(carry && part > 1 \? carry\.topic : req\?\.topic \|\| d\.topic \|\| "자유 주제"\)\.slice\(0, L\.TALK_TOPIC_MAX\)/, "talk topics must use the shared maximum");
 const emptyTalkOpenerGuard = 'const d = L.extractJson(out); if (!d?.text) throw new Error("봇 수다 첫마디를 못 만들었어요");';

@@ -1002,7 +1002,10 @@ assert.deepEqual(defaultJunkNames, ["일반", "general", "채팅 채널", "음�
 const cleanupSource = setup.slice(setup.indexOf("// Remove Discord's default channels"), setup.indexOf("kvSet(openDb(), \"channels\""));
 assert.match(cleanupSource, /if \(!c \|\| !DEFAULT_JUNK\.has\(c\.name\)\) continue;/, "setup must only consider channels whose names are default junk");
 assert.match(cleanupSource, /c\.type === ChannelType\.GuildCategory\) \{ if \(!guild\.channels\.cache\.some\(\(x\) => x\.parentId === c\.id && !DEFAULT_JUNK\.has\(x\.name\)\)\)/, "setup must keep junk categories with a non-junk child");
+assert.ok(cleanupSource.indexOf("continue;", cleanupSource.indexOf("c.type === ChannelType.GuildCategory")) < cleanupSource.indexOf("const msgs ="), "setup must not fetch messages for category channels");
+assert.match(cleanupSource, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch\(\{ limit: 1 \}\)\.catch\(\(\) => null\) : null;/, "setup must fetch at most one message for non-category junk channels");
 assert.match(setup, /const msgs = c\.isTextBased\(\) \? await c\.messages\.fetch\(\{ limit: 1 \}\)\.catch\(\(\) => null\) : null;\s*if \(!msgs \|\| msgs\.size === 0\) await c\.delete\(/, "setup must delete default channels only when empty");
+assert.match(cleanupSource, /const msgs = [\s\S]*?if \(!msgs \|\| msgs\.size === 0\) await c\.delete\(/, "setup must delete non-category junk channels only when the one-message fetch is missing or empty");
 const communitySetup = setup.slice(setup.indexOf("if (!community)"), setup.indexOf("await applyChannels(true)"));
 assert.match(communitySetup, /guild\.edit\(\{ verificationLevel: GuildVerificationLevel\.Low, explicitContentFilter: GuildExplicitContentFilter\.AllMembers \}\)/, "setup must use low verification and filter content for all members");
 assert.match(communitySetup, /guild\.edit\(\{ features: \[\.\.\.guild\.features, "COMMUNITY"\], rulesChannel: ids\.rules, publicUpdatesChannel: ids\.staff \}\)/, "setup must enable Community with rules and staff channels");

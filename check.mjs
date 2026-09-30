@@ -506,6 +506,10 @@ const repoContextSource = bot.slice(bot.indexOf("async function repoContext(hit)
 assert.match(repoContextSource, /const meta = await json\(""\); if \(!meta \|\| meta\.private\) return null;/, "repoContext must return null for missing or private repositories");
 assert.ok(repoContextSource.indexOf('if (!meta || meta.private) return null;') < repoContextSource.indexOf('const readme = await fetch('), "repoContext must reject missing or private repositories before fetching the README");
 assert.match(repoContextSource, /const manifest = files\.find\(\(f\) => \["package\.json", "pyproject\.toml", "requirements\.txt", "Cargo\.toml", "go\.mod"\]\.includes\(f\.name\)\);/, "repoContext must recognize exactly the supported dependency manifests");
+assert.match(repoContextSource, /meta\.stargazers_count/, "repoContext must include the repository star count");
+assert.match(repoContextSource, /meta\.pushed_at/, "repoContext must include the last push date");
+assert.match(repoContextSource, /manifest \? await fetch\(manifest\.download_url\)/, "repoContext must fetch the manifest body from its download URL");
+assert.match(repoContextSource, /manifestText\.slice\(0, 2000\)/, "repoContext must include the fetched manifest body in the review context");
 const resolveRepoSource = bot.slice(bot.indexOf("async function resolveRepo(text) {"), bot.indexOf("\n/** \"리뷰해줘\"", bot.indexOf("async function resolveRepo(text) {")));
 assert.match(resolveRepoSource, /users\/\$\{user\}\/repos\?sort=pushed&per_page=10/, "resolveRepo must request user repositories sorted by pushed time");
 assert.match(resolveRepoSource, /const pick = list\.find\(\(r\) => !r\.fork && !r\.private\);/, "resolveRepo must select the first public non-fork repository");

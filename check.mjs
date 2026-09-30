@@ -900,6 +900,9 @@ assert.equal(new Set(CHANNELS.map(({ name }) => name)).size, CHANNELS.length, "c
 assert.equal(new Set(ROLES.map(({ name }) => name)).size, ROLES.length, "role names must be unique");
 assert.ok(ROLES.every(({ name }) => name.length <= 100), "role names must be at most 100 characters");
 for (const role of ROLES) assert.ok(Number.isInteger(role.color) && role.color >= 0 && role.color <= 0xFFFFFF, `role color must be an integer from 0 to 0xFFFFFF: ${role.key}`);
+assert.deepEqual(ROLES.filter(({ mentionable }) => mentionable).map(({ name }) => name), ["공동프로젝트 알림"], "only the 공동프로젝트 알림 role may be mentionable");
+assert.match(setup, /guild\.roles\.create\(\{[\s\S]*?mentionable: !!r\.mentionable[\s\S]*?\}\)/, "role creation must pass through the mentionable flag");
+assert.match(setup, /role\.edit\(\{[\s\S]*?mentionable: !!r\.mentionable[\s\S]*?\}\)/, "role edits must pass through the mentionable flag");
 for (const role of ROLES) for (const perm of role.perms) {
   assert.ok(Object.hasOwn(PermissionFlagsBits, perm), `unknown role permission: ${role.key}/${perm}`);
 }

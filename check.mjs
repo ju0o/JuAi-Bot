@@ -694,6 +694,10 @@ assert.ok(onDirectSource.indexOf("if (REVIEW_ASK.test(text)) return reviewReques
 const dmHelpSource = bot.slice(bot.indexOf("const DM_HELP = `"), bot.indexOf("\n\nasync function onDirect"));
 assert.match(dmHelpSource, /하루 질문 횟수 공유/, "DM_HELP must state the shared daily quota");
 const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));
+const shortAnonymousReply = "if (question.length < L.ANON_MIN) return reply(`질문을 ${L.ANON_MIN}자 이상 조금만 더 자세히 적어주세요. 예: \\`!익명 코딩 처음인데 뭐부터 배우면 돼요?\\``);";
+assert.ok(anonymousQuestionSource.includes(shortAnonymousReply), "short anonymous questions must return the existing too-short reply");
+assert.ok(anonymousQuestionSource.indexOf(shortAnonymousReply) < anonymousQuestionSource.indexOf("const thread ="), "too-short anonymous questions must return before creating a thread");
+assert.ok(anonymousQuestionSource.includes("await reply(`이름 없이 올렸어요! 👉 ${thread.url}\\n답이 달리면 거기서 확인하세요."), "anonymous questions must confirm with the existing posted-without-name reply");
 assert.match(anonymousQuestionSource, /ai\("opencode", `\$\{PERSONA\.OPENCODE\}\\n\$\{RULES\}[\s\S]*L\.quote\(question/, "anonymous answers must put RULES before quoted member text");
 assert.doesNotMatch(anonymousQuestionSource, /askerContext\(/, "anonymous answers must not use asker context");
 const anonymousThreadSource = anonymousQuestionSource.slice(anonymousQuestionSource.indexOf("const thread ="), anonymousQuestionSource.indexOf("\n  await log("));

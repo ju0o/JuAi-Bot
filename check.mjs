@@ -502,6 +502,10 @@ assert.ok(codeReviewSource.indexOf(codeReviewQuotaGuard) < codeReviewSource.inde
 assert.match(codeReviewSource, /if \(text\) await sayLong\("OPENCODE", t\.id,/, "code review must post only when review text is present");
 const githubContextSource = bot.slice(bot.indexOf("async function githubContext(text) {"), bot.indexOf("\nasync function repoContext", bot.indexOf("async function githubContext(text) {")));
 assert.match(githubContextSource, /matchAll\(GH\)\]\.slice\(0, 3\)/, "githubContext must try at most three links");
+const gh = Function(`return ${bot.match(/^const GH = (\/.*\/gi);$/m)?.[1]}`)();
+const ghLinks = [..."https://github.com/acme/one.git and github.com/org/two/path?x=1#hash".matchAll(gh)];
+assert.deepEqual(ghLinks.map(([, owner, repo]) => [owner, repo]), [["acme", "one"], ["org", "two"]], "GH must extract two owner/repo links, drop .git, and stop before a path, query, or hash");
+assert.equal([..."github.com/user".matchAll(gh)].length, 0, "GH must ignore profile-only GitHub URLs");
 const repoContextSource = bot.slice(bot.indexOf("async function repoContext(hit) {"), bot.indexOf("\nconst reviewPrompt", bot.indexOf("async function repoContext(hit) {")));
 assert.match(repoContextSource, /const meta = await json\(""\); if \(!meta \|\| meta\.private\) return null;/, "repoContext must return null for missing or private repositories");
 assert.ok(repoContextSource.indexOf('if (!meta || meta.private) return null;') < repoContextSource.indexOf('const readme = await fetch('), "repoContext must reject missing or private repositories before fetching the README");

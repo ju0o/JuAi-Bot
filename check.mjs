@@ -538,6 +538,10 @@ assert.match(highlightSource, /items\.sort\(\(a, b\) => b\.score - a\.score\)\.s
 assert.ok(highlightSource.indexOf("if (!top.length) return;") < highlightSource.indexOf('createCard("notice", "이번 주 하이라이트 공지"'), "highlight must create a notice only when a member post remains");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 3 && h >= 19\) await job\(`nudge:\$\{today\}`, progressNudge\);/, "progress nudge must be scheduled from Wednesday 19:00 KST");
 assert.match(tickSource, /if \(h >= 4\) await job\(`backup:\$\{today\}`, backup\);/, "daily backup must be scheduled from 04:00 KST");
+const backupSource = bot.slice(bot.indexOf("async function backup() {"), bot.indexOf("\nasync function threadsSince", bot.indexOf("async function backup() {")));
+assert.match(backupSource, /const dir = path\.join\(ROOT, "data\/backup"\); mkdirSync\(dir, \{ recursive: true \}\);/, "backup must create the backup directory");
+assert.match(backupSource, /db\.exec\(`VACUUM INTO '\$\{path\.join\(dir, `juai-\$\{L\.kstDate\(\)\}\.db`\)\}'`\);/, "backup must vacuum into the KST-dated database path");
+assert.match(backupSource, /for \(const f of readdirSync\(dir\)\.filter\(\(f\) => f\.endsWith\("\.db"\)\)\.sort\(\)\.slice\(0, -7\)\) rmSync\(path\.join\(dir, f\)\);/, "backup must delete older database files while keeping the newest seven");
 const startupSource = bot.slice(bot.indexOf("const starts ="), bot.indexOf("\nconst deployFile", bot.indexOf("const starts =")));
 assert.match(startupSource, /const starts = \[\.\.\.\(kvGet\(db, "starts"\) \|\| \[\]\), Date\.now\(\)\]\.filter\(\(t\) => Date\.now\(\) - t < 15 \* 60_000\); kvSet\(db, "starts", starts\);/, "startup must keep only starts from the last 15 minutes");
 assert.match(startupSource, /if \(starts\.length >= 3\) alertFounder\("restarts", `봇이 15분 동안 \$\{starts\.length\}번 다시 시작됐어요\. 무언가 계속 실패하는 것 같아요\. <#\$\{ids\.botlog\}>를 확인해 주세요\.`\);/, "startup must alert Founder with the existing Korean restart sentence at three starts");

@@ -124,6 +124,8 @@ assert.match(readme, new RegExp("^- `#질문-답변`에 입문자가 질문하�
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}"--tools", ""/, "Claude must disable tools");
 const claudeDevAllowedTools = ai.match(/if \(engine === "claude-dev"\)[\s\S]*?"--allowedTools", "([^"]+)"/)?.[1];
 assert.equal(claudeDevAllowedTools, "Read,Edit,Write,Glob,Grep,Bash(node check.mjs)", "claude-dev allowedTools must stay limited to the approved tools");
+const claudeDevCommandSource = ai.slice(ai.indexOf('if (engine === "claude-dev")'), ai.indexOf('if (engine === "claude")'));
+assert.match(claudeDevCommandSource, /"--permission-mode", "acceptEdits"[\s\S]*"--no-session-persistence"/, "claude-dev must accept edits without persisting sessions");
 const defaultModels = ai.match(/: \[([^\]]+)\];/)?.[1].match(/"([^"]+)"/g)?.map((model) => model.slice(1, -1)) ?? [];
 assert.ok(defaultModels.length > 0 && defaultModels.every((model) => model.includes("free")), "OpenCode default models must all be free");
 assert.match(ai, /if \(engine === "claude"\)[\s\S]{0,220}model \|\| "haiku"/, "member Claude must default to Haiku");
@@ -161,9 +163,12 @@ assert.match(bwrapSource, /"--unshare-pid"/, "bwrap must isolate the process id 
 assert.match(bwrapSource, /"--bind",\s*SANDBOX,\s*HOME/, "bwrap must bind-mount the sandbox directory over HOME");
 const claudeCommandSource = ai.slice(ai.indexOf('if (engine === "claude")'), ai.indexOf('if (engine === "codex")'));
 assert.match(claudeCommandSource, /path\.resolve\("data\/claude-cwd"\)/, "member Claude must run in data/claude-cwd");
+assert.match(claudeCommandSource, /"--no-session-persistence"/, "member Claude must not persist sessions");
 const codexCommandSource = ai.slice(ai.indexOf('if (engine === "codex")'), ai.indexOf('if (engine === "opencode")'));
 assert.match(codexCommandSource, /"-s", "read-only"/, "Codex must run read-only");
 assert.match(codexCommandSource, /"--ephemeral"/, "Codex must run ephemerally");
+assert.match(codexCommandSource, /"--skip-git-repo-check"/, "Codex must skip the repository check");
+assert.match(codexCommandSource, /"--color", "never"/, "Codex must disable color output");
 const commandCodeSource = ai.slice(ai.indexOf('if (engine === "commandcode")'), ai.indexOf('throw new Error'));
 assert.match(commandCodeSource, /"--max-turns", "3"/, "CommandCode must limit itself to three turns");
 assert.match(commandCodeSource, /"--no-session"/, "CommandCode must not use a session");

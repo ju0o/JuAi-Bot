@@ -449,6 +449,10 @@ assert.ok(onThreadSource.indexOf("return coprojectMatch(t, post);") < onThreadSo
 const coprojectSource = bot.slice(bot.indexOf("async function coprojectMatch(t, post) {"), bot.indexOf("\n// ---------- welcome + profile ----------"));
 assert.match(coprojectSource, /await say\("COMMANDCODE", t\.id, \{/ , "coproject matching must post through CommandCode");
 assert.match(coprojectSource, /const fields = \(want\.fields \|\| \[\]\)\.filter\(\(f\) => INTERESTS\.includes\(f\)\);/, "coproject matching must keep only INTERESTS fields");
+assert.match(coprojectSource, /content: `🤝 \*\*새 팀원 모집\*\*/, "coproject matching must post the new-team-member heading");
+assert.match(coprojectSource, /찾는 분야:/, "coproject matching must name the fields being sought");
+assert.match(coprojectSource, /\|\| "글 참고"/, "coproject matching must use 글 참고 when no interest fields match");
+assert.match(coprojectSource, /String\(want\.one_line\)\.slice\(0, 120\)/, "coproject matching must cap the one-line summary at 120 characters");
 assert.match(coprojectSource, /const ping = guild\.roles\.cache\.find\(\(r\) => r\.name === "공동프로젝트 알림"\);[\s\S]*allowedMentions: \{ roles: ping \? \[ping\.id\] : \[\] \}/, "coproject matching must ping only the 공동프로젝트 알림 role");
 const codeReviewSource = bot.slice(bot.indexOf("async function codeReview(t, starter) {"), bot.indexOf("\n/** Repo link", bot.indexOf("async function codeReview(t, starter) {")));
 assert.match(codeReviewSource, /const repo = await githubContext\(starter\.content\)\.catch\(\(\) => null\); if \(!repo\) return;[\s\S]*?L\.takeQuota\(db, "bot:forum", \{ staff: true \}\)/, "code review must return before taking forum quota when no repository is found");

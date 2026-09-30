@@ -14,6 +14,12 @@ const setup = fs.readFileSync("setup.mjs", "utf8");
 const bot = fs.readFileSync("bot.mjs", "utf8");
 const ai = fs.readFileSync("ai.mjs", "utf8");
 const service = fs.readFileSync("juai-bot.service", "utf8");
+const inviteSource = setup.slice(setup.indexOf("function printInvites() {"), setup.indexOf("\n\nexport async function findGuild"));
+assert.match(inviteSource, /for \(const \[name, key\] of Object\.entries\(BOTS\)\)/, "invite mode must iterate every BOTS entry");
+assert.match(inviteSource, /if \(!id\) \{ console\.log\(`\$\{name\}: 토큰 없음`\); continue; \}/, "invite mode must keep the missing-token sentence and skip that bot");
+assert.match(inviteSource, /https:\/\/discord\.com\/oauth2\/authorize\?client_id=\$\{id\}&scope=bot&permissions=\$\{perms\}/, "invite mode must print one Discord bot invite URL for each configured bot");
+assert.equal((inviteSource.match(/https:\/\/discord\.com\/oauth2\/authorize\?/g) ?? []).length, 1, "invite mode must have one invite URL template");
+assert.match(setup, /process\.argv\[2\] === "invite" \? printInvites\(\) : main\(\)/, "invite mode must run printInvites instead of main");
 const resolveChannelSource = bot.slice(bot.indexOf("function resolveChannel(ref) {"), bot.indexOf("\n\nasync function adminCommand", bot.indexOf("function resolveChannel(ref) {")));
 const resolveChannel = Function("guild", `${resolveChannelSource}; return resolveChannel;`)({
   channels: {

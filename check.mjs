@@ -134,7 +134,16 @@ assert.ok([...commandSource.matchAll(/"([^"]*sonnet[^"]*)"/g)].every(([, model])
 const aiCloseSource = ai.slice(ai.indexOf('child.on("close"'), ai.indexOf("\n    });", ai.indexOf('child.on("close"')));
 assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)[\s\S]*resolve\(redact\(text\)\)/, "successful AI CLI close must resolve redacted text");
 assert.doesNotMatch(aiCloseSource, /resolve\(out\)/, "successful AI CLI close must not resolve raw stdout");
+assert.match(aiCloseSource, /if \(code !== 0 \|\| !text\)/, "a non-zero exit or empty output must reject instead of resolving");
+const aiRejectSource = aiCloseSource.match(/if \(code !== 0 \|\| !text\) return reject\((new Error\([\s\S]*?\))\);/)?.[1] ?? "";
+assert.ok(aiRejectSource, "a non-zero exit or empty output must return reject");
+assert.ok(aiCloseSource.indexOf("return reject(") < aiCloseSource.indexOf("resolve(redact(text))"), "a failed AI CLI must reject before resolving redacted text");
+const aiRejectMessage = Function("engine", "code", "err", "stripAnsi", `return (${aiRejectSource}).message;`);
+assert.equal(aiRejectMessage("opencode", 1, "첫 줄\n두 번째 줄\n세 번째 줄", stripAnsi), "opencode exit 1: 두 번째 줄 세 번째 줄", "the reject error must name the engine and exit code and keep only the last two stderr lines");
+assert.equal(aiRejectMessage("claude", 2, `[31m빨간 줄[0m\n${"가".repeat(500)}\n${"나".repeat(500)}`, stripAnsi), `claude exit 2: ${"가".repeat(300)}`, "the reject error must drop ANSI codes, keep the last two stderr lines, and cap the message at 300 characters");
+assert.equal(aiRejectMessage("codex", 0, "\n\n", stripAnsi), "codex exit 0: ", "an empty output must reject with the same bounded error");
 const aiRunSource = ai.slice(ai.indexOf("function run("), ai.indexOf("\n// ponytail:"));
+assert.ok(aiRunSource.indexOf("text = text.trim();") < aiRunSource.indexOf("if (code !== 0 || !text)"), "empty output must be detected after trim");
 assert.match(aiRunSource, /const timer = setTimeout\(\(\) => child\.kill\("SIGKILL"\), timeoutMs\);/, "AI CLI timeout must kill the child with SIGKILL");
 assert.ok(aiRunSource.indexOf("setTimeout") < aiRunSource.indexOf('child.on("close"'), "AI CLI timeout must be armed before waiting for close");
 assert.match(aiRunSource, /if \(engine === "opencode"\) text = text\.split\("\\n"\)\.filter\(\(l\) => !\/\^> \\S\+ · \/\.test\(l\)\)\.join\("\\n"\);/, "OpenCode stdout must drop prompt-echo lines");

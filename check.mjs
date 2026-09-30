@@ -612,6 +612,9 @@ assert.match(tickSource, /const due = L\.TALK_OFFSETS_MIN\.map\(\(m, n\) => \[n,
 const monthlyBadgeSource = bot.slice(bot.indexOf("async function monthlyBadge(month) {"), bot.indexOf("\nconst snowflakeTime"));
 assert.match(monthlyBadgeSource, /user_id LIKE 'fb:%'[\s\S]*day=\?[\s\S]*count>=\$\{L\.BADGE_MIN\}[\s\S]*LIMIT \$\{L\.BADGE_TOP\}/, "monthly badge must select qualifying fb usage rows with the configured limit");
 assert.ok(monthlyBadgeSource.indexOf("if (!top.length) return;") < monthlyBadgeSource.indexOf("await createCard("), "monthly badge must return before creating a card when no member qualifies");
+assert.ok(monthlyBadgeSource.includes('`${["🥇", "🥈", "🥉"][i]} <@${x.id}> · 피드백 ${x.n}개`'), "monthly badge body must keep the medal lines and pass each member id");
+assert.ok(monthlyBadgeSource.includes('다른 사람의 프로젝트에 정성껏 피드백해 주셔서 고마워요! 이번 달 "피드백 장인" 역할을 드려요.'), "monthly badge body must keep the existing role sentence");
+assert.match(monthlyBadgeSource, /await createCard\("badge", `\$\{Number\(month\.slice\(5\)\)\}월 피드백 장인 발표`, text, \{ user_ids: top\.map\(\(x\) => x\.id\), text \}\);/, "monthly badge must create the existing titled card with the badge body and qualifying user ids");
 assert.match(tickSource, /if \(today\.endsWith\("-01"\) && h >= 10\) \{[\s\S]*?monthlyBadge\(month\)/, "monthly badge must be scheduled on KST day 1 from 10:00");
 const progressNudgeSource = bot.slice(bot.indexOf("async function progressNudge() {"), bot.indexOf("\n\nasync function dailyStarter", bot.indexOf("async function progressNudge() {")));
 assert.match(progressNudgeSource, /threadsSince\(\[ids\.showcase\], now - 120 \* L\.DAY_MS\)/, "progress nudge must inspect showcase threads only");

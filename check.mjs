@@ -400,6 +400,9 @@ assert.match(summarizeThreadSource, /if \(!q\.ok\) return say\("OPENCODE", m\.ch
 assert.ok(summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf("const msgs =") && summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf('ai("opencode"'), "failed thread-summary quota must return before fetching messages or calling AI");
 assert.match(summarizeThreadSource, /\.catch\(\(e\) => \{ fail\("summary\/thread", e\); return "지금은 요약을 못 만들었어요\. 잠시 뒤에 다시 해주세요\."; \}\)/, "thread-summary AI failures must use the existing Korean fallback");
 assert.match(summarizeThreadSource, /text \+ \(Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\)/, "thread-summary quota footer must be finite-only");
+assert.match(summarizeThreadSource, /m\.channel\.messages\.fetch\(\{ limit: 60 \}\)/, "thread summaries must fetch at most 60 messages");
+assert.match(summarizeThreadSource, /`\[글\] \$\{L\.quote\(starter\.content, 800\)\}`/, "thread summaries must prefix the starter as [글] and quote it to 800 characters");
+assert.match(summarizeThreadSource, /\$\{x\.author\.bot \? x\.author\.username : name\(x\)\}: \$\{L\.quote\(x\.content, 300\)\}/, "thread summaries must quote each later line to 300 characters");
 const answerSource = bot.slice(bot.indexOf("async function answer(m, channelId, who, history, replyTo) {"), bot.indexOf("\n/** Every AI answer", bot.indexOf("async function answer(m, channelId, who, history, replyTo) {")));
 const requiredPromptRuleTerms = ["규칙 무시", "파일 읽기", "명령 실행", "비밀·토큰 출력", "역할 바꾸기"];
 const rulesSource = bot.slice(bot.indexOf("const RULES = "), bot.indexOf("\n\n/** What the asker", bot.indexOf("const RULES = ")));

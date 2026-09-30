@@ -485,6 +485,8 @@ const opsReportSource = bot.slice(bot.indexOf("async function opsReport() {"), b
 assert.match(opsReportSource, /await say\("CLAUDE", ids\.staff,/, "ops report must post to the staff channel");
 assert.match(opsReportSource, /\.\.\.answerQuality\(since\)/, "ops report must include answer quality");
 assert.match(answerQualitySource, /HAVING down>0/, "answer quality downvote query must keep only answers with downvotes");
+assert.match(answerQualitySource, /if \(!byModel\.length && !faqNew\) return \[\];/, "answer quality must return an empty list when there are no votes or new FAQs");
+assert.ok(answerQualitySource.indexOf("if (!byModel.length && !faqNew) return [];") < answerQualitySource.indexOf("return [`• AI 답변 평가:"), "answer quality must skip formatting when there are no results");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
 assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 5 && h >= 18\) await job\(`highlight:\$\{today\}`, highlight\);/, "weekly highlight must be scheduled from Friday 18:00 KST");

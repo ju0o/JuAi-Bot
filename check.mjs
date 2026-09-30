@@ -710,6 +710,8 @@ assert.equal(talkReplies.length, 1, "valid talk requests must reply once");
 assert.equal(talkReplies[0].content, "🎙️ 신청 받았어요! <#playground-id>에서 봇들이 **AI가 짠 코드 믿어도 될까** 얘기를 할 거예요. (대기 1번째)", "talk acceptance must name the playground and wait position");
 
 const startTalkSource = bot.slice(bot.indexOf("async function startTalk() {"), bot.indexOf("\nfunction scheduleTalk()", bot.indexOf("async function startTalk() {")));
+assert.match(bot, /const TALK_BUDGET = \{ CODEX: 3, CLAUDE: 3, OPENCODE: 6, COMMANDCODE: 5 \};/, "talk budgets must stay Codex 3, Claude 3, OpenCode 6, and CommandCode 5");
+assert.match(bot, /const TALK_GAP_S = \[90, 240\];/, "talk gaps must stay between 90 and 240 seconds");
 assert.match(startTalkSource, /if \(kvGet\(db, "talk_session"\)\) return;/, "startTalk must return when a talk session already exists");
 const talkRequestClaim = 'req = db.prepare("SELECT * FROM talk_requests WHERE used=0 ORDER BY at LIMIT 1").get();';
 assert.ok(startTalkSource.includes(talkRequestClaim), "startTalk must claim the oldest unused talk request");
@@ -726,6 +728,8 @@ const emptyTalkOpenerGuard = 'const d = L.extractJson(out); if (!d?.text) throw 
 assert.ok(startTalkSource.includes(emptyTalkOpenerGuard), "empty talk openers must throw the existing error");
 assert.ok(startTalkSource.indexOf(emptyTalkOpenerGuard) < startTalkSource.indexOf('await say("CLAUDE", ids.playground'), "empty talk openers must fail before posting the playground header");
 assert.ok(startTalkSource.indexOf(emptyTalkOpenerGuard) < startTalkSource.indexOf('kvSet(db, "talk_session", {'), "empty talk openers must fail before storing a talk session");
+assert.match(startTalkSource, /const budget = Object\.fromEntries\(Object\.entries\(TALK_BUDGET\)\.filter\(\(\[b\]\) => clients\[b\]\)\);\s*budget\[proposer\]--;/, "talk sessions must budget only connected bots and charge the proposer");
+assert.match(startTalkSource, /nextAt: Date\.now\(\) \+ rand\(\.\.\.TALK_GAP_S\) \* 1000/, "talk sessions must schedule the next turn within TALK_GAP_S");
 const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot.indexOf("\n// ---------- 프로젝트 목록", bot.indexOf("async function talkStep() {")));
 assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
 assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");
@@ -735,6 +739,7 @@ assert.match(scheduleTalkSource, /if \(Date\.now\(\) - sess\.startedAt > 3 \* 3_
 const talkFailureRecovery = 'talkStep().catch((e) => { fail("bot-talk", e); const s2 = kvGet(db, "talk_session"); if (s2) { kvSet(db, "talk_session", { ...s2, nextAt: Date.now() + 120_000 }); scheduleTalk(); } })';
 assert.ok(scheduleTalkSource.includes(talkFailureRecovery), "talk-step failures must keep the session, retry in 120 seconds, and reschedule");
 assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ 30_000 \}\); return scheduleTalk\(\); \}/, "talkStep must disable a bot and reschedule when its reply has no text");
+assert.match(talkStepSource, /if \(!closing\) \{ kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ rand\(\.\.\.TALK_GAP_S\) \* 1000 \}\); return scheduleTalk\(\); \}/, "non-closing talk steps must wait within TALK_GAP_S");
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
 assert.match(refreshProjectsSource, /threadsSince\(\[ids\.showcase\], Date\.now\(\) - 180 \* L\.DAY_MS\)/, "project list must read showcase threads from the last 180 days");

@@ -761,6 +761,7 @@ assert.match(talkStepSource, /if \(!d\?\.text\) \{ sess\.budget\[who\] = 0; kvSe
 assert.match(talkStepSource, /if \(!closing\) \{ kvSet\(db, "talk_session", \{ \.\.\.sess, nextAt: Date\.now\(\) \+ rand\(\.\.\.TALK_GAP_S\) \* 1000 \}\); return scheduleTalk\(\); \}/, "non-closing talk steps must wait within TALK_GAP_S");
 
 const refreshProjectsSource = bot.slice(bot.indexOf("async function refreshProjects() {"), bot.indexOf("\n// ---------- GitHub code review", bot.indexOf("async function refreshProjects() {")));
+assert.ok(refreshProjectsSource.indexOf("if (!ids.projects) return;") < refreshProjectsSource.indexOf("const forum = await hub.channels.fetch(ids.showcase);"), "project list must return before fetching showcase when ids.projects is missing");
 assert.match(refreshProjectsSource, /threadsSince\(\[ids\.showcase\], Date\.now\(\) - 180 \* L\.DAY_MS\)/, "project list must read showcase threads from the last 180 days");
 const threadsSinceSource = bot.slice(bot.indexOf("async function threadsSince(parentIds, since) {"), bot.indexOf("\nasync function highlight", bot.indexOf("async function threadsSince(parentIds, since) {")));
 assert.match(threadsSinceSource, /for \(const id of parentIds\) archived\.push\(\.\.\.\(await \(await hub\.channels\.fetch\(id\)\)\.threads\.fetchArchived\(\{ limit: 50 \}\)/, "threadsSince must read archived threads for every requested parent");

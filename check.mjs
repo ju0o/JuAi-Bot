@@ -115,6 +115,8 @@ assert.ok(alertFounderSource.includes(alertCooldownGuard), "repeated Founder ale
 assert.ok(alertFounderSource.indexOf(alertCooldownGuard) < alertFounderSource.indexOf("kvSet(db, k, Date.now())"), "repeated Founder alerts must return before saving");
 assert.ok(alertFounderSource.indexOf(alertCooldownGuard) < alertFounderSource.indexOf("for (const f of founders"), "repeated Founder alerts must return before sending");
 assert.match(alertFounderSource, /content: `🚨 \*\*JuAi 알림\*\*[\s\S]*같은 알림은 3시간에 한 번만 보내요\./, "Founder DMs must say the same alert is sent only once every three hours");
+const statSource = bot.slice(bot.indexOf("const stat = (name) =>"), bot.indexOf("const isStaff =", bot.indexOf("const stat = (name) =>")));
+assert.match(statSource, /INSERT INTO usage\(user_id,day,count,last_at\)[\s\S]*`stat:\$\{name\}`[\s\S]*L\.quotaDay\(\)/, "weekly-report counters must write stat rows on quotaDay");
 const failSource = bot.slice(bot.indexOf("function fail"), bot.indexOf("\n/** Founder runs", bot.indexOf("function fail")));
 assert.match(failSource, /while \(recentErrors\.length && now - recentErrors\[0\] > 30 \* 60_000\) recentErrors\.shift\(\);/, "fail must drop errors older than 30 minutes");
 assert.match(failSource, /if \(recentErrors\.length >= 8\) alertFounder\("errors", `최근 30분 동안 오류가 \$\{recentErrors\.length\}번 났어요\./, "fail must alert Founder only after eight recent errors");
@@ -367,6 +369,7 @@ assert.match(onMessageSource, /db\.prepare\(`INSERT INTO usage[\s\S]*?`\)\.run\(
 assert.match(onMessageSource, /if \(L\.grantBonus\(db, m\.author\.id\)\) await m\.react\("🎁"\)\.catch\(\(\) => \{\}\);/, "feedback bonus must react with a gift only when grantBonus succeeds");
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
+assert.ok(summarizeThreadSource.indexOf('stat("스레드 요약")') < summarizeThreadSource.indexOf("const q = L.takeQuota"), "thread-summary usage must be recorded before taking quota");
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
 assert.match(summarizeThreadSource, /if \(!q\.ok\) return say\("OPENCODE", m\.channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\}\);/, "failed thread-summary quota must return its quota message");
 assert.ok(summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf("const msgs =") && summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf('ai("opencode"'), "failed thread-summary quota must return before fetching messages or calling AI");
@@ -391,17 +394,20 @@ assert.ok(answerSource.indexOf("if (!q.ok) return say(") < answerSource.indexOf(
 assert.match(answerSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?sayLong\([^;]*text \+ footer/, "answer quota footer must be finite-only");
 assert.match(answerSource, /ai\(ENGINE\[who\], prompt\)\)\.catch\(\(e\) => \{ fail\(`answer\/\$\{who\}`, e\); return "지금은 답을 못 만들었어요\. 잠시 뒤에 다시 물어봐 주세요\."; \}\)/, "answer must send the Korean fallback when ai fails");
 const labQuestionSource = bot.slice(bot.indexOf("async function labQuestion(m) {"), bot.indexOf("\nasync function threadChat(m) {"));
+assert.ok(labQuestionSource.indexOf('stat("연구실 질문")') < labQuestionSource.indexOf("startThread("), "lab-question usage must be recorded before opening a thread");
 assert.match(labQuestionSource, /m\.startThread\(\{ name: m\.content\.replace\(\/\\s\+\/g, " "\)\.slice\(0, 50\) \|\| "질문", autoArchiveDuration: 1440 \}\)/, "lab questions must open a 50-character, 1440-minute thread");
 assert.ok(labQuestionSource.indexOf("startThread(") < labQuestionSource.indexOf("await faqReply("), "lab questions must open the thread before checking FAQ");
 assert.match(labQuestionSource, /if \(await faqReply\([\s\S]*?\)\) return;\s+await answer\(/, "lab questions must return after a reused FAQ answer before calling answer");
 assert.ok(labQuestionSource.includes("-# 이걸로 해결이 안 되면 이 스레드에 한 번 더 써 주세요. AI가 이어서 답해요. (이번엔 질문 횟수를 안 썼어요)"), "lab FAQ reuse must pass the no-question-spent follow-up");
 const faqReplySource = bot.slice(bot.indexOf("async function faqReply(question, channelId, who, followUp) {"), bot.indexOf("\n// ---------- DM:", bot.indexOf("async function faqReply(question, channelId, who, followUp) {")));
 assert.match(faqReplySource, /const hit = L\.bestFaq\([\s\S]*?\); if \(!hit\) return false;/, "faq miss must return false");
+assert.ok(faqReplySource.indexOf('stat("FAQ 재사용")') > faqReplySource.indexOf("if (!hit) return false;") && faqReplySource.indexOf('stat("FAQ 재사용")') < faqReplySource.indexOf("await say("), "FAQ reuse usage must follow a hit and precede its reply");
 assert.ok(faqReplySource.indexOf("if (!hit) return false;") < faqReplySource.indexOf("await say("), "faq miss must return before posting");
 assert.doesNotMatch(faqReplySource, /takeQuota/, "FAQ reuse must not take quota");
 assert.match(faqReplySource, /📚 \*\*비슷한 질문이 예전에 해결됐어요\*\*/, "FAQ hit must post the existing similar-question notice");
 assert.ok(faqReplySource.includes("\\n\\n${followUp}`"), "FAQ hits must post their caller-provided follow-up");
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
+assert.ok(threadChatSource.indexOf('stat("스레드 대화")') < threadChatSource.indexOf("messages.fetch"), "thread-chat usage must be recorded before fetching history");
 assert.match(threadChatSource, /await m\.channel\.messages\.fetch\(\{ limit: 11 \}\)/, "threadChat must fetch recent thread messages");
 assert.match(threadChatSource, /const history = [\s\S]*?await answer\(m, m\.channelId, "OPENCODE", history, undefined\);/, "threadChat must pass fetched history to OpenCode answer");
 assert.match(threadChatSource, /const starter = m\.channel\.parentId === ids\.picks \? await m\.channel\.fetchStarterMessage\(\)\.catch\(\(\) => null\) : null;/, "picks thread replies must fetch the starter message");
@@ -661,6 +667,10 @@ assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.index
 assert.ok(subscribeSource.indexOf(subscriptionCancelGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cancel must return before insertion");
 assert.match(subscribeSource, /if \(mine\(\)\.length >= L\.SUB_MAX && !mine\(\)\.includes\(kw\)\) return reply\(`구독은 \$\{L\.SUB_MAX\}개까지예요\./, "subscription max must return the cap reply for a new keyword");
 assert.ok(subscribeSource.indexOf(subscriptionCapGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription cap reply must precede keyword insertion");
+assert.ok(subscribeSource.indexOf(subscriptionInsert) < subscribeSource.indexOf('stat("키워드 구독")'), "subscription usage must follow insertion");
+for (const guard of [subscriptionListGuard, subscriptionCancelGuard, subscriptionKeywordValidation, subscriptionCapGuard]) {
+  assert.ok(subscribeSource.indexOf(guard) < subscribeSource.indexOf('stat("키워드 구독")'), `${guard} must return before subscription usage`);
+}
 assert.ok(subscribeSource.includes(subscriptionConfirmation), "subscription must keep the existing keyword confirmation");
 assert.ok(subscribeSource.indexOf(subscriptionInsert) < subscribeSource.indexOf(subscriptionConfirmation), "subscription confirmation must follow insertion");
 const notifySubsSource = bot.slice(bot.indexOf("async function notifySubs("), bot.indexOf("\n// ---------- 봇 놀이터", bot.indexOf("async function notifySubs(")));
@@ -712,6 +722,10 @@ assert.match(onDirectSource, /\$\{askerContext\(m\.author\.id, member\)\}/, "DM 
 assert.match(onDirectSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return reply\(L\.quotaMessage\(q\)\);/, "DM quota refusal must return quotaMessage");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf('ai("opencode"'), "DM quota refusal must return before calling ai");
 assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf("for (const part of L.chunk"), "DM quota refusal must return before sending answer chunks");
+assert.ok(onDirectSource.indexOf("if (!q.ok) return reply(L.quotaMessage(q));") < onDirectSource.indexOf('stat("익명 질문")'), "anonymous-question usage must follow successful quota");
+assert.ok(onDirectSource.indexOf('stat("익명 질문")') < onDirectSource.indexOf('stat("DM 대화")'), "anonymous-question usage must precede DM-chat usage");
+assert.ok(onDirectSource.indexOf('stat("DM 대화")') < onDirectSource.indexOf("messages.fetch"), "DM-chat usage must precede history fetch");
+assert.ok(onDirectSource.indexOf('stat("DM 대화")') < onDirectSource.indexOf("sendTyping"), "DM-chat usage must precede typing");
 assert.match(onDirectSource, /const footer = Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : "";[\s\S]*?L\.chunk\(answer \+ footer\)/, "DM quota footer must be finite-only");
 assert.match(onDirectSource, /ai\("opencode",[\s\S]*?\.catch\(\(e\) => \{ fail\("dm\/answer", e\); return "지금은 답을 못 만들었어요\. 잠시 뒤에 다시 보내주세요\."; \}\)/, "DM answers must send the Korean fallback when ai fails");
 const shortAnonGuard = "if (anon && anon[1].trim().length < L.ANON_MIN) return anonymousQuestion(m, anon[1].trim(), undefined, reply);";
@@ -743,6 +757,7 @@ const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");
+assert.ok(reviewRequestSource.indexOf('stat("리뷰 요청")') < reviewRequestSource.indexOf("if (!source) return send("), "review usage must be recorded before the missing-link return");
 assert.match(reviewRequestSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return send\(L\.quotaMessage\(q\)\);/, "review quota refusal must return quotaMessage");
 assert.ok(reviewRequestSource.indexOf("if (!q.ok) return send(L.quotaMessage(q));") < reviewRequestSource.indexOf("const repo = await resolveRepo(source);"), "review quota refusal must return before resolving the repository");
 assert.ok(reviewRequestSource.indexOf("if (!q.ok) return send(L.quotaMessage(q));") < reviewRequestSource.indexOf('const text = await ai("opencode"'), "review quota refusal must return before calling ai");
@@ -761,6 +776,10 @@ assert.match(requestTalkSource, /if \(topic\.length < L\.TALK_TOPIC_MIN\) return
 assert.match(requestTalkSource, /if \(db\.prepare\("SELECT count\(\*\) n FROM talk_requests WHERE user_id=\? AND used=0"\)\.get\(m\.author\.id\)\.n >= L\.TALK_PENDING_MAX\) return reply\(/, "full talk queues must return before insertion");
 assert.ok(requestTalkSource.indexOf("topic.length < L.TALK_TOPIC_MIN") < requestTalkSource.indexOf(talkInsert), "short talk guard must precede insertion");
 assert.ok(requestTalkSource.indexOf("n >= L.TALK_PENDING_MAX") < requestTalkSource.indexOf(talkInsert), "pending talk guard must precede insertion");
+assert.ok(requestTalkSource.indexOf(talkInsert) < requestTalkSource.indexOf('stat("봇수다 신청")'), "talk-request usage must follow insertion");
+for (const guard of ["topic.length < L.TALK_TOPIC_MIN", "n >= L.TALK_PENDING_MAX"]) {
+  assert.ok(requestTalkSource.indexOf(guard) < requestTalkSource.indexOf('stat("봇수다 신청")'), `${guard} must return before talk-request usage`);
+}
 const talkDb = new DatabaseSync(":memory:"); talkDb.exec(SCHEMA);
 const talkReplies = [];
 const requestTalk = Function("db", "L", "stat", "say", "ids", `${requestTalkSource}; return requestTalk;`)(

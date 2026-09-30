@@ -584,6 +584,8 @@ const opsReportSource = bot.slice(bot.indexOf("async function opsReport() {"), b
 assert.match(opsReportSource, /await say\("CLAUDE", ids\.staff,/, "ops report must post to the staff channel");
 assert.match(opsReportSource, /\.\.\.answerQuality\(since\)/, "ops report must include answer quality");
 assert.match(opsReportSource, /sum\("reject:\*"\) > 10 \? "-# 한도 초과가 많아요\. #운영진에 \\\"하루 한도 7회로 올려줘\\\"라고 말하면 바꿔드려요\." : ""/, "ops report must include the quota-pressure footnote only above ten rejects");
+assert.match(opsReportSource, /\[\["showcase", "쇼케이스"\], \["feedback", "피드백"\], \["qa", "질문"\], \["coproject", "공동 프로젝트"\], \["suggest", "건의"\]\]/, "ops report must include new-post counts for all five community areas");
+assert.match(opsReportSource, /SELECT substr\(user_id,6\) name, SUM\(count\) n FROM usage WHERE user_id LIKE 'stat:%' AND day>=\? GROUP BY user_id ORDER BY n DESC/, "ops report must read feature usage from stat rows");
 assert.match(opsReportSource, /\|\| "아직 없음"/, "ops report must say 아직 없음 when there are no feature-usage rows");
 assert.match(answerQualitySource, /HAVING down>0/, "answer quality downvote query must keep only answers with downvotes");
 assert.match(answerQualitySource, /if \(!byModel\.length && !faqNew\) return \[\];/, "answer quality must return an empty list when there are no votes or new FAQs");

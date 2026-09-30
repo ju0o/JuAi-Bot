@@ -405,6 +405,11 @@ assert.ok(faqReplySource.indexOf('stat("FAQ 재사용")') > faqReplySource.index
 assert.ok(faqReplySource.indexOf("if (!hit) return false;") < faqReplySource.indexOf("await say("), "faq miss must return before posting");
 assert.doesNotMatch(faqReplySource, /takeQuota/, "FAQ reuse must not take quota");
 assert.match(faqReplySource, /📚 \*\*비슷한 질문이 예전에 해결됐어요\*\*/, "FAQ hit must post the existing similar-question notice");
+const faqQuestionTrim = 'hit.question.replace(/\\s+/g, " ").slice(0, 120)';
+const faqAnswerTrim = 'hit.answer.replace(/-# .*$/gm, "").slice(0, 500)';
+const faqReplyCall = faqReplySource.slice(faqReplySource.indexOf("await say("));
+assert.ok(faqReplyCall.includes(faqQuestionTrim), "FAQ replies must collapse question whitespace and cap it at 120 characters");
+assert.ok(faqReplyCall.includes(faqAnswerTrim), "FAQ replies must strip footer lines and cap the stored answer at 500 characters");
 assert.ok(faqReplySource.includes("\\n\\n${followUp}`"), "FAQ hits must post their caller-provided follow-up");
 const threadChatSource = bot.slice(bot.indexOf("async function threadChat(m) {"), bot.indexOf("\n// ---------- forum posts"));
 assert.ok(threadChatSource.indexOf('stat("스레드 대화")') < threadChatSource.indexOf("messages.fetch"), "thread-chat usage must be recorded before fetching history");

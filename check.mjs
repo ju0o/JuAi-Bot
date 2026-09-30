@@ -597,6 +597,7 @@ assert.ok(rememberAnswerSource.indexOf("if (!msg) return;") < rememberAnswerSour
 assert.ok(rememberAnswerSource.indexOf("if (!msg) return;") < rememberAnswerSource.indexOf(answerReactions), "missing answers must return before reactions");
 assert.ok(rememberAnswerSource.includes('question.replace(/<@!?\\d+>/g, "").trim().slice(0, 1000)'), "answer questions must be capped at 1000 characters");
 assert.match(rememberAnswerSource, /text\.slice\(0, 3000\)/, "answers must be capped at 3000 characters");
+assert.match(rememberAnswerSource, /\.run\(msg\.id,[\s\S]*AI\.lastModel \|\| "", Date\.now\(\)\);/, "answers must store the last AI model or an empty string");
 assert.match(rememberAnswerSource, /for \(const e of \["👍", "👎"\]\) msg\.react\(e\)\.catch\(\(\) => \{\}\);/, "answers must get both thumbs-up and thumbs-down reactions");
 const addFaqSource = bot.slice(bot.indexOf("function addFaq("), bot.indexOf("\nasync function onVote(", bot.indexOf("function addFaq(")));
 assert.match(addFaqSource, /INSERT OR IGNORE INTO faq\(source,question,answer,url,at\)/, "FAQ insertion must ignore duplicate sources");

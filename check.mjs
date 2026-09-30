@@ -512,6 +512,12 @@ assert.ok(repoContextSource.indexOf('if (!meta || meta.private) return null;') <
 assert.match(repoContextSource, /const manifest = files\.find\(\(f\) => \["package\.json", "pyproject\.toml", "requirements\.txt", "Cargo\.toml", "go\.mod"\]\.includes\(f\.name\)\);/, "repoContext must recognize exactly the supported dependency manifests");
 assert.match(repoContextSource, /meta\.stargazers_count/, "repoContext must include the repository star count");
 assert.match(repoContextSource, /meta\.pushed_at/, "repoContext must include the last push date");
+assert.match(repoContextSource, /meta\.language/, "repoContext must include the repository language");
+assert.match(repoContextSource, /meta\.description \|\| \"\(없음\)\"/, "repoContext must use (없음) when the description is missing");
+assert.match(repoContextSource, /f\.type === \"dir\" \? `\$\{f\.name\}\/` : f\.name/, "repoContext must mark directories with a trailing slash");
+assert.match(repoContextSource, /\.join\(\", \"\)\.slice\(0, 1200\)/, "repoContext must cap the file list at 1200 characters");
+assert.match(repoContextSource, /readme\.slice\(0, 6000\)/, "repoContext must cap the README at 6000 characters");
+assert.match(repoContextSource, /Accept: \"application\/vnd\.github\.raw\"/, "repoContext must request the README with the raw GitHub accept header");
 assert.match(repoContextSource, /manifest \? await fetch\(manifest\.download_url\)/, "repoContext must fetch the manifest body from its download URL");
 assert.match(repoContextSource, /manifestText\.slice\(0, 2000\)/, "repoContext must include the fetched manifest body in the review context");
 const resolveRepoSource = bot.slice(bot.indexOf("async function resolveRepo(text) {"), bot.indexOf("\n/** \"리뷰해줘\"", bot.indexOf("async function resolveRepo(text) {")));

@@ -132,6 +132,9 @@ assert.match(agentRoleSource, /if \(!member\) console\.warn\(`! 봇 \$\{id\}가 
 assert.equal((agentRoleSource.match(/member\.roles\.add\(roles\.agent\)/g) ?? []).length, 1, "setup must have one guarded AI 에이전트 role addition");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
+assert.match(approvalCardSource, /\.setTitle\(title\.slice\(0, 250\)\)/, "cardView must slice the title to 250 characters");
+assert.match(approvalCardSource, /\.setDescription\(body\.slice\(0, 4000\)\)/, "cardView must slice the description to 4000 characters");
+assert.match(approvalCardSource, /\.setColor\(status \? 0x8a909c : 0x2f7d6d\)/, "cardView must use color 0x2f7d6d when status is absent and 0x8a909c when status is present");
 assert.match(approvalCardSource, /if \(status\) embed\.setFooter\(\{ text: status \}\);/, "decided approval cards must show their status in the footer");
 assert.match(approvalCardSource, /components: status \? \[\] : \[buttons\]/, "decided approval cards must drop their action buttons");
 const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));

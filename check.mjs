@@ -267,6 +267,19 @@ assert.ok(onMessageSource.indexOf(messageGuildGuard) < onMessageSource.indexOf("
 assert.ok(onMessageSource.indexOf("if (m.type === MessageType.UserJoin) return welcome(m);") < onMessageSource.indexOf("if (m.author.bot || m.system) return;"), "member joins must welcome before other message handling");
 assert.match(welcomeSource, /new ActionRowBuilder\(\)\.addComponents\([\s\S]*setCustomId\("profile"\)/, "member joins must create a profile button");
 assert.match(welcomeSource, /say\("COMMANDCODE"[\s\S]*components: \[row\]/, "member joins must send the profile button through CommandCode");
+const welcomeSteps = [
+  "**이렇게 시작해보세요**",
+  "1. <#${ids.lab}>에 지금 막힌 거 하나 물어보기 → AI가 스레드에서 답해요",
+  "2. 만들고 있는 게 있다면 <#${ids.showcase}>에 올리기 → GitHub 링크면 코드 리뷰도 달려요",
+  "3. <#${ids.picks}> 오늘의 추천 스레드 구경하기",
+  "-# 전체 사용법은 <#${ids.guide}>에 있어요.",
+];
+let welcomeStepAt = -1;
+for (const step of welcomeSteps) {
+  const next = welcomeSource.indexOf(step);
+  assert.ok(next > welcomeStepAt, `member welcome must keep the ordered start step: ${step}`);
+  welcomeStepAt = next;
+}
 assert.match(welcomeSource, /setTimeout\(\(\) => void loungeWelcome\(m\.author\.id\)\.catch\([\s\S]*60_000\)/, "member joins must schedule the lounge welcome after 60 seconds");
 const loungeWelcomeSource = bot.slice(bot.indexOf("async function loungeWelcome(uid) {"), bot.indexOf("\nconst ROLE_GROUPS", bot.indexOf("async function loungeWelcome(uid) {")));
 assert.match(loungeWelcomeSource, /const member = await guild\.members\.fetch\(uid\)\.catch\(\(\) => null\); if \(!member\) return;/, "lounge welcome must return when the member is missing");

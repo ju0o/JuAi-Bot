@@ -780,6 +780,9 @@ const projectEdit = refreshProjectsSource.indexOf("await m.edit({ content: texts
 const projectDelete = refreshProjectsSource.indexOf("await m.delete().catch(() => {});");
 assert.match(refreshProjectsSource, /if \(prev\.length === texts\.length && prev\.every\(Boolean\)\) \{[\s\S]*?for \(const \[n, m\] of prev\.entries\(\)\) await m\.edit\(/, "project list must edit existing messages when chunk counts match");
 assert.ok(projectEdit >= 0 && projectEdit < projectDelete, "project list must edit matching messages before deleting old ones");
+assert.match(refreshProjectsSource, /for \(const m of prev\.filter\(Boolean\)\) await m\.delete\(\)\.catch\(\(\) => \{\}\);[\s\S]*const ids2 = \[\]; for \(const t of texts\) ids2\.push\(\(await ch\.send\(\{ content: t, allowedMentions: NO_PING \}\)\)\.id\);[\s\S]*kvSet\(db, "projects_messages", ids2\);/, "project list must replace mismatched messages without pings and store the new ids");
+const projectEditReturn = refreshProjectsSource.indexOf("return;", projectEdit);
+assert.ok(projectEditReturn >= 0 && projectEditReturn < projectDelete, "project list replacement must stay after the edit-in-place return");
 
 assert.equal(new Set(CHANNELS.map(({ key }) => key)).size, CHANNELS.length);
 assert.equal(new Set(ROLES.map(({ key }) => key)).size, ROLES.length);

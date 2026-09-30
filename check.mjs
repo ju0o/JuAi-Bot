@@ -769,6 +769,9 @@ assert.ok(onDirectSource.includes("if (!text || /^!?(도움말|help)$/i.test(tex
 assert.ok(onDirectSource.indexOf(shortAnonGuard) < onDirectSource.indexOf("const q = L.takeQuota"), "short anonymous questions must skip quota before takeQuota");
 assert.match(onDirectSource, /isStaff\(member\)\s*\?\s*"운영진은 AI 질문 횟수 제한이 없어요\."\s*:\s*`오늘 남은 질문 \*\*\$\{q\.left\}\/\$\{q\.total\}\*\* · 매일 오전 9시 충전`/, "DM quota response must branch on staff status");
 assert.ok(onDirectSource.indexOf("if (REVIEW_ASK.test(text)) return reviewRequest(m, reply, member);") < onDirectSource.indexOf("const q = L.takeQuota"), "DM review requests must be handled before taking quota");
+assert.match(onDirectSource, /1:1 대화 기록:\\n\$\{history\.join\("\\n"\)/, "DM prompts must put prior turns under the 1:1 conversation history label");
+assert.ok(onDirectSource.includes('x.author.id === oc.user.id ? "OpenCode" : "나"'), "DM history must label the bot OpenCode and the member 나");
+assert.match(onDirectSource, /messages\.fetch\(\{ limit: 11 \}\)[\s\S]*?filter\(\(x\) => x\.id !== m\.id\)/, "DM history must exclude the current message");
 const dmHelpSource = bot.slice(bot.indexOf("const DM_HELP = `"), bot.indexOf("\n\nasync function onDirect"));
 assert.match(dmHelpSource, /하루 질문 횟수 공유/, "DM_HELP must state the shared daily quota");
 const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));

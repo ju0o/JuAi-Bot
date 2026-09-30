@@ -124,6 +124,12 @@ assert.equal((await findGuild(offlineGuildClient(namedGuilds))).id, "2", "setup 
 const configuredFindGuild = Function("env", `${setup.match(/export async function findGuild\(client\) \{[\s\S]*?\n\}/)?.[0].replace("export ", "")}; return findGuild;`)({ JUAI_GUILD_ID: "1" });
 assert.equal((await configuredFindGuild(offlineGuildClient(namedGuilds))).id, "1", "setup must prefer the configured guild id");
 await assert.rejects(() => findGuild(offlineGuildClient([{ id: "3", name: "Other" }])), /JuAi 서버를 못 찾았어요/, "setup must explain when no guild matches");
+const agentRoleSource = setup.slice(setup.indexOf("for (const key of Object.values(BOTS))"), setup.indexOf("\n\n  const everyone", setup.indexOf("for (const key of Object.values(BOTS))")));
+assert.match(agentRoleSource, /const member = await guild\.members\.fetch\(id\)\.catch\(\(\) => null\);/, "setup must check whether each bot is already in the guild");
+assert.match(agentRoleSource, /if \(member && !member\.roles\.cache\.has\(roles\.agent\.id\)\) await member\.roles\.add\(roles\.agent\)/, "setup must add the AI 에이전트 role only to an existing bot member");
+assert.ok(agentRoleSource.indexOf("const member = await guild.members.fetch(id)") < agentRoleSource.indexOf("member.roles.add(roles.agent)"), "setup must fetch the bot member before adding the AI 에이전트 role");
+assert.match(agentRoleSource, /if \(!member\) console\.warn\(`! 봇 \$\{id\}가 아직 서버에 없어요 \(초대 링크를 눌러주세요\)`\);/, "setup must keep the existing warning when a bot is absent");
+assert.equal((agentRoleSource.match(/member\.roles\.add\(roles\.agent\)/g) ?? []).length, 1, "setup must have one guarded AI 에이전트 role addition");
 const approvalCardSource = bot.slice(bot.indexOf("function cardView"), bot.indexOf("\nasync function createCard"));
 assert.deepEqual([...approvalCardSource.matchAll(/\.setLabel\("([^"]+)"\)/g)].map(([, label]) => label), ["승인", "보류", "더 생각"], "approval cards must have exactly the three allowed actions");
 assert.match(approvalCardSource, /if \(status\) embed\.setFooter\(\{ text: status \}\);/, "decided approval cards must show their status in the footer");

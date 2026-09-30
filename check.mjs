@@ -591,6 +591,10 @@ assert.ok(answerQualitySource.indexOf("if (!byModel.length && !faqNew) return []
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 1 && h >= 10\) \{[\s\S]*?await job\(`weekly:\$\{today\}`, weekly\); await job\(`ops:\$\{today\}`, opsReport\); \}/, "weekly and ops reports must share the Monday 10:00 KST gate");
 assert.equal([...tickSource.matchAll(/job\(`(?:weekly|ops):\$\{today\}`/g)].length, 2, "weekly and ops reports must only be scheduled in their shared branch");
 assert.match(tickSource, /if \(L\.kstDay\(now\) === 5 && h >= 18\) await job\(`highlight:\$\{today\}`, highlight\);/, "weekly highlight must be scheduled from Friday 18:00 KST");
+assert.ok(GUIDE(() => "#channel").some((message) => message.includes("매주 월요일 TOP 5")), "guide must keep the Monday TOP 5 schedule");
+assert.ok(GUIDE(() => "#channel").some((message) => message.includes("매주 금요일 하이라이트")), "guide must keep the Friday highlight schedule");
+const staffGuide = STAFF_GUIDE(() => "#channel");
+for (const schedule of ["월 10시", "금 18시", "매달 1일"]) assert.ok(staffGuide.includes(schedule), `staff guide must keep the ${schedule} schedule`);
 const highlightSource = bot.slice(bot.indexOf("async function highlight() {"), bot.indexOf("\nfunction answerQuality", bot.indexOf("async function highlight() {")));
 assert.match(highlightSource, /threadsSince\(\[ids\.showcase, ids\.feedback\], Date\.now\(\) - 7 \* L\.DAY_MS\)/, "highlight must rank recent showcase and feedback threads");
 assert.match(highlightSource, /fetchStarterMessage\(\)[\s\S]*?if \(!s \|\| s\.author\.bot\) continue;/, "highlight must skip bot-authored starters");

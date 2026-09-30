@@ -247,6 +247,11 @@ assert.ok(suggestUsageSource.includes('const gh = db.prepare("SELECT github FROM
 assert.ok(spamSource.indexOf("if (isStaff(m.member)) return false;") < spamSource.indexOf("L.isSpam("), "staff must skip spam detection");
 assert.match(spamSource, /const list = \(recent\.get\(m\.author\.id\) \|\| \[\]\)\.filter\(\(x\) => now - x\.at < L\.SPAM_WINDOW_MS\);/, "spam must drop stored messages older than SPAM_WINDOW_MS");
 assert.ok(spamSource.indexOf(".filter((x) => now - x.at < L.SPAM_WINDOW_MS)") < spamSource.indexOf("L.isSpam(m.content, list"), "spam must prune old messages before checking for spam");
+const spamPush = "list.push({ c: m.content, ch: m.channelId, id: m.id, at: now });";
+const spamStore = "recent.set(m.author.id, list);";
+assert.ok(spamSource.includes(spamPush) && spamSource.includes(spamStore), "spam must push the current message and store the recent list");
+assert.ok(spamSource.indexOf(spamPush) < spamSource.indexOf("L.isSpam(m.content, list"), "spam must include the current message before checking for spam");
+assert.ok(spamSource.indexOf(spamStore) < spamSource.indexOf("L.isSpam(m.content, list"), "spam must store the current message before checking for spam");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?for \(const x of list\.filter\(\(x\) => x\.c === m\.content\)\)[\s\S]*?messages\.delete\(x\.id\)/, "spam must delete messages matching the detected content");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?await m\.member\?\.timeout\(L\.SPAM_TIMEOUT_MS,/, "spam must time out detected members for SPAM_TIMEOUT_MS");
 assert.match(spamSource, /if \(!L\.isSpam\(m\.content, list, m\.member\?\.joinedTimestamp, now\)\) return false;[\s\S]*?await createCard\("spam",/, "spam must create a spam card after detection");

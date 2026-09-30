@@ -250,6 +250,10 @@ assert.match(profileModalSource, /input\("making",[\s\S]*TextInputStyle\.Paragra
 assert.match(profileModalSource, /input\("github",[\s\S]*TextInputStyle\.Short, false, 200,/, "GitHub profile field must keep the 200-character limit");
 assert.ok(interactionSource.indexOf('if (i.isButton() && i.customId === "profile")') < interactionSource.indexOf("const [tag, rawId, verb]"), "profile button must open the modal before card handling");
 assert.match(interactionSource, /if \(i\.isButton\(\) && i\.customId === "profile"\) \{[\s\S]*return i\.showModal\(profileModal\(/, "profile button must show the profile modal");
+assert.match(profileModalSource, /new ModalBuilder\(\)\.setCustomId\("profile_modal"\)\.setTitle\("JuAi 프로필"\)/, "profile form must keep the profile_modal custom id the submit handler matches");
+const profileSubmit = 'if (i.isModalSubmit() && i.customId === "profile_modal") return saveProfile(i);';
+assert.ok(interactionSource.includes(profileSubmit), "a profile_modal submit must run saveProfile");
+assert.ok(interactionSource.indexOf(profileSubmit) < interactionSource.indexOf("const [tag, rawId, verb]"), "profile modal submits must be saved before card handling");
 const saveProfileSource = bot.slice(bot.indexOf("async function saveProfile(i) {"), bot.indexOf("\n/** First profile", bot.indexOf("async function saveProfile(i) {")));
 assert.match(saveProfileSource, /await i\.deferReply\(\{ flags: MessageFlags\.Ephemeral \}\);/, "profile saves must defer an ephemeral reply");
 assert.match(saveProfileSource, /\.addFields\(\{ name: "SNS", value: sns \}, \{ name: "만드는 것", value: making \|\| "-" \}, \.\.\.\(github \? \[\{ name: "링크", value: github \}\] : \[\]\)\)/, "profile embeds must omit the link field when GitHub is empty");

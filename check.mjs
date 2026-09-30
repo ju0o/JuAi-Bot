@@ -692,6 +692,22 @@ assert.match(requestTalkSource, /if \(topic\.length < L\.TALK_TOPIC_MIN\) return
 assert.match(requestTalkSource, /if \(db\.prepare\("SELECT count\(\*\) n FROM talk_requests WHERE user_id=\? AND used=0"\)\.get\(m\.author\.id\)\.n >= L\.TALK_PENDING_MAX\) return reply\(/, "full talk queues must return before insertion");
 assert.ok(requestTalkSource.indexOf("topic.length < L.TALK_TOPIC_MIN") < requestTalkSource.indexOf(talkInsert), "short talk guard must precede insertion");
 assert.ok(requestTalkSource.indexOf("n >= L.TALK_PENDING_MAX") < requestTalkSource.indexOf(talkInsert), "pending talk guard must precede insertion");
+const talkDb = new DatabaseSync(":memory:"); talkDb.exec(SCHEMA);
+const talkReplies = [];
+const requestTalk = Function("db", "L", "stat", "say", "ids", `${requestTalkSource}; return requestTalk;`)(
+  talkDb,
+  { TALK_TOPIC_MIN, TALK_TOPIC_MAX, TALK_PENDING_MAX },
+  () => {},
+  async (_who, _channelId, payload) => talkReplies.push(payload),
+  { playground: "playground-id" },
+);
+await requestTalk({ author: { id: "member-1" }, channelId: "chat-id", id: "message-1" }, "!봇수다 AI가 짠 코드 믿어도 될까");
+const talkRequest = talkDb.prepare("SELECT user_id, topic, used FROM talk_requests").get();
+assert.equal(talkRequest.user_id, "member-1", "valid talk requests must insert the requester");
+assert.equal(talkRequest.topic, "AI가 짠 코드 믿어도 될까", "valid talk requests must insert the topic");
+assert.equal(talkRequest.used, 0, "new talk requests must wait unused");
+assert.equal(talkReplies.length, 1, "valid talk requests must reply once");
+assert.equal(talkReplies[0].content, "🎙️ 신청 받았어요! <#playground-id>에서 봇들이 **AI가 짠 코드 믿어도 될까** 얘기를 할 거예요. (대기 1번째)", "talk acceptance must name the playground and wait position");
 
 const startTalkSource = bot.slice(bot.indexOf("async function startTalk() {"), bot.indexOf("\nfunction scheduleTalk()", bot.indexOf("async function startTalk() {")));
 assert.match(startTalkSource, /if \(kvGet\(db, "talk_session"\)\) return;/, "startTalk must return when a talk session already exists");

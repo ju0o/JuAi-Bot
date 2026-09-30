@@ -344,6 +344,10 @@ assert.match(saveProfileSource, /if \(!prev\) \{ stat\("프로필 작성"\); awa
 const suggestUsageSource = bot.slice(bot.indexOf("async function suggestUsage(i, profileMsg, making) {"), bot.indexOf("\n// ---------- spam", bot.indexOf("async function suggestUsage(i, profileMsg, making) {")));
 assert.ok(suggestUsageSource.indexOf('if (!L.takeQuota(db, "bot:forum", { staff: true }).ok) return;') < suggestUsageSource.indexOf("await ai("), "usage suggestions must return before AI when the shared forum quota fails");
 assert.ok(suggestUsageSource.includes('const gh = db.prepare("SELECT github FROM profiles WHERE user_id=?").get(i.user.id)?.github;') && suggestUsageSource.includes('gh && /github\\.com\\//i.test(gh)'), "usage suggestions must offer review only for saved GitHub links");
+assert.match(suggestUsageSource, /const linked = text\.replace\(\/\#\(\[\\w가-힣-\]\+\)\/g, \(all, n\) => \(chName\(n\) && ids\[chName\(n\)\.key\] \? `<#\$\{ids\[chName\(n\)\.key\]\}>` : all\)\);/, "usage suggestions must rewrite known channel names as mentions");
+assert.match(suggestUsageSource, /\(linked \+ offer\)\.slice\(0, 1900\)/, "usage suggestions must cap the post at 1900 characters");
+assert.match(suggestUsageSource, /reply: \{ messageReference: profileMsg\.id, failIfNotExists: false \}/, "usage suggestions must reply to the saved profile message");
+assert.ok(suggestUsageSource.includes('코드 리뷰나 피드백이 필요하면 언제든 이 글에 **"리뷰해줘"**라고 남겨주세요.'), "GitHub profile suggestions must keep the existing review offer");
 assert.ok(spamSource.indexOf("if (isStaff(m.member)) return false;") < spamSource.indexOf("L.isSpam("), "staff must skip spam detection");
 assert.match(spamSource, /const list = \(recent\.get\(m\.author\.id\) \|\| \[\]\)\.filter\(\(x\) => now - x\.at < L\.SPAM_WINDOW_MS\);/, "spam must drop stored messages older than SPAM_WINDOW_MS");
 assert.ok(spamSource.indexOf(".filter((x) => now - x.at < L.SPAM_WINDOW_MS)") < spamSource.indexOf("L.isSpam(m.content, list"), "spam must prune old messages before checking for spam");

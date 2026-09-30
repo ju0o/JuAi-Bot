@@ -1291,6 +1291,13 @@ assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='b
 assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='bonus:u1' AND day=?").get(quotaDay(bonusPruneNow - 10 * DAY_MS)).n, 1);
 assert.equal(bonusPruneDb.prepare("SELECT count(*) n FROM usage WHERE user_id='u2'").get().n, 0);
 
+const monthPruneDb = new DatabaseSync(":memory:"); monthPruneDb.exec(SCHEMA);
+const monthPruneNow = Date.parse("2026-09-25T00:00:00Z");
+monthPruneDb.exec("INSERT INTO usage VALUES ('monthly','2026-08',1,0), ('old-date','2026-07-01',1,0)");
+pruneState(monthPruneDb, monthPruneNow);
+assert.equal(monthPruneDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-08'").get().n, 1);
+assert.equal(monthPruneDb.prepare("SELECT count(*) n FROM usage WHERE day='2026-07-01'").get().n, 0);
+
 const faqRows = [{ id: 1, question: "Next.js 앱을 Vercel이랑 Railway 중 어디에 배포하는 게 나아?" }, { id: 2, question: "파이썬 리스트 뒤집는 방법" }];
 assert.equal(bestFaq([], "anything"), null);
 assert.equal(bestFaq(faqRows, "넥스트 앱 Vercel Railway 중에 어디 배포하는게 나아요?")?.id, 1);

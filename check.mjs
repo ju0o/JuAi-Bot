@@ -786,6 +786,8 @@ assert.match(startTalkSource, /nextAt: Date\.now\(\) \+ rand\(\.\.\.TALK_GAP_S\)
 const talkStepSource = bot.slice(bot.indexOf("async function talkStep() {"), bot.indexOf("\n// ---------- 프로젝트 목록", bot.indexOf("async function talkStep() {")));
 assert.match(talkStepSource, /b === "CLAUDE" \? n > 1 : n > 0/, "talkStep must keep one Claude turn in reserve");
 assert.match(talkStepSource, /const unfinished = d\.concluded === false && sess\.part < TALK_MAX_PARTS;[\s\S]*kvSet\(db, "talk_carry", unfinished \?/, "talkStep must carry only an unconcluded part below the maximum");
+assert.ok(talkStepSource.includes('unfinished ? "-# 다음 수다에서 이어서 해요. 보고 싶은 주제는 `!봇수다 주제`로 신청하세요."'), "unfinished talks must keep the existing footer");
+assert.ok(talkStepSource.includes(': `-# 보고 싶은 주제가 있으면 <#${ids.chat}>에서 \\`!봇수다 주제\\`로 신청하세요.`'), "finished talks must keep the existing footer");
 const scheduleTalkSource = bot.slice(bot.indexOf("function scheduleTalk() {"), bot.indexOf("\nasync function talkStep()", bot.indexOf("function scheduleTalk() {")));
 assert.match(scheduleTalkSource, /const sess = kvGet\(db, "talk_session"\); if \(!sess\) return;/, "scheduleTalk must return when no talk session exists");
 assert.match(scheduleTalkSource, /if \(Date\.now\(\) - sess\.startedAt > 3 \* 3_600_000\) \{ kvSet\(db, "talk_session", null\); return; \}/, "scheduleTalk must clear stale talk sessions");

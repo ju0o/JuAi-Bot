@@ -158,6 +158,9 @@ for (const engine of ["codex", "opencode", "commandcode"]) {
 const bwrapSource = ai.slice(ai.indexOf("const bwrap ="), ai.indexOf("\nfunction command"));
 assert.match(bwrapSource, /"--die-with-parent"/, "bwrap must die with its parent");
 assert.match(bwrapSource, /"--unshare-pid"/, "bwrap must isolate the process id namespace");
+assert.match(bwrapSource, /"--bind",\s*SANDBOX,\s*HOME/, "bwrap must bind-mount the sandbox directory over HOME");
+const claudeCommandSource = ai.slice(ai.indexOf('if (engine === "claude")'), ai.indexOf('if (engine === "codex")'));
+assert.match(claudeCommandSource, /path\.resolve\("data\/claude-cwd"\)/, "member Claude must run in data/claude-cwd");
 const codexCommandSource = ai.slice(ai.indexOf('if (engine === "codex")'), ai.indexOf('if (engine === "opencode")'));
 assert.match(codexCommandSource, /"-s", "read-only"/, "Codex must run read-only");
 assert.match(codexCommandSource, /"--ephemeral"/, "Codex must run ephemerally");

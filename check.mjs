@@ -446,6 +446,8 @@ const reviewPromptSource = bot.slice(bot.indexOf("const reviewPrompt ="), bot.in
 assert.match(reviewPromptSource, /코드 본문은 못 봤다는 걸 전제로/, "review prompt must say the code body was not read");
 assert.match(reviewPromptSource, /잘한 점 2개[\s\S]*개선하면 좋을 점 3개/, "review prompt must ask for two strengths and three improvements");
 const tickSource = bot.slice(bot.indexOf("async function tick() {"), bot.indexOf("\nawait connect();"));
+const staffGuard = tickSource.indexOf("if (!ids.staff) return;");
+assert.ok(staffGuard >= 0 && staffGuard < tickSource.indexOf("catchUp()") && staffGuard < tickSource.indexOf('kvSet(db, "last_seen"') && staffGuard < tickSource.indexOf("await job("), "tick must return without staff ids before catch-up, last-seen updates, or scheduled jobs");
 const bootstrapSource = bot.slice(bot.indexOf("async function bootstrap() {"), bot.indexOf("\nconst JOB_NAME"));
 assert.match(bootstrapSource, /const data = L\.extractJson\(out\); if \(!data\?\.rules\) throw new Error\("첫 규칙 초안을 못 읽었어요"\);/, "bootstrap must throw when the draft has no rules");
 assert.ok(bootstrapSource.indexOf("throw new Error(\"첫 규칙 초안을 못 읽었어요\")") < bootstrapSource.indexOf("await createCard("), "bootstrap must reject a rule-less draft before creating cards");

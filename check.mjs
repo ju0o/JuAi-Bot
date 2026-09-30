@@ -126,6 +126,9 @@ assert.match(thinkButtonSource, /return i\.showModal\(new ModalBuilder\(\)\.setC
 assert.ok(!thinkButtonSource.includes("setCard("), "the rethink button must not change the card before the comment is submitted");
 assert.match(interactionSource, /if \(tag === "think"\) return rethink\(i, card, i\.fields\.getTextInputValue\("comment"\)\);/, "the comment modal must submit through rethink");
 assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");
+assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*return i\.update\(cardView\(card\.id, card\.kind, title, body, `⏸ 보류 · \$\{L\.kstDate\(at\)\}에 다시 물어볼게요`\)\);/, "holding a card must update the card with the existing reminder status");
+assert.match(interactionSource, /await i\.deferUpdate\(\); setCard\(card\.id, "RUNNING"\);[\s\S]*const result = await execute\(card\);[\s\S]*setCard\(card\.id, "DONE"\); await i\.editReply\(cardView\(card\.id, card\.kind, title, body, `✅ 승인 · \$\{result\}`\)\);/, "successful approval must update the card with the execute result");
+assert.match(bot, /async function rethink\(i, card, comment\) \{[\s\S]*await i\.editReply\(cardView\(card\.id, card\.kind, title, body, `🔁 의견 반영 중: \$\{comment\.slice\(0, 100\)\}`\)\);[\s\S]*await createCard\(/, "rethink must update the card before creating its replacement");
 const cardGuard = 'if (!card || card.status !== "OPEN") return i.reply({ content: "이미 처리된 카드예요.", flags: MessageFlags.Ephemeral });';
 assert.ok(interactionSource.includes(cardGuard), "missing or non-OPEN cards must reply that they were already handled");
 assert.ok(interactionSource.indexOf(cardGuard) < interactionSource.indexOf("setCard("), "missing or non-OPEN cards must be rejected before any card update");

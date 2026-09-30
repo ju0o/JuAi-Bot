@@ -806,6 +806,9 @@ assert.ok(anonymousQuestionSource.includes("-# 해결이 안 되면 이 글에 �
 assert.match(anonymousQuestionSource, /\.catch\(\(e\) => \{ fail\("anon\/answer", e\); return null; \}\)/, "failed anonymous AI calls must return null");
 assert.match(anonymousQuestionSource, /if \(answer\) \{[\s\S]*?sayLong\("OPENCODE", thread\.id, answer\)[\s\S]*?rememberAnswer\(first, m\.author\.id, question, answer\);\s*\}/, "anonymous answers must post and remember only when answer exists");
 const reviewRequestSource = bot.slice(bot.indexOf("async function reviewRequest(m, send, member) {"), bot.indexOf("\nconst REVIEW_ASK"));
+const reviewAsk = Function(`return ${bot.match(/^const REVIEW_ASK = (.+);$/m)?.[1]}`)();
+for (const text of ["리뷰해줘", "리뷰해주세요", "리뷰 부탁해요", "!리뷰해줘"]) assert.equal(reviewAsk.test(text), true, `REVIEW_ASK must match ${text}`);
+for (const text of ["코드리뷰해줘", "미리뷰해줘"]) assert.equal(reviewAsk.test(text), false, `REVIEW_ASK must reject ${text}`);
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");

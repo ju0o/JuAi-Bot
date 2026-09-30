@@ -741,6 +741,8 @@ const solvedFaqInsert = onSolvedSource.indexOf("addFaq(");
 assert.ok(onSolvedSource.indexOf("if (!solved") < solvedFaqInsert, "solved FAQ insertion must skip when the 해결됨 tag does not exist");
 assert.ok(onSolvedSource.indexOf("before.appliedTags?.includes(solved)") < solvedFaqInsert, "solved FAQ insertion must skip an already-solved thread");
 assert.ok(onSolvedSource.indexOf("if (!best) return;") < solvedFaqInsert, "solved FAQ insertion must skip threads without an answer message");
+assert.match(onSolvedSource, /const best = msgs\.find\(\(x\) => x\.author\.bot\) \|\| msgs\.at\(-1\);/, "solved FAQ must prefer the first bot-authored reply and otherwise use the last message");
+assert.ok(onSolvedSource.indexOf("const best = msgs.find((x) => x.author.bot) || msgs.at(-1);") < solvedFaqInsert, "solved FAQ message selection must happen before insertion");
 assert.match(onSolvedSource, /addFaq\(`thread:\$\{after\.id\}`,/, "solved FAQ entries must use the thread source id");
 assert.ok(readme.includes(`멤버 AI 대화는 무료 모델만, 1인 기본 하루 ${LIMITS.daily}회(30자 이상 피드백 보너스는 다른 사람의 쇼케이스·피드백 글에 피드백을 달 때만 적용, 최대 +${LIMITS.bonusMax}) · ${LIMITS.gapMs / 1000}초 간격 · 서버 전체 하루 ${LIMITS.globalDaily}회 · 서버 주인(Founder)·운영진은 일일 제한 없음.`), "README quota safety line omits a limit or Founder/staff exemption");
 const onDirectSource = bot.slice(bot.indexOf("async function onDirect(m) {"), bot.indexOf("\nasync function anonymousQuestion", bot.indexOf("async function onDirect(m) {")));

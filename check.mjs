@@ -586,9 +586,12 @@ const subscriptionCancelGuard = 'if (cmd === "!구독취소") { const n = db.pre
 const subscriptionKeywordValidation = "if (!L.isValidSubKeyword(kw)) return reply(";
 const subscriptionCapGuard = "if (mine().length >= L.SUB_MAX && !mine().includes(kw)) return reply(";
 const subscriptionInsert = 'db.prepare("INSERT OR IGNORE INTO subs(user_id,keyword) VALUES(?,?)")';
+const subscriptionCancelSuccess = 'return reply(n ? `\\`${kw}\\` 구독을 껐어요.`';
 const subscriptionConfirmation = 'return reply(`🔔 \\`${kw}\\` 구독했어요!';
 assert.ok(subscribeSource.includes('if (cmd === "!구독목록") return reply(mine().length ?') && subscribeSource.includes('"아직 구독한 단어가 없어요. `!구독 MCP`처럼 써보세요!"'), "empty subscription lists must explain how to subscribe");
 assert.ok(subscribeSource.includes('if (cmd === "!구독취소") {') && subscribeSource.includes("는 구독 중이 아니에요."), "cancelling an unsubscribed keyword must explain that it was not subscribed");
+assert.ok(subscribeSource.includes(subscriptionCancelSuccess), "cancelling a deleted subscription must keep the existing keyword-named success reply");
+assert.ok(subscribeSource.indexOf(subscriptionCancelSuccess) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription cancel success reply must stay before keyword validation");
 assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription list must return before keyword validation");
 assert.ok(subscribeSource.indexOf(subscriptionCancelGuard) < subscribeSource.indexOf(subscriptionKeywordValidation), "subscription cancel must return before keyword validation");
 assert.ok(subscribeSource.indexOf(subscriptionListGuard) < subscribeSource.indexOf(subscriptionInsert), "subscription list must return before insertion");

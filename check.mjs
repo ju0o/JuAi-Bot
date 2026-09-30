@@ -582,9 +582,13 @@ assert.match(progressNudgeSource, /owner\.user\.bot \|\| \(optoutRole && owner\.
 assert.match(progressNudgeSource, /if \(n >= 8\) break;[\s\S]*?await say\("COMMANDCODE", t\.id,/, "progress nudge must stop after eight posts and ask CommandCode");
 const mentorPingSource = bot.slice(bot.indexOf("async function mentorPing("), bot.indexOf("\n// ---------- 키워드 구독"));
 assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.name === "입문"\)\) return;/, "mentor ping must return unless the asker has the 입문 role");
+assert.match(mentorPingSource, /const fields = want\.filter\(\(f\) => INTERESTS\.includes\(f\)\);/, "mentor ping must keep only INTERESTS fields");
+assert.ok(mentorPingSource.includes('const day = L.kstDate(), pool = new Set([...db.prepare("SELECT user_id FROM profiles")') && mentorPingSource.includes('...db.prepare("SELECT key FROM kv WHERE key LIKE \'joined:%\'")'), "mentor ping candidate pool must include profiles and joined keys");
+assert.ok(mentorPingSource.indexOf("if (!fields.length) return;") < mentorPingSource.indexOf('await say("COMMANDCODE"'), "mentor ping must return before CommandCode when fields are empty");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");
 assert.match(mentorPingSource, /if \(uid === starter\.author\.id \|\| kvGet\(db, `mentor:\$\{uid\}:\$\{day\}`\)\) continue;/, "mentor ping must skip mentors already stored for today");
 assert.match(mentorPingSource, /const mentors = L\.capMentors\(candidates, L\.MENTOR_MAX\);[\s\S]*mentors\.map\(\(u\) => `<@\$\{u\}>`\)/, "mentor ping must cap mentors before mentioning them");
+assert.ok(mentorPingSource.indexOf("if (!mentors.length) return;") < mentorPingSource.indexOf('await say("COMMANDCODE"'), "mentor ping must return before CommandCode when mentors are empty");
 assert.match(mentorPingSource, /for \(const uid of mentors\) kvSet\(db, `mentor:\$\{uid\}:\$\{day\}`, true\);/, "mentor ping must store every chosen mentor for today");
 assert.ok(mentorPingSource.indexOf("for (const uid of mentors) kvSet(") < mentorPingSource.indexOf('await say("COMMANDCODE"'), "mentor ping must store chosen mentors before the CommandCode ping");
 const subscribeSource = bot.slice(bot.indexOf("async function subscribe(m, text) {"), bot.indexOf("\nasync function notifySubs", bot.indexOf("async function subscribe(m, text) {")));

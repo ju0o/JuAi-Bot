@@ -516,6 +516,11 @@ assert.ok(voteSource.indexOf("const n = (e)") < voteSource.indexOf("votes.push(`
 assert.match(voteSource, /if \(n\("👍"\) \|\| n\("👎"\)\) votes\.push\(`/, "daily picks must include a repository only when a member left a thumbs reaction");
 assert.match(dailyPicksSource, /const usage = await ai\("opencode",[\s\S]*활용 예시[\s\S]*흐름도/, "each pick must ask OpenCode for usage examples and a text flow diagram");
 assert.match(dailyPicksSource, /startThread\(\{ name: `💬 \$\{r\.name\} 활용법`[\s\S]*const usage = await ai\("opencode"/, "usage example must be generated in the new recommendation thread");
+assert.match(dailyPicksSource, /r\.license\?\.spdx_id \|\| "라이선스 확인 필요"/, "recommendation posts must show the license fallback");
+assert.match(dailyPicksSource, /db\.prepare\("INSERT OR IGNORE INTO picks\(repo,day,msg_id\) VALUES\(\?,\?,\?\)"\)\.run\(r\.full_name, today, msg\.id\);/, "daily picks must store each posted repository");
+assert.match(dailyPicksSource, /for \(const e of \["👍", "👎"\]\) await msg\.react\(e\)\.catch\(\(\) => \{\}\);/, "recommendation posts must get both thumbs reactions");
+const pickSubscriptionNotify = 'await notifySubs(`${r.full_name} ${r.description || ""} ${p.why}`, thread.id).catch((e) => fail("subs", e));';
+assert.ok(dailyPicksSource.indexOf(pickSubscriptionNotify) < dailyPicksSource.indexOf('await sayLong("OPENCODE", thread.id, usage)'), "subscription notifications must precede the OpenCode usage reply");
 assert.match(dailyPicksSource, /await sayLong\("OPENCODE", thread\.id, usage\)/, "OpenCode usage reply must be posted in the recommendation thread");
 const dailyStarterSource = bot.slice(bot.indexOf("async function dailyStarter(today) {"), bot.indexOf("\n\n// Founder 9/25", bot.indexOf("async function dailyStarter(today) {")));
 assert.match(dailyStarterSource, /const question = String\(d\.question \|\| ""\)\.trim\(\)[\s\S]*answers = \(d\.answers \|\| \[\]\)/, "daily starter must normalize the question and answers");

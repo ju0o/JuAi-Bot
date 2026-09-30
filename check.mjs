@@ -137,6 +137,10 @@ assert.match(approvalCardSource, /\.setDescription\(body\.slice\(0, 4000\)\)/, "
 assert.match(approvalCardSource, /\.setColor\(status \? 0x8a909c : 0x2f7d6d\)/, "cardView must use color 0x2f7d6d when status is absent and 0x8a909c when status is present");
 assert.match(approvalCardSource, /if \(status\) embed\.setFooter\(\{ text: status \}\);/, "decided approval cards must show their status in the footer");
 assert.match(approvalCardSource, /components: status \? \[\] : \[buttons\]/, "decided approval cards must drop their action buttons");
+const createCardSource = bot.slice(bot.indexOf("async function createCard"), bot.indexOf("\nconst getCard", bot.indexOf("async function createCard")));
+assert.match(createCardSource, /await say\("CLAUDE", ids\.staff, \{/, "createCard must post to the staff channel");
+assert.match(createCardSource, /content: \[\.\.\.founders\]\.map\(\(f\) => `<@\$\{f\}>`\)\.join\(" "\)/, "createCard must mention only Founder ids");
+assert.match(createCardSource, /allowedMentions: \{ users: \[\.\.\.founders\] \}/, "createCard must allow mentions only for Founder ids");
 const alertFounderSource = bot.slice(bot.indexOf("async function alertFounder"), bot.indexOf("\n// Per-feature usage counters"));
 const alertCooldownGuard = "if (Date.now() - (kvGet(db, k) || 0) < 3 * 3_600_000) return;";
 assert.ok(alertFounderSource.includes(alertCooldownGuard), "repeated Founder alerts must return within three hours");

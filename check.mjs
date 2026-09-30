@@ -53,6 +53,14 @@ assert.ok(connectSource.indexOf(loginFailureGuard) < connectSource.indexOf('if (
 assert.ok(connectSource.includes('hub.on("messageCreate", (m) => void onMessage(m).catch((e) => fail("message", e)));'), "hub must register the message handler");
 assert.ok(connectSource.includes('hub.on("threadCreate", (t, isNew) => { if (isNew) onThread(t).catch((e) => fail("thread", e)); });'), "hub must register the new-thread handler");
 assert.ok(connectSource.includes('hub.on("messageReactionAdd", (r, u) => void onVote(r, u).catch((e) => fail("vote", e)));'), "hub must register the reaction handler");
+const missingChannelWarning = 'if (missing.length) console.warn(`채널 없음: ${missing.join(", ")} → node setup.mjs 먼저 실행`);';
+assert.ok(connectSource.includes(missingChannelWarning), "connect must keep the existing missing-channel warning sentence");
+for (const handler of [
+  'hub.on("messageCreate"',
+  'hub.on("threadCreate"',
+  'hub.on("messageReactionAdd"',
+  'hub.on("threadUpdate"',
+]) assert.ok(connectSource.indexOf(missingChannelWarning) < connectSource.indexOf(handler), `${handler} must be registered after the missing-channel warning`);
 assert.match(connectSource, /intents: isHub \? \[[^\]]*\] : name === "OPENCODE" \? \[G\.Guilds, G\.DirectMessages\] : \[G\.Guilds\]/, "OpenCode must receive DirectMessages when it is not the hub");
 assert.match(connectSource, /\.\.\.\(isHub \? \{ partials: \[[^\]]*\] \} : name === "OPENCODE" \? \{ partials: \[Partials\.Channel\] \} : \{\}\)/, "OpenCode must receive a Channel partial when it is not the hub");
 assert.ok(connectSource.includes('if (name === "OPENCODE") client.on("messageCreate", (m) => void onDirect(m).catch((e) => fail("dm", e)));'), "OpenCode must always register its messageCreate handler to onDirect");

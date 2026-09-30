@@ -14,6 +14,19 @@ const setup = fs.readFileSync("setup.mjs", "utf8");
 const bot = fs.readFileSync("bot.mjs", "utf8");
 const ai = fs.readFileSync("ai.mjs", "utf8");
 const service = fs.readFileSync("juai-bot.service", "utf8");
+const resolveChannelSource = bot.slice(bot.indexOf("function resolveChannel(ref) {"), bot.indexOf("\n\nasync function adminCommand", bot.indexOf("function resolveChannel(ref) {")));
+const resolveChannel = Function("guild", `${resolveChannelSource}; return resolveChannel;`)({
+  channels: {
+    cache: {
+      get: (id) => id === "123" ? { id, name: "mention" } : undefined,
+      find: (predicate) => [{ name: "hello-world" }].find(predicate),
+    },
+  },
+});
+assert.equal(resolveChannel(null), null, "resolveChannel must return null when ref is missing");
+assert.equal(resolveChannel("<#123>").name, "mention", "resolveChannel must resolve channel mentions through cache.get");
+assert.equal(resolveChannel("# hello   world").name, "hello-world", "resolveChannel must normalize a channel name before searching");
+assert.ok(resolveChannelSource.indexOf("guild.channels.cache.get(id)") < resolveChannelSource.indexOf("guild.channels.cache.find"), "channel mentions must use cache.get before name search");
 const approvalSource = bot.slice(bot.indexOf("async function onInteraction(i) {"), bot.indexOf("\nasync function rethink", bot.indexOf("async function onInteraction(i) {")));
 const ownerGuard = 'if (!founders.has(i.user.id)) return i.reply({ content: "서버 주인만 누를 수 있어요.", flags: MessageFlags.Ephemeral });';
 assert.ok(approvalSource.includes(ownerGuard), "non-owner approval-card presses must reply with the owner-only sentence");

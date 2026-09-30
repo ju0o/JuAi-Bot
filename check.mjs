@@ -1067,6 +1067,10 @@ assert.match(approvalBranch, /const ch = resolveChannel\(p\.channel\); if \(!ch\
 assert.ok(approvalBranch.indexOf("if (!ch?.isTextBased()) return reply(") < approvalBranch.indexOf("ch.messages.fetch("), "delete_messages must reject a missing channel before fetching messages");
 assert.match(approvalBranch, /if \(!chosen\.length\) return reply\("조건에 맞는 메시지를 못 찾았어요\."\);/, "delete_messages must report when nothing matches");
 assert.ok(approvalBranch.indexOf("if (!chosen.length) return reply(") < approvalBranch.indexOf('return createCard("delete"'), "delete_messages must report no matches before creating a card");
+assert.match(approvalBranch, /const preview = chosen\.slice\(0, 5\)/, "delete preview must list at most the first five chosen messages");
+assert.match(approvalBranch, /x\.content\.slice\(0, 80\)/, "delete preview messages must be limited to 80 characters");
+assert.match(approvalBranch, /chosen\.length > 5 \? `\\n…외 \$\{chosen\.length - 5\}개` : ""/, "delete preview must append the existing extra-count line only when more than five messages are chosen");
+assert.match(approvalBranch, /messageIds: chosen\.map\(\(x\) => x\.id\)/, "delete approval cards must store every chosen message id");
 for (const action of ADMIN_ACTIONS.filter((action) => !DIRECT_ACTIONS.has(action))) {
   const route = action === "delete_messages" ? /if \(plan\.action === "delete_messages"\)[\s\S]*return createCard\("delete"/ : new RegExp(`${action}:.*createCard\\(`);
   assert.match(approvalBranch, route, `${action} must route through an approval card`);

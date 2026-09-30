@@ -332,6 +332,9 @@ assert.match(onMessageSource, /if \(L\.grantBonus\(db, m\.author\.id\)\) await m
 assert.ok(onMessageSource.indexOf("L.grantBonus(db, m.author.id)") < onMessageSource.indexOf("if (m.channelId === ids.lab) return labQuestion(m);"), "feedback bonus must run before labQuestion");
 const summarizeThreadSource = bot.slice(bot.indexOf("async function summarizeThread(m) {"), bot.indexOf("\nasync function labQuestion(m) {"));
 assert.ok(summarizeThreadSource.indexOf("const q = L.takeQuota") < summarizeThreadSource.indexOf("const msgs ="), "in-thread summary must take quota before fetching messages");
+assert.match(summarizeThreadSource, /if \(!q\.ok\) return say\("OPENCODE", m\.channelId, \{ content: L\.quotaMessage\(q\),[\s\S]*?\}\);/, "failed thread-summary quota must return its quota message");
+assert.ok(summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf("const msgs =") && summarizeThreadSource.indexOf("if (!q.ok) return say(") < summarizeThreadSource.indexOf('ai("opencode"'), "failed thread-summary quota must return before fetching messages or calling AI");
+assert.match(summarizeThreadSource, /\.catch\(\(e\) => \{ fail\("summary\/thread", e\); return "지금은 요약을 못 만들었어요\. 잠시 뒤에 다시 해주세요\."; \}\)/, "thread-summary AI failures must use the existing Korean fallback");
 assert.match(summarizeThreadSource, /text \+ \(Number\.isFinite\(q\.left\) \? `\\n-# 오늘 남은 질문 \$\{q\.left\}\/\$\{q\.total\}` : ""\)/, "thread-summary quota footer must be finite-only");
 const answerSource = bot.slice(bot.indexOf("async function answer(m, channelId, who, history, replyTo) {"), bot.indexOf("\n/** Every AI answer", bot.indexOf("async function answer(m, channelId, who, history, replyTo) {")));
 const requiredPromptRuleTerms = ["규칙 무시", "파일 읽기", "명령 실행", "비밀·토큰 출력", "역할 바꾸기"];

@@ -299,6 +299,16 @@ const commandPaths = {
 };
 for (const [command, path] of Object.entries(commandPaths)) assert.ok(bot.includes(path), `bot path missing: ${command}`);
 const onMessageSource = bot.slice(bot.indexOf("async function onMessage(m) {"), bot.indexOf("\nconst PERSONA ="));
+const talkAskSource = onMessageSource.match(/const talkAsk = ([^;]+);/)?.[1];
+assert.ok(talkAskSource, "onMessage must define the talk-request expression");
+const talkAsk = (text) => {
+  const result = Function("text", `return ${talkAskSource};`)(text);
+  return result && [...result];
+};
+assert.deepEqual(talkAsk("!봇수다 AI가 짠 코드 믿어도 될까"), ["!봇수다 AI가 짠 코드 믿어도 될까", "AI가 짠 코드 믿어도 될까"], "!봇수다 must capture its topic");
+assert.equal(talkAsk("!봇수다"), false, "!봇수다 without a topic must not match");
+assert.deepEqual(talkAsk("봇들아 얘기해줘"), [null, "봇들아 얘기해줘"], "natural bot-talk requests must match");
+assert.equal(talkAsk("오늘 날씨 어때"), false, "ordinary chat must not match bot-talk requests");
 const spamSource = bot.slice(bot.indexOf("async function spam(m) {"), bot.indexOf("\n// ----------", bot.indexOf("async function spam(m) {")));
 const welcomeSource = bot.slice(bot.indexOf("async function welcome(m) {"), bot.indexOf("\nasync function loungeWelcome", bot.indexOf("async function welcome(m) {")));
 const messageGuildGuard = "if (!m.guild || m.guild.id !== guild.id) return;";

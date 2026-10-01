@@ -903,6 +903,10 @@ assert.match(startTalkSource, /if \(kvGet\(db, "talk_session"\)\) return;/, "sta
 const talkRequestClaim = 'req = db.prepare("SELECT * FROM talk_requests WHERE used=0 ORDER BY at LIMIT 1").get();';
 assert.ok(startTalkSource.includes(talkRequestClaim), "startTalk must claim the oldest unused talk request");
 assert.ok(startTalkSource.indexOf(talkRequestClaim) < startTalkSource.indexOf("const fallback ="), "talk requests must be claimed before fallback topics are chosen");
+const talkRequestUsed = 'if (req) db.prepare("UPDATE talk_requests SET used=1 WHERE id=?").run(req.id);';
+assert.ok(startTalkSource.indexOf(talkRequestUsed) < startTalkSource.indexOf("await collect(since, Date.now())"), "claimed talk requests must be marked used before collecting member lines");
+assert.match(startTalkSource, /const since = Math\.max\(kvGet\(db, "last_talk_at"\) \|\| 0, Date\.now\(\) - 2 \* L\.DAY_MS\);/, "member-line collection must start at the later of last_talk_at and two days ago");
+assert.match(startTalkSource, /if \(part === 1\) kvSet\(db, "talk_topics", \[\.\.\.used, topic\]\.slice\(-20\)\);/, "part-1 topics must keep only the latest 20");
 const carryContinuation = 'if (carry && carry.part < TALK_MAX_PARTS) source = `지난번에 결론이 안 난 주제를 이어서 해.';
 assert.ok(startTalkSource.includes(carryContinuation), "startTalk must continue an unfinished talk below the maximum");
 assert.match(startTalkSource, /carry\.part < TALK_MAX_PARTS[\s\S]*carry\.topic[\s\S]*carry\.open[\s\S]*carry\.tail/, "talk continuation must include the carried topic, open issue, and tail");

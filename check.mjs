@@ -331,6 +331,12 @@ assert.ok(onMessageSource.indexOf(messageGuildGuard) < onMessageSource.indexOf("
 assert.ok(onMessageSource.indexOf("if (m.type === MessageType.UserJoin) return welcome(m);") < onMessageSource.indexOf("if (m.author.bot || m.system) return;"), "member joins must welcome before other message handling");
 assert.match(welcomeSource, /new ActionRowBuilder\(\)\.addComponents\([\s\S]*setCustomId\("profile"\)/, "member joins must create a profile button");
 assert.match(welcomeSource, /say\("COMMANDCODE"[\s\S]*components: \[row\]/, "member joins must send the profile button through CommandCode");
+const joinedBeforeWelcome = "kvSet(db, `joined:\${m.author.id}`, { at: Date.now(), welcomeId: null });";
+const joinedAfterWelcome = "kvSet(db, `joined:\${m.author.id}`, { at: Date.now(), welcomeId: w.id })";
+assert.ok(welcomeSource.includes(joinedBeforeWelcome), "member joins must store joined state with no welcome id");
+assert.ok(welcomeSource.includes(joinedAfterWelcome), "member joins must store the sent welcome id");
+assert.ok(welcomeSource.indexOf(joinedBeforeWelcome) < welcomeSource.indexOf('await say("COMMANDCODE"'), "joined state must be stored before sending the welcome");
+assert.ok(welcomeSource.indexOf('await say("COMMANDCODE"') < welcomeSource.indexOf(joinedAfterWelcome), "sent welcome id must be stored after sending the welcome");
 const welcomeSteps = [
   "**이렇게 시작해보세요**",
   "1. <#${ids.lab}>에 지금 막힌 거 하나 물어보기 → AI가 스레드에서 답해요",

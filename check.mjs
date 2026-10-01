@@ -828,6 +828,9 @@ assert.ok(onDirectSource.includes('x.author.id === oc.user.id ? "OpenCode" : "�
 assert.match(onDirectSource, /messages\.fetch\(\{ limit: 11 \}\)[\s\S]*?filter\(\(x\) => x\.id !== m\.id\)/, "DM history must exclude the current message");
 const dmHelpSource = bot.slice(bot.indexOf("const DM_HELP = `"), bot.indexOf("\n\nasync function onDirect"));
 assert.match(dmHelpSource, /하루 질문 횟수 공유/, "DM_HELP must state the shared daily quota");
+assert.match(dmHelpSource, /\$\{L\.ANON_MIN\}자 이상/, "DM_HELP must cite L.ANON_MIN");
+assert.match(dmHelpSource, /다른 멤버들도 답을 달 수 있어요/, "DM_HELP must say other members can answer");
+assert.match(dmHelpSource, /이름이 보이지 않아요\.[\s\S]*운영 기록에만 남아요\./, "DM_HELP must keep the name hidden from members and only in the ops log");
 const anonymousQuestionSource = bot.slice(bot.indexOf("async function anonymousQuestion(m, question, q, reply) {"), bot.indexOf("\nasync function summarizeThread(m) {"));
 const shortAnonymousReply = "if (question.length < L.ANON_MIN) return reply(`질문을 ${L.ANON_MIN}자 이상 조금만 더 자세히 적어주세요. 예: \\`!익명 코딩 처음인데 뭐부터 배우면 돼요?\\``);";
 assert.ok(anonymousQuestionSource.includes(shortAnonymousReply), "short anonymous questions must return the existing too-short reply");

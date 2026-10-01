@@ -231,9 +231,14 @@ for (const engine of ["codex", "opencode", "commandcode"]) {
   assert.match(ai, new RegExp(`if \\(engine === "${engine}"\\)[\\s\\S]{0,260}return \\[\\.\\.\\.bwrap\\(`), `${engine} must use bwrap`);
 }
 const bwrapSource = ai.slice(ai.indexOf("const bwrap ="), ai.indexOf("\nfunction command"));
+assert.match(bwrapSource, /"--ro-bind",\s*"\/",\s*"\/"/, "bwrap must read-only bind the host root");
 assert.match(bwrapSource, /"--die-with-parent"/, "bwrap must die with its parent");
 assert.match(bwrapSource, /"--unshare-pid"/, "bwrap must isolate the process id namespace");
 assert.match(bwrapSource, /"--bind",\s*SANDBOX,\s*HOME/, "bwrap must bind-mount the sandbox directory over HOME");
+assert.match(bwrapSource, /"--dev",\s*"\/dev"/, "bwrap must mount /dev");
+assert.match(bwrapSource, /"--proc",\s*"\/proc"/, "bwrap must mount /proc");
+assert.match(bwrapSource, /"--tmpfs",\s*"\/tmp"/, "bwrap must mount a tmpfs on /tmp");
+assert.match(bwrapSource, /"--chdir",\s*HOME/, "bwrap must change directory to HOME");
 const claudeCommandSource = ai.slice(ai.indexOf('if (engine === "claude")'), ai.indexOf('if (engine === "codex")'));
 assert.match(claudeCommandSource, /path\.resolve\("data\/claude-cwd"\)/, "member Claude must run in data/claude-cwd");
 assert.match(claudeCommandSource, /"--no-session-persistence"/, "member Claude must not persist sessions");

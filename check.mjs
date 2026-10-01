@@ -218,6 +218,7 @@ assert.equal(aiRejectMessage("opencode", 1, "첫 줄\n두 번째 줄\n세 번째
 assert.equal(aiRejectMessage("claude", 2, `[31m빨간 줄[0m\n${"가".repeat(500)}\n${"나".repeat(500)}`, stripAnsi), `claude exit 2: ${"가".repeat(300)}`, "the reject error must drop ANSI codes, keep the last two stderr lines, and cap the message at 300 characters");
 assert.equal(aiRejectMessage("codex", 0, "\n\n", stripAnsi), "codex exit 0: ", "an empty output must reject with the same bounded error");
 const aiRunSource = ai.slice(ai.indexOf("function run("), ai.indexOf("\n// ponytail:"));
+assert.match(aiRunSource, /function run\(engine, prompt, \{ model, cwd: workdir, timeoutMs = 180_000 \} = \{\}\)/, "AI CLI run must default to a 180-second timeout");
 assert.ok(aiRunSource.indexOf("text = text.trim();") < aiRunSource.indexOf("if (code !== 0 || !text)"), "empty output must be detected after trim");
 assert.match(aiRunSource, /const timer = setTimeout\(\(\) => child\.kill\("SIGKILL"\), timeoutMs\);/, "AI CLI timeout must kill the child with SIGKILL");
 assert.ok(aiRunSource.indexOf("setTimeout") < aiRunSource.indexOf('child.on("close"'), "AI CLI timeout must be armed before waiting for close");
@@ -256,6 +257,10 @@ assert.match(ai, /spawn\(bin, args, \{ cwd, env: CHILD_ENV, stdio: \["ignore", "
 assert.doesNotMatch(ai, /spawn\(bin, args, \{[^}]*env: process\.env/, "AI CLI must not inherit the full process environment");
 assert.match(ai, /const COMMANDCODE_MODEL = process\.env\.JUAI_COMMANDCODE_MODEL \|\| "poolside\/laguna-s-2\.1-free";/, "CommandCode must default to Laguna");
 const fallbackSource = ai.slice(ai.indexOf("async function runWithFallback"), ai.indexOf("\nexport function ai("));
+const commandCodeFallbackSource = fallbackSource.slice(fallbackSource.indexOf('if (engine === "commandcode" && !opts.model)'), fallbackSource.indexOf('engine = "opencode";'));
+const openCodeFallbackSource = fallbackSource.slice(fallbackSource.indexOf('if (engine !== "opencode" || opts.model)'), fallbackSource.indexOf("\n  alertHook"));
+assert.match(commandCodeFallbackSource, /timeoutMs: opts\.timeoutMs \?\? 90_000/, "CommandCode fallback must default to a 90-second timeout");
+assert.match(openCodeFallbackSource, /timeoutMs: opts\.timeoutMs \?\? 90_000/, "OpenCode fallback must default to a 90-second timeout");
 assert.match(ai, /const COOLDOWN_MS = 30 \* 60_000;/, "failed free models must cool down for 30 minutes");
 assert.match(fallbackSource, /catch \(e\) \{ benched\.set\(COMMANDCODE_MODEL, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed CommandCode must be benched for the cooldown");
 assert.match(fallbackSource, /catch \(e\) \{ lastError = e; benched\.set\(model, Date\.now\(\) \+ COOLDOWN_MS\)/, "failed OpenCode models must be benched for the cooldown");

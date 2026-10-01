@@ -80,6 +80,8 @@ for (const handler of [
   'hub.on("messageReactionAdd"',
   'hub.on("threadUpdate"',
 ]) assert.ok(connectSource.indexOf(missingChannelWarning) < connectSource.indexOf(handler), `${handler} must be registered after the missing-channel warning`);
+assert.match(connectSource, /intents: isHub \? \[[^\]]*G\.GuildMessages[^\]]*G\.MessageContent[^\]]*\]/, "hub must request GuildMessages and MessageContent");
+assert.match(connectSource, /: name === "OPENCODE" \? \[[^\]]*\] : \[G\.Guilds\]/, "non-hub bots other than OpenCode must request only Guilds");
 assert.match(connectSource, /intents: isHub \? \[[^\]]*\] : name === "OPENCODE" \? \[G\.Guilds, G\.DirectMessages\] : \[G\.Guilds\]/, "OpenCode must receive DirectMessages when it is not the hub");
 assert.match(connectSource, /intents: isHub \? \[[^\]]*G\.GuildMessageReactions[^\]]*\]/, "hub must request GuildMessageReactions");
 assert.match(connectSource, /\.\.\.\(isHub \? \{ partials: \[[^\]]*\] \} : name === "OPENCODE" \? \{ partials: \[Partials\.Channel\] \} : \{\}\)/, "OpenCode must receive a Channel partial when it is not the hub");

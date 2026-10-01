@@ -618,8 +618,12 @@ assert.ok(dailySummarySource.indexOf("if (!data?.channels)") < dailySummarySourc
 assert.ok(dailySummarySource.indexOf("kvSet(db, `topics:${day}`, topics)") < dailySummarySource.indexOf('await sayLong("CLAUDE", ids.summary, text)'), "daily summaries must store topics before posting");
 assert.ok(dailySummarySource.indexOf("kvSet(db, `summary:${day}`, text)") < dailySummarySource.indexOf('await sayLong("CLAUDE", ids.summary, text)'), "daily summaries must store summary text before posting");
 assert.match(collectSource, /const optedOut = async \(uid\) => \{[\s\S]*?return optoutRole && members\.get\(uid\)\?\.roles\.cache\.has\(optoutRole\.id\);/, "collect optedOut must check the AI 언급 제외 role");
+assert.match(collectSource, /if \(!ids\[key\]\) continue;/, "collect must skip summary channels without ids");
+assert.match(collectSource, /const sources = ch\.type === ChannelType\.GuildForum \? \[\.\.\.threads\.filter\(\(t\) => t\.parentId === ch\.id\)\.values\(\)\] : \[ch, \.\.\.threads\.filter\(\(t\) => t\.parentId === ch\.id\)\.values\(\)\];/, "collect must use only child threads for forums and include the channel for other sources");
+assert.match(collectSource, /const msgs = await src\.messages\.fetch\(\{ limit: 100 \}\)[\s\S]*?for \(const x of \[\.\.\.msgs\.values\(\)\]\.reverse\(\)/, "collect must fetch 100 messages and process them oldest first");
 assert.match(collectSource, /if \(x\.author\.bot \|\| x\.createdTimestamp < fromMs \|\| x\.createdTimestamp >= toMs \|\| !x\.content \|\| await optedOut\(x\.author\.id\)\) continue;/, "collect must skip opted-out messages");
 assert.ok(collectSource.indexOf("await optedOut(x.author.id)") < collectSource.indexOf("refs.push({"), "collect must skip opted-out messages before adding summary refs");
+assert.match(collectSource, /L\.quote\(x\.content, 300\)/, "collect must quote each kept line's content at 300 characters");
 assert.match(collectSource, /return \{ lines: lines\.slice\(-400\), refs \};/, "collect must cap summaries at the last 400 lines");
 assert.equal(channelByKey.summary.topic, "매일 오전 8시 Claude가 어제 대화를 요약해요.", "summary channel topic must keep the 8 a.m. posting promise");
 assert.equal(channelByKey.picks.topic, "매일 오전 9시 Codex 추천. 스레드에서 OpenCode에게 활용법을 물어보세요.", "picks channel topic must keep the 9 a.m. posting promise");

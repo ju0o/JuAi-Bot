@@ -165,6 +165,10 @@ const interactionSource = bot.slice(bot.indexOf("async function onInteraction(i)
 assert.ok(interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("const card = getCard") && interactionSource.indexOf("if (!founders.has(i.user.id)) return i.reply") < interactionSource.indexOf("setCard("), "non-owner card presses must be rejected before card changes");
 const thinkButtonSource = interactionSource.slice(interactionSource.indexOf('if (verb === "think")'), interactionSource.indexOf('if (verb === "hold")'));
 assert.match(thinkButtonSource, /return i\.showModal\(new ModalBuilder\(\)\.setCustomId\(`think:\$\{card\.id\}`\)/, "the rethink button must open the comment modal");
+assert.match(thinkButtonSource, /\.setTitle\("어떻게 바꿀까요\?"\)/, "the rethink modal must keep its title");
+assert.match(thinkButtonSource, /\.setLabel\("의견을 한 줄로"\)/, "the rethink modal must keep its comment label");
+assert.match(thinkButtonSource, /\.setRequired\(true\)/, "the rethink comment must be required");
+assert.match(thinkButtonSource, /\.setMaxLength\(500\)/, "the rethink comment must allow at most 500 characters");
 assert.ok(!thinkButtonSource.includes("setCard("), "the rethink button must not change the card before the comment is submitted");
 assert.match(interactionSource, /if \(tag === "think"\) return rethink\(i, card, i\.fields\.getTextInputValue\("comment"\)\);/, "the comment modal must submit through rethink");
 assert.match(interactionSource, /if \(verb === "hold"\) \{[\s\S]*Date\.now\(\) \+ 7 \* L\.DAY_MS; setCard\(card\.id, "HOLD", at\);/, "holding a card must store HOLD with a seven-day reminder");

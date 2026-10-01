@@ -1236,10 +1236,15 @@ assert.match(executeSource, /case "feature_ready":\s+\{[\s\S]*writeFileSync\(pat
 assert.match(executeSource, /case "feature_ready":[\s\S]*?return "적용했어요\. 봇을 재시작합니다";/, "ready feature cards must return the existing Korean success sentence");
 assert.match(executeSource, /throw new Error\(`모르는 카드 종류: \$\{card\.kind\}`\)/, "unknown card kinds must throw the Korean error");
 const implementSource = bot.slice(bot.indexOf("async function implement("), bot.indexOf("\n// ---------- daily / weekly jobs"));
+assert.match(implementSource, /const branch = `feature\/card-\$\{card\.id\}`, dir = path\.join\(ROOT, "data", `feature-\$\{card\.id\}`\);\s*git\(\["worktree", "add", dir, "-b", branch\]\);/, "feature implementation must create its card worktree");
+assert.match(implementSource, /await ai\("claude-dev", `JuAi 디스코드 봇 저장소야\. Founder 요청: \$\{card\.payload\.description\}[\s\S]*새 의존성 금지[\s\S]*node check\.mjs가 통과해야 해\.[\s\S]*\{ cwd: dir, timeoutMs: 20 \* 60_000 \}\);/, "feature implementation must run claude-dev for 20 minutes with the existing no-new-dependency prompt");
+assert.match(implementSource, /let check; try \{ check = "✅ " \+ execFileSync\("node", \["check\.mjs"\], \{ cwd: dir, encoding: "utf8" \}\)\.trim\(\); \} catch \(e\) \{ check = "❌ " \+ String\(e\.stdout \|\| e\.message\)\.slice\(-300\); \}/, "feature implementation must record a passing check or the last 300 failure characters");
 const commitSource = implementSource.slice(implementSource.indexOf('try { git(["commit"'), implementSource.indexOf("\n  const stat"));
 assert.match(commitSource, /catch \{ return createCard\("feature", "기능 구현 결과 없음", `코드가 바뀌지 않았어요\.\\n\$\{summary\}`, card\.payload\); \}/, "a failed feature commit must return the existing empty-result card");
 assert.doesNotMatch(commitSource, /feature_ready/, "a failed feature commit must not create an apply card");
 assert.ok(implementSource.indexOf('return createCard("feature", "기능 구현 결과 없음"') < implementSource.indexOf('await createCard("feature_ready"'), "only a committed feature may reach the apply card");
+assert.match(implementSource, /const stat = git\(\["diff", "--stat", "HEAD~1"\], dir\);\s*await createCard\("feature_ready",[\s\S]*stat\.slice\(-800\)/, "feature_ready must include only the last 800 diff-stat characters");
+assert.ok(implementSource.indexOf('try { git(["commit"') < implementSource.indexOf('const stat = git(["diff", "--stat", "HEAD~1"], dir);'), "diff stat must be collected after the commit attempt");
 
 const db = new DatabaseSync(":memory:"); db.exec(SCHEMA);
 assert.deepEqual(

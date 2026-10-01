@@ -1027,6 +1027,10 @@ assert.match(cleanupSource, /const msgs = [\s\S]*?if \(!msgs \|\| msgs\.size ===
 const communitySetup = setup.slice(setup.indexOf("if (!community)"), setup.indexOf("await applyChannels(true)"));
 assert.match(communitySetup, /guild\.edit\(\{ verificationLevel: GuildVerificationLevel\.Low, explicitContentFilter: GuildExplicitContentFilter\.AllMembers \}\)/, "setup must use low verification and filter content for all members");
 assert.match(communitySetup, /guild\.edit\(\{ features: \[\.\.\.guild\.features, "COMMUNITY"\], rulesChannel: ids\.rules, publicUpdatesChannel: ids\.staff \}\)/, "setup must enable Community with rules and staff channels");
+const communityOffStart = setup.indexOf("if (!community) {", setup.indexOf("let invite"));
+const communityOffSource = setup.slice(communityOffStart, setup.indexOf("// Onboarding.", communityOffStart));
+assert.match(communityOffSource, /console\.log\("\\n! 커뮤니티 기능이 꺼져 있어서 입장 질문은 아직 못 만들었어요\./, "setup must keep the existing community-off onboarding sentence");
+assert.ok(setup.indexOf("await client.destroy();", communityOffStart) < setup.indexOf("putOnboarding", communityOffStart), "setup must destroy the client before onboarding when Community is off");
 assert.match(setup, /guild\.edit\(\{ defaultMessageNotifications: GuildDefaultMessageNotifications\.OnlyMentions \}\)/, "setup must default notifications to mentions only");
 assert.match(setup, /guild\.edit\(\{ systemChannel: ids\.intro,/, "setup must set the system channel to intro");
 assert.match(setup, /for \(let n = ONBOARDING\.length; n > 0; n--\) \{[\s\S]*?await putOnboarding\(ONBOARDING, n\);[\s\S]*?catch \(e\) \{ if \(!\/TOO_MANY_ONBOARDING_PROMPTS\/.test\(e\.message\) \|\| n === 1\) throw e; \}/, "setup must retry onboarding with fewer shown questions when Discord caps prompts");

@@ -738,6 +738,9 @@ assert.match(mentorPingSource, /if \(!asker\?\.roles\.cache\.some\(\(r\) => r\.n
 assert.match(mentorPingSource, /const fields = want\.filter\(\(f\) => INTERESTS\.includes\(f\)\);/, "mentor ping must keep only INTERESTS fields");
 assert.ok(mentorPingSource.includes('const day = L.kstDate(), pool = new Set([...db.prepare("SELECT user_id FROM profiles")') && mentorPingSource.includes('...db.prepare("SELECT key FROM kv WHERE key LIKE \'joined:%\'")'), "mentor ping candidate pool must include profiles and joined keys");
 assert.ok(mentorPingSource.indexOf("if (!fields.length) return;") < mentorPingSource.indexOf('await say("COMMANDCODE"'), "mentor ping must return before CommandCode when fields are empty");
+const mentorFetchGuard = "const mem = await guild.members.fetch(uid).catch(() => null); if (!mem || mem.user.bot) continue;";
+assert.ok(mentorPingSource.includes(mentorFetchGuard), "mentor ping must skip missing members and bot members");
+assert.ok(mentorPingSource.indexOf(mentorFetchGuard) < mentorPingSource.indexOf('if (names.has("실무")'), "mentor ping must skip missing or bot members before the 실무 role test");
 assert.match(mentorPingSource, /if \(names\.has\("실무"\) && !names\.has\("AI 언급 제외"\) && fields\.some\(\(f\) => names\.has\(f\)\)\) candidates\.push\(uid\);/, "mentor ping must keep only matching 실무 mentors without AI 언급 제외");
 assert.match(mentorPingSource, /if \(uid === starter\.author\.id \|\| kvGet\(db, `mentor:\$\{uid\}:\$\{day\}`\)\) continue;/, "mentor ping must skip mentors already stored for today");
 assert.match(mentorPingSource, /const mentors = L\.capMentors\(candidates, L\.MENTOR_MAX\);[\s\S]*mentors\.map\(\(u\) => `<@\$\{u\}>`\)/, "mentor ping must cap mentors before mentioning them");

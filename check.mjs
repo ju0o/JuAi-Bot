@@ -944,6 +944,9 @@ assert.match(refreshProjectsSource, /const s = await t\.fetchStarterMessage\(\)\
 assert.match(refreshProjectsSource, /s\.content\.split\("\\n"\)\[0\]\.slice\(0, 90\) \|\| "설명 없음"/, "project list must use 설명 없음 for a blank starter first line");
 assert.match(refreshProjectsSource, /rows\.sort\(\(a, b\) => b\.last - a\.last\);/, "project list must sort by latest activity");
 assert.ok(refreshProjectsSource.includes("아직 올라온 프로젝트가 없어요"), "project list must use the empty-state sentence");
+assert.ok(refreshProjectsSource.includes("JuAi 프로젝트 목록"), "project list header must name JuAi 프로젝트 목록");
+assert.ok(refreshProjectsSource.includes("최근 활동 순"), "project list header must say 최근 활동 순");
+assert.ok(refreshProjectsSource.includes("글을 올리면 자동으로 추가돼요. 매일 갱신."), "project list header must say showcase posts are added automatically and refreshed daily");
 const projectEdit = refreshProjectsSource.indexOf("await m.edit({ content: texts[n]");
 const projectDelete = refreshProjectsSource.indexOf("await m.delete().catch(() => {});");
 assert.match(refreshProjectsSource, /if \(prev\.length === texts\.length && prev\.every\(Boolean\)\) \{[\s\S]*?for \(const \[n, m\] of prev\.entries\(\)\) await m\.edit\(/, "project list must edit existing messages when chunk counts match");

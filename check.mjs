@@ -1131,6 +1131,9 @@ for (const { title, single, required, options } of ONBOARDING) {
     for (const key of option.roles) assert.ok(roleKeys.has(key), `unknown onboarding role key: ${key}`);
   }
 }
+assert.equal(ROLES.find(({ key }) => key === "optout")?.name, "AI 언급 제외", "optout role must be named AI 언급 제외");
+const optoutOptions = ONBOARDING.flatMap(({ options }) => options.filter(({ title }) => title === "언급하지 말아주세요"));
+assert.deepEqual(optoutOptions, [{ title: "언급하지 말아주세요", roles: ["optout"] }], "언급하지 말아주세요 must be the optout onboarding option");
 const mention = (key) => {
   assert.ok(channelByKey[key], `unknown channel key: ${key}`);
   return `<#${"0".repeat(20)}>`;
@@ -1141,6 +1144,7 @@ assert.ok(GUIDE(mention).some((message) => message.includes(`하루 ${TALK_OFFSE
 assert.ok(GUIDE(mention).some((message) => message.includes(`질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.gapMs");
 assert.ok(GUIDE(mention).some((message) => message.includes(`AI 질문은 **1인 하루 ${LIMITS.daily}회**, 서버 전체 **하루 ${LIMITS.globalDaily}회**, 질문 사이 ${LIMITS.gapMs / 1000}초`)), "guide omits LIMITS.globalDaily");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 하루 AI 질문 제한이 없어요.")), "guide omits staff exemption");
+assert.ok(GUIDE(mention).some((message) => message.includes('입장 질문에서 **"언급하지 말아주세요"**를 고르세요.')), "guide must tell members to choose the no-AI-mention onboarding option");
 assert.ok(GUIDE(mention).some((message) => message.includes("예전에 해결된 비슷한 질문이 있으면 그 답을 먼저 보여줘요 (횟수 안 씀)")), "guide must say reused similar answers do not spend a question");
 assert.ok(GUIDE(mention).some((message) => message.includes(`입문자 질문이면 같은 분야 실무자 최대 ${MENTOR_MAX}명도 불러요`)), "guide omits mentor cap");
 assert.ok(GUIDE(mention).some((message) => message.includes("하루 질문 횟수 공유")), "guide omits shared DM quota");

@@ -1026,6 +1026,9 @@ assert.match(communitySetup, /guild\.edit\(\{ features: \[\.\.\.guild\.features,
 assert.match(setup, /guild\.edit\(\{ defaultMessageNotifications: GuildDefaultMessageNotifications\.OnlyMentions \}\)/, "setup must default notifications to mentions only");
 assert.match(setup, /guild\.edit\(\{ systemChannel: ids\.intro,/, "setup must set the system channel to intro");
 assert.match(setup, /for \(let n = ONBOARDING\.length; n > 0; n--\) \{[\s\S]*?await putOnboarding\(ONBOARDING, n\);[\s\S]*?catch \(e\) \{ if \(!\/TOO_MANY_ONBOARDING_PROMPTS\/.test\(e\.message\) \|\| n === 1\) throw e; \}/, "setup must retry onboarding with fewer shown questions when Discord caps prompts");
+assert.match(setup, /putOnboarding\(questions, shown\) \{[\s\S]*?enabled: true,/, "putOnboarding must enable onboarding");
+assert.match(setup, /putOnboarding\(questions, shown\) \{[\s\S]*?mode: 0,/, "putOnboarding must use mode 0");
+assert.match(setup, /in_onboarding: i < shown,/, "putOnboarding must show only questions before the shown count");
 assert.match(setup, /role_ids:\s*o\.roles\.map\(\(k\) => roles\[k\]\.id\)/, "setup.mjs maps onboarding roles from option roles");
 assert.match(setup, /channel_ids:\s*o\.roles\.length\s*\?\s*\[\]\s*:\s*\[ids\.chat\]/, "setup.mjs routes only role-less onboarding options to #chat");
 const guideUpdateSource = setup.slice(setup.indexOf("// #사용법"), setup.indexOf("let invite", setup.indexOf("// #사용법")));

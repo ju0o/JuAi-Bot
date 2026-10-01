@@ -588,6 +588,9 @@ assert.match(jobSource, /if \(kvGet\(db, `done:\$\{key\}`\) \|\| running\.has\(k
 assert.match(jobSource, /running\.add\(key\);[\s\S]*try \{ await fn\(\); kvSet\(db, `done:\$\{key\}`, true\); \}/, "successful jobs must record completion");
 assert.match(jobSource, /const tries = \(kvGet\(db, `tries:\$\{key\}`\) \|\| 0\) \+ 1; kvSet\(db, `tries:\$\{key\}`, tries\);/, "failed jobs must increment and persist their retry count");
 assert.match(jobSource, /if \(tries >= 3\) \{[\s\S]*kvSet\(db, `done:\$\{key\}`, "failed"\);[\s\S]*alertFounder\(/, "jobs must alert and skip after three failures");
+assert.match(jobSource, /finally \{ running\.delete\(key\); \}/, "jobs must clear their running key in finally");
+const cleanup = jobSource.indexOf("finally { running.delete(key); }");
+assert.ok(cleanup > jobSource.indexOf("kvSet(db, `done:${key}`, true);") && cleanup > jobSource.indexOf("alertFounder("), "job cleanup must follow both success recording and the three-failure alert");
 const catchUpSource = bot.slice(bot.indexOf("async function catchUp() {"), bot.indexOf("\nasync function tick() {", bot.indexOf("async function catchUp() {")));
 assert.match(catchUpSource, /const since = kvGet\(db, "last_seen"\); if \(!since\) return;/, "catch-up must stop without a last-seen timestamp");
 assert.equal((catchUpSource.match(/if \(n >= 10\) break;/g) ?? []).length, 2, "catch-up must cap both message and thread passes at ten");

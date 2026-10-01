@@ -1027,6 +1027,11 @@ assert.match(cleanupSource, /const msgs = [\s\S]*?if \(!msgs \|\| msgs\.size ===
 const communitySetup = setup.slice(setup.indexOf("if (!community)"), setup.indexOf("await applyChannels(true)"));
 assert.match(communitySetup, /guild\.edit\(\{ verificationLevel: GuildVerificationLevel\.Low, explicitContentFilter: GuildExplicitContentFilter\.AllMembers \}\)/, "setup must use low verification and filter content for all members");
 assert.match(communitySetup, /guild\.edit\(\{ features: \[\.\.\.guild\.features, "COMMUNITY"\], rulesChannel: ids\.rules, publicUpdatesChannel: ids\.staff \}\)/, "setup must enable Community with rules and staff channels");
+const applyChannelsBeforeCommunity = setup.indexOf("await applyChannels(false);");
+const communityEnable = setup.indexOf('features: [...guild.features, "COMMUNITY"]');
+const applyChannelsAfterCommunity = setup.indexOf("await applyChannels(true);");
+assert.ok(applyChannelsBeforeCommunity < communityEnable, "setup must create non-forum channels before enabling Community");
+assert.ok(communityEnable < applyChannelsAfterCommunity, "setup must create forum channels only after enabling Community");
 const communityOffStart = setup.indexOf("if (!community) {", setup.indexOf("let invite"));
 const communityOffSource = setup.slice(communityOffStart, setup.indexOf("// Onboarding.", communityOffStart));
 assert.match(communityOffSource, /console\.log\("\\n! 커뮤니티 기능이 꺼져 있어서 입장 질문은 아직 못 만들었어요\./, "setup must keep the existing community-off onboarding sentence");

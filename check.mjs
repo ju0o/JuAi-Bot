@@ -855,6 +855,7 @@ for (const text of ["코드리뷰해줘", "미리뷰해줘"]) assert.equal(revie
 assert.match(reviewRequestSource, /const profileLink = db\.prepare\("SELECT github FROM profiles WHERE user_id=\?"\)/, "review requests must read the member profile link");
 assert.ok(reviewRequestSource.includes(`const source = /github\\.com\\//i.test(m.content) ? m.content : profileLink;`), "review requests must prefer a GitHub link in the message over the profile link");
 assert.ok(reviewRequestSource.indexOf("if (!source) return send(") < reviewRequestSource.indexOf("const q = L.takeQuota"), "missing review links must be answered before spending quota");
+assert.match(reviewRequestSource, /if \(!source\) return send\("리뷰할 GitHub 링크를 같이 보내주세요\. 예: `리뷰해줘 https:\/\/github\.com\/아이디\/저장소`\\n-# #자기소개 프로필에 GitHub를 적어두면 링크 없이 \\"리뷰해줘\\"만 써도 돼요\."\);/, "missing review links must keep the existing GitHub-link and profile-link reply");
 assert.ok(reviewRequestSource.indexOf('stat("리뷰 요청")') < reviewRequestSource.indexOf("if (!source) return send("), "review usage must be recorded before the missing-link return");
 assert.match(reviewRequestSource, /const q = L\.takeQuota\(db, m\.author\.id, \{ staff: isStaff\(member\) \}\);[\s\S]*?if \(!q\.ok\) return send\(L\.quotaMessage\(q\)\);/, "review quota refusal must return quotaMessage");
 assert.ok(reviewRequestSource.indexOf("if (!q.ok) return send(L.quotaMessage(q));") < reviewRequestSource.indexOf("const repo = await resolveRepo(source);"), "review quota refusal must return before resolving the repository");

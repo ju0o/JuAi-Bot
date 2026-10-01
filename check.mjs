@@ -910,6 +910,21 @@ const startTalkSource = bot.slice(bot.indexOf("async function startTalk() {"), b
 assert.match(bot, /const TALK_BUDGET = \{ CODEX: 3, CLAUDE: 3, OPENCODE: 6, COMMANDCODE: 5 \};/, "talk budgets must stay Codex 3, Claude 3, OpenCode 6, and CommandCode 5");
 assert.match(bot, /const TALK_GAP_S = \[90, 240\];/, "talk gaps must stay between 90 and 240 seconds");
 assert.match(startTalkSource, /if \(kvGet\(db, "talk_session"\)\) return;/, "startTalk must return when a talk session already exists");
+const talkProposer = 'const turnNo = kvGet(db, "talk_turn") || 0, proposer = alive[turnNo % alive.length];';
+assert.ok(startTalkSource.includes('const alive = PROPOSERS.filter((b) => clients[b]);'), "startTalk must choose from connected proposers");
+assert.ok(startTalkSource.includes(talkProposer), "startTalk must choose the proposer from talk_turn modulo the alive length");
+assert.ok(startTalkSource.indexOf(talkProposer) < startTalkSource.indexOf('kvSet(db, "talk_turn", turnNo + 1);'), "startTalk must increment talk_turn after choosing the proposer");
+const talkHeaderStart = startTalkSource.indexOf('await say("CLAUDE", ids.playground');
+const talkHeaderEnd = startTalkSource.indexOf("const msg = await say(proposer", talkHeaderStart);
+const talkHeaderSource = startTalkSource.slice(talkHeaderStart, talkHeaderEnd);
+for (const phrase of [
+  "🎙️ **봇들의 수다**",
+  "${BOT_NAME[proposer]}",
+  "주제: **${topic}**",
+  "${origin ? `\\n-# ${origin}` : \"\"}",
+]) assert.ok(talkHeaderSource.includes(phrase), `playground header must include ${phrase}`);
+assert.ok(startTalkSource.includes("req ? `<@${req.user_id}>님이 신청한 주제`"), "talk header origin must name the requester topic");
+assert.ok(startTalkSource.includes("지난번에 결론이 안 나서 이어서 해요"), "talk header origin must name continued unfinished talks");
 const talkRequestClaim = 'req = db.prepare("SELECT * FROM talk_requests WHERE used=0 ORDER BY at LIMIT 1").get();';
 assert.ok(startTalkSource.includes(talkRequestClaim), "startTalk must claim the oldest unused talk request");
 assert.ok(startTalkSource.indexOf(talkRequestClaim) < startTalkSource.indexOf("const fallback ="), "talk requests must be claimed before fallback topics are chosen");

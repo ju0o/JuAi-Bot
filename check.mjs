@@ -59,6 +59,10 @@ assert.match(lifecycleSource, /setInterval\(\(\) => void tick\(\)\.catch\(\(e\) 
 assert.match(lifecycleSource, /for \(const sig of \["SIGINT", "SIGTERM"\]\) process\.on\(sig, async \(\) => \{ await Promise\.all\(Object\.values\(clients\)\.map\(\(c\) => c\.destroy\(\)\)\);/, "shutdown must destroy every logged-in client on SIGINT and SIGTERM");
 const botId = Function(`${setup.match(/export const botId = \(token\) => [^;]+;/)?.[0].replace("export ", "")}; return botId;`)();
 const connectSource = bot.slice(bot.indexOf("async function connect() {"), bot.indexOf("\nconst as =", bot.indexOf("async function connect() {")));
+const waitForNetworkSource = bot.slice(bot.indexOf("async function waitForNetwork() {"), bot.indexOf("\n\nasync function connect()", bot.indexOf("async function waitForNetwork() {")));
+assert.match(waitForNetworkSource, /lookup\("discord\.com"\)/, "waitForNetwork must look up discord.com");
+assert.match(waitForNetworkSource, /for \(let i = 0; i < 36; i\+\+\)/, "waitForNetwork must try at most 36 times");
+assert.match(waitForNetworkSource, /catch \{ await new Promise\(\(r\) => setTimeout\(r, 5000\)\); \}/, "waitForNetwork must wait 5000ms after each failed lookup");
 assert.ok(connectSource.indexOf("await waitForNetwork();") < connectSource.indexOf("for (const name of"), "connect must wait for the network before logging in bots");
 const missingTokenGuard = 'if (!token) { console.warn(`${name}: 토큰 없음`); continue; }';
 assert.ok(connectSource.includes(missingTokenGuard), "connect must warn and continue when a bot token is missing");

@@ -20,6 +20,11 @@ assert.match(inviteSource, /if \(!id\) \{ console\.log\(`\$\{name\}: 토큰 없�
 assert.match(inviteSource, /https:\/\/discord\.com\/oauth2\/authorize\?client_id=\$\{id\}&scope=bot&permissions=\$\{perms\}/, "invite mode must print one Discord bot invite URL for each configured bot");
 assert.equal((inviteSource.match(/https:\/\/discord\.com\/oauth2\/authorize\?/g) ?? []).length, 1, "invite mode must have one invite URL template");
 assert.match(setup, /process\.argv\[2\] === "invite" \? printInvites\(\) : main\(\)/, "invite mode must run printInvites instead of main");
+const storedInviteSource = setup.slice(setup.indexOf("let invite = kvGet"), setup.indexOf("\n  console.log(`초대 링크", setup.indexOf("let invite = kvGet")));
+assert.match(storedInviteSource, /let invite = kvGet\(openDb\(\), "invite"\);/, "setup must load the stored invite");
+assert.match(storedInviteSource, /if \(!invite \|\| !\(await client\.fetchInvite\(invite\)\.catch\(\(\) => null\)\)\)/, "setup must reuse a stored invite unless fetchInvite fails");
+assert.match(storedInviteSource, /createInvite\(\{ maxAge: 0, maxUses: 0, unique: true, reason: "JuAi 공개 초대 링크" \}\)/, "replacement invites must never expire, have unlimited uses, and keep the existing reason");
+assert.ok(storedInviteSource.indexOf("createInvite(") < storedInviteSource.indexOf('kvSet(openDb(), "invite", invite)'), "setup must store a replacement invite after creating it");
 const resolveChannelSource = bot.slice(bot.indexOf("function resolveChannel(ref) {"), bot.indexOf("\n\nasync function adminCommand", bot.indexOf("function resolveChannel(ref) {")));
 const resolveChannel = Function("guild", `${resolveChannelSource}; return resolveChannel;`)({
   channels: {

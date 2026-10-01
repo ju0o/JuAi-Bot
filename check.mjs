@@ -381,6 +381,8 @@ assert.match(profileModalSource, /input\("github", "GitHub \/ 포트폴리오 �
 assert.match(profileModalSource, /input\("sns",[\s\S]*TextInputStyle\.Short, true, 100,/, "SNS profile field must keep the 100-character limit");
 assert.match(profileModalSource, /input\("making",[\s\S]*TextInputStyle\.Paragraph, false, 500,/, "making profile field must keep the 500-character limit");
 assert.match(profileModalSource, /input\("github",[\s\S]*TextInputStyle\.Short, false, 200,/, "GitHub profile field must keep the 200-character limit");
+const profileLabels = [...profileModalSource.matchAll(/input\("[^\"]+", "([^\"]+)"/g)].map(([, label]) => label);
+assert.ok(profileLabels.every((label) => label.length <= 45), "profile form field labels must be at most 45 characters");
 assert.ok(interactionSource.indexOf('if (i.isButton() && i.customId === "profile")') < interactionSource.indexOf("const [tag, rawId, verb]"), "profile button must open the modal before card handling");
 assert.match(interactionSource, /if \(i\.isButton\(\) && i\.customId === "profile"\) \{[\s\S]*return i\.showModal\(profileModal\(/, "profile button must show the profile modal");
 assert.match(profileModalSource, /new ModalBuilder\(\)\.setCustomId\("profile_modal"\)\.setTitle\("JuAi 프로필"\)/, "profile form must keep the profile_modal custom id the submit handler matches");

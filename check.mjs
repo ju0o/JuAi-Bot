@@ -218,6 +218,10 @@ assert.equal(aiRejectMessage("opencode", 1, "첫 줄\n두 번째 줄\n세 번째
 assert.equal(aiRejectMessage("claude", 2, `[31m빨간 줄[0m\n${"가".repeat(500)}\n${"나".repeat(500)}`, stripAnsi), `claude exit 2: ${"가".repeat(300)}`, "the reject error must drop ANSI codes, keep the last two stderr lines, and cap the message at 300 characters");
 assert.equal(aiRejectMessage("codex", 0, "\n\n", stripAnsi), "codex exit 0: ", "an empty output must reject with the same bounded error");
 const aiRunSource = ai.slice(ai.indexOf("function run("), ai.indexOf("\n// ponytail:"));
+const aiErrorSource = aiRunSource.slice(aiRunSource.indexOf('child.on("error"'), aiRunSource.indexOf('child.on("close"'));
+assert.match(aiErrorSource, /child\.on\("error", \(e\) => \{ clearTimeout\(timer\); reject\(e\); \}\);/, "a child process error must clear the kill timer and reject");
+assert.ok(aiErrorSource.indexOf("clearTimeout(timer)") < aiErrorSource.indexOf("reject(e)"), "a child process error must clear its kill timer before rejecting");
+assert.ok(aiRunSource.indexOf('child.on("error"') < aiRunSource.indexOf("resolve(redact(text))"), "a child process error must reject before close can resolve redacted output");
 assert.match(aiRunSource, /function run\(engine, prompt, \{ model, cwd: workdir, timeoutMs = 180_000 \} = \{\}\)/, "AI CLI run must default to a 180-second timeout");
 assert.ok(aiRunSource.indexOf("text = text.trim();") < aiRunSource.indexOf("if (code !== 0 || !text)"), "empty output must be detected after trim");
 assert.match(aiRunSource, /const timer = setTimeout\(\(\) => child\.kill\("SIGKILL"\), timeoutMs\);/, "AI CLI timeout must kill the child with SIGKILL");

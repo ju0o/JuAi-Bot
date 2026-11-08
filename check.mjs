@@ -929,6 +929,8 @@ assert.equal(isSpam("https://a https://b https://c https://d", [], spamNow - DAY
 assert.ok(GUIDE(mention).some((message) => message.includes(`${SPAM_WINDOW_MS / 60_000}분 안에 같은 글을 ${SPAM_REPEAT_CHANNELS}개 채널`)), "guide omits spam repeat boundary");
 assert.ok(GUIDE(mention).some((message) => message.includes(`링크 ${SPAM_LINK_MIN}개 이상`) && message.includes(`${SPAM_MIN_LEN}자 이하는 반복 글로 세지 않으며`) && message.includes(`${SPAM_TIMEOUT_MS / 3_600_000}시간 타임아웃`)), "guide omits dynamic spam limits");
 assert.ok(GUIDE(mention).some((message) => message.includes("서버 주인과 운영진은 제외돼요.")), "guide omits Founder/staff spam exemption");
+assert.ok(bot.includes(`스팸 의심: <@\${m.author.id}> 메시지 삭제 + ${SPAM_TIMEOUT_MS / 3_600_000}시간 타임아웃`), "spam log must state the configured timeout in hours");
+assert.ok(bot.includes(`${SPAM_TIMEOUT_MS / 3_600_000}시간 타임아웃했어요.\\n1일 타임아웃으로 늘릴까요?`), "spam approval card must offer a one-day extension");
 assert.ok(STAFF_GUIDE(mention).length <= 2000);
 assert.ok(SOURCE_GUIDE.length <= 2000);
 for (const placeholder of ["<#QA>", "<#SUGGEST>"]) assert.ok(SOURCE_GUIDE.includes(placeholder), `setup.mjs replaces ${placeholder}`);
